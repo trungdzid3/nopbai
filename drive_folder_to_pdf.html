@@ -2003,6 +2003,42 @@
         body[data-design="apple"] #accent-color-section {
             display: none !important;
         }
+
+        /* --- DARK MODE TEXT IMPROVEMENTS FOR MODALS --- */
+        body.dark #settings_modal .text-on-surface,
+        body.dark #class_form_modal .text-on-surface,
+        body.dark #settings_modal h2,
+        body.dark #settings_modal h3,
+        body.dark #class_form_modal h2,
+        body.dark #class_form_modal h3,
+        body.dark #settings_modal label,
+        body.dark #class_form_modal label {
+            color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        body.dark #settings_modal .text-on-surface-variant,
+        body.dark #class_form_modal .text-on-surface-variant,
+        body.dark #settings_modal p,
+        body.dark #class_form_modal p {
+            color: rgba(255, 255, 255, 0.75) !important;
+        }
+
+        body.dark #settings_modal input,
+        body.dark #settings_modal textarea,
+        body.dark #class_form_modal input,
+        body.dark #class_form_modal textarea {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        body.dark #settings_modal .m3-settings-nav-button span,
+        body.dark #settings_modal .m3-settings-nav-button {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        body.dark #settings_modal .m3-settings-nav-button[data-active="true"] span,
+        body.dark #settings_modal .m3-settings-nav-button[data-active="true"] {
+            color: rgba(255, 255, 255, 0.95) !important;
+        }
     </style>
 </head>
 
