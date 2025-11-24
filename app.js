@@ -925,6 +925,12 @@ async function createClassSystemAutomatic() {
         updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
+        
+        // 2.1. Create folder for form file uploads
+        updateStatus("2.1. Đang tạo thư mục lưu tệp đính kèm...");
+        const uploadFolder = await apiCreateFolder('[Tệp đính kèm Form]', folder.id);
+        await apiSetFormUploadFolder(form.id, uploadFolder.id);
+        updateStatus(`✓ Đã tạo thư mục tệp đính kèm: ${uploadFolder.id}`);
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
@@ -1160,6 +1166,65 @@ async function apiUpdateFormChoices(formId, assignments) {
     } catch (e) {
         console.error('[FORM] Lỗi cập nhật form choices:', e);
         // Don't throw - form still usable, just needs manual update
+    }
+}
+
+async function apiSetFormUploadFolder(formId, folderId) {
+    try {
+        // Get form structure to find file upload question
+        const formResponse = await gapi.client.request({
+            path: `https://forms.googleapis.com/v1/forms/${formId}`,
+            method: 'GET'
+        });
+        
+        const form = formResponse.result;
+        let fileUploadItemId = null;
+        
+        // Find file upload question
+        if (form.items) {
+            for (const item of form.items) {
+                if (item.questionItem?.question?.fileUploadQuestion) {
+                    fileUploadItemId = item.itemId;
+                    break;
+                }
+            }
+        }
+        
+        if (!fileUploadItemId) {
+            console.warn('[FORM] Không tìm thấy câu hỏi tải file trong form');
+            return;
+        }
+        
+        // Update file upload question with folder
+        await gapi.client.request({
+            path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
+            method: 'POST',
+            body: {
+                requests: [{
+                    updateItem: {
+                        item: {
+                            itemId: fileUploadItemId,
+                            questionItem: {
+                                question: {
+                                    fileUploadQuestion: {
+                                        folderId: folderId,
+                                        maxFiles: 10,
+                                        maxFileSize: 10485760 // 10MB
+                                    }
+                                }
+                            }
+                        },
+                        updateMask: 'questionItem.question.fileUploadQuestion'
+                    }
+                }],
+                includeFormInResponse: false
+            }
+        });
+        
+        console.log(`[FORM] Đã set upload folder: ${folderId}`);
+    } catch (e) {
+        console.error('[FORM] Lỗi set upload folder:', e);
+        // Don't throw - form still works, just needs manual folder setup
     }
 }
 
