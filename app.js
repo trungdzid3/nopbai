@@ -5,7 +5,7 @@
 const { jsPDF } = window.jspdf;
 const { PDFDocument, rgb } = window.PDFLib;
 
-const API_KEY = "AIzaSyD_-wvUOLuc9vrJSF8Rb2WCA4TihTDNP3c"; // Để trống
+const API_KEY = ""; // Để trống
 const CLIENT_ID = "537125658544-f5j4rh872q8412rkfoffrs7nt7fahjun.apps.googleusercontent.com";
 
 // --- CẤU HÌNH ID MẪU (HARDCODED) ---
