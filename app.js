@@ -80,7 +80,6 @@ const btnOpenSheet = document.getElementById('btn_open_sheet');
 const btnOpenForm = document.getElementById('btn_open_form');
 const inpRootFolderId = document.getElementById('root_folder_id');
 const btnSaveSystemConfig = document.getElementById('save_system_config');
-const chkAutoCreate = document.getElementById('is_auto_create');
 const divAutoCreateSection = document.getElementById('auto_create_section');
 
 // --- [NEW] Custom Dropdown Elements ---
@@ -766,13 +765,9 @@ function createAssignmentInputRow() {
 
 
 
-// [NEW] Logic Save (Manual or Auto)
+// [NEW] Logic Save (Always Auto)
 async function handleSaveClassProfile() {
-    if (chkAutoCreate && chkAutoCreate.checked) {
-        await createClassSystemAutomatic();
-    } else {
-        await saveClassProfileManual();
-    }
+    await createClassSystemAutomatic();
 }
 
 async function saveClassProfileManual() {
@@ -978,9 +973,16 @@ async function createClassSystemAutomatic() {
                 await apiUpdateFormChoices(form.id, assignments);
                 updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn`);
             }
+            
+            // 8.1. Create assignment sheets automatically
+            if (assignments.length > 0) {
+                updateStatus("9. Đang tạo sheet cho từng loại bài tập...");
+                await apiCreateAssignmentSheets(sheet.id, assignments);
+                updateStatus(`✓ Đã tạo ${assignments.length} sheet nhận xét`);
+            }
         }
 
-        // 9. Save Profile
+        // 10. Save Profile
         const newProfile = {
             id: folder.id,
             name: name,
@@ -1225,6 +1227,48 @@ async function apiWriteUserEmailToConfig(spreadsheetId, email) {
     });
 }
 
+async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
+    try {
+        // 1. Get template sheet "(Mẫu) Bảng nhận xét"
+        const sheetData = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: spreadsheetId
+        });
+        
+        const sheets = sheetData.result.sheets;
+        const templateSheet = sheets.find(s => s.properties.title === '(Mẫu) Bảng nhận xét');
+        
+        if (!templateSheet) {
+            console.warn('[SHEETS] Không tìm thấy sheet template');
+            return;
+        }
+        
+        const templateSheetId = templateSheet.properties.sheetId;
+        
+        // 2. Duplicate template for each assignment
+        const requests = [];
+        for (const assignment of assignments) {
+            requests.push({
+                duplicateSheet: {
+                    sourceSheetId: templateSheetId,
+                    newSheetName: assignment.name,
+                    insertSheetIndex: sheets.length
+                }
+            });
+        }
+        
+        await gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: spreadsheetId,
+            resource: { requests: requests }
+        });
+        
+        console.log(`[SHEETS] Đã tạo ${assignments.length} sheet từ template`);
+        
+    } catch (error) {
+        console.error('[SHEETS] Lỗi tạo assignment sheets:', error);
+        updateStatus(`⚠️ Lỗi tạo sheet: ${error.result?.error?.message || error.message}`);
+    }
+}
+
 async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
     if (!assignments || assignments.length === 0) {
         console.log('[CONFIG] Không có assignment nào để ghi.');
@@ -1406,7 +1450,6 @@ function clearClassForm() {
     assignmentTypesContainer.innerHTML = '';
 
     deleteClassProfileButton.style.display = 'none';
-    if (chkAutoCreate) chkAutoCreate.checked = false;
 }
 
 function deleteClassProfile() {
