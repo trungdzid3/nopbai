@@ -434,7 +434,17 @@ function updateAssignmentSelectionUI() {
         return;
     }
 
-    currentProfile.assignments.forEach(assignment => {
+    // Filter out "File responses" folders
+    const validAssignments = currentProfile.assignments.filter(a => 
+        !a.name.toLowerCase().includes('file responses')
+    );
+
+    if (validAssignments.length === 0) {
+        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">Lớp này chưa có loại bài tập hợp lệ.</p>';
+        return;
+    }
+
+    validAssignments.forEach(assignment => {
         const btn = document.createElement('button');
         btn.className = 'assignment-type-btn m3-button m3-button-outlined text-sm py-2 px-4 smooth-transition flex-1 rounded-full';
         btn.textContent = assignment.name;
@@ -2224,7 +2234,10 @@ async function markFolderAsScanned(folderId, formFile, sheetFile) {
 async function listAssignmentFolders(classFolderId) {
     try {
         const { folders } = await listFilesInFolder(classFolderId);
-        return folders.map(f => ({ name: f.name, folderId: f.id }));
+        // Filter out "File responses" folders (case-insensitive)
+        return folders
+            .filter(f => !f.name.toLowerCase().includes('file responses'))
+            .map(f => ({ name: f.name, folderId: f.id }));
     } catch (err) {
         console.error(`[METADATA] Lỗi list assignment folders:`, err);
         return [];
@@ -2316,10 +2329,13 @@ async function scanAndSyncClasses(silent = false) {
                     // Mark folder for faster future scans
                     await markFolderAsScanned(classFolder.id, formFile, sheetFile);
 
-                    const assignments = assignmentFolderCandidates.map(folder => ({
-                        name: folder.name,
-                        folderId: folder.id
-                    }));
+                    // Filter out "File responses" folders
+                    const assignments = assignmentFolderCandidates
+                        .filter(folder => !folder.name.toLowerCase().includes('file responses'))
+                        .map(folder => ({
+                            name: folder.name,
+                            folderId: folder.id
+                        }));
 
                     detectedClasses.push({
                         id: classFolder.id,
