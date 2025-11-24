@@ -1,9 +1,10 @@
 // Service Worker for PWA
-const CACHE_NAME = 'drive2pdf-v1.1.0';
+const CACHE_NAME = 'drive2pdf-v1.1.1';
 const urlsToCache = [
   './drive_folder_to_pdf.html',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  './icon.png'
 ];
 
 // Install event - cache resources

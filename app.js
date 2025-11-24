@@ -13,7 +13,7 @@ const TEMPLATE_FORM_ID = "1I9u9P3MlP4623JPnRpjuiySHxGl0z6mSOOGCxbCI3Pg";
 const TEMPLATE_SHEET_ID = "1J18DezSL6Y-doQw7NMox8o14qzQeixsTM1AI1-9LnQg";
 
 // --- CẤU HÌNH AUTO-UPDATE ---
-const CURRENT_VERSION = "1.1.0"; // Phiên bản hiện tại
+const CURRENT_VERSION = "1.1.1"; // Phiên bản hiện tại
 const VERSION_CHECK_URL = ""; // Disabled - CORS issue with GitHub Pages
 
 let activeAssignment = null;
