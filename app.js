@@ -34,7 +34,7 @@ const DISCOVERY_DOCS = [
     "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
     "https://sheets.googleapis.com/$discovery/rest?version=v4"
 ];
-const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets";
+const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/forms";
 
 let tokenClient;
 let gapiInited = false;
@@ -1104,12 +1104,16 @@ async function apiLinkFormToSheet(formId, sheetId) {
 
 async function apiUpdateFormChoices(formId, assignments) {
     try {
+        console.log('[FORM] Bắt đầu cập nhật form choices:', formId);
+        console.log('[FORM] Assignments:', assignments);
+        
         // 1. Get form structure to find the question item
         const formResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${formId}`,
             method: 'GET'
         });
         
+        console.log('[FORM] Form structure:', formResponse.result);
         const form = formResponse.result;
         
         // 2. Find the question with title containing assignment/homework keywords
@@ -1143,7 +1147,8 @@ async function apiUpdateFormChoices(formId, assignments) {
         const choices = assignments.map(a => ({ value: a.name }));
         
         // 4. Update the question with new choices
-        await gapi.client.request({
+        console.log('[FORM] Updating question with choices:', choices);
+        const updateResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
             method: 'POST',
             body: {
@@ -1167,7 +1172,8 @@ async function apiUpdateFormChoices(formId, assignments) {
             }
         });
         
-        console.log(`[FORM] Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
+        console.log('[FORM] Update response:', updateResponse);
+        console.log(`[FORM] ✓ Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
     } catch (e) {
         console.error('[FORM] Lỗi cập nhật form choices:', e);
         updateStatus(`⚠️ Lỗi cập nhật Form: ${e.result?.error?.message || e.message}`);
