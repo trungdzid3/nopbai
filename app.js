@@ -239,11 +239,29 @@ function bindQuickActions() {
         else updateStatus("⚠ Lớp này chưa liên kết Sheet.", true);
     };
 
-    if (btnOpenForm) btnOpenForm.onclick = () => {
-        const profile = getClassProfile(classProfileSelect.value);
-        if (profile && profile.formLink) window.open(profile.formLink, '_blank');
-        else updateStatus("⚠ Lớp này chưa liên kết Form.", true);
-    };
+    if (btnOpenForm) {
+        btnOpenForm.onclick = () => {
+            const profile = getClassProfile(classProfileSelect.value);
+            if (profile && profile.formLink) window.open(profile.formLink, '_blank');
+            else updateStatus("⚠ Lớp này chưa liên kết Form.", true);
+        };
+        
+        btnOpenForm.oncontextmenu = (e) => {
+            e.preventDefault();
+            const profile = getClassProfile(classProfileSelect.value);
+            if (profile && (profile.formShortLink || profile.formLink)) {
+                const linkToCopy = profile.formShortLink || profile.formLink;
+                navigator.clipboard.writeText(linkToCopy).then(() => {
+                    updateStatus(`✓ Đã copy link Form: ${linkToCopy}`);
+                }).catch(err => {
+                    console.error('Lỗi copy:', err);
+                    updateStatus("⚠ Không thể copy link.", true);
+                });
+            } else {
+                updateStatus("⚠ Lớp này chưa có link Form.", true);
+            }
+        };
+    }
 
     if (btnSaveSystemConfig) btnSaveSystemConfig.onclick = () => {
         localStorage.setItem('root_folder_id', inpRootFolderId.value);
@@ -841,6 +859,7 @@ async function saveClassProfileManual() {
             assignments,
             sheetLink: existingProfile ? existingProfile.sheetLink : null,
             formLink: existingProfile ? existingProfile.formLink : null,
+            formShortLink: existingProfile ? existingProfile.formShortLink : null,
             folderLink: folderLink,
             sheetId: existingProfile ? existingProfile.sheetId : null,
             formId: existingProfile ? existingProfile.formId : null
@@ -982,13 +1001,30 @@ async function createClassSystemAutomatic() {
             }
         }
 
-        // 10. Save Profile
+        // 10. Get shortened form link
+        updateStatus("10. Đang lấy link rút gọn của Form...");
+        let formShortLink = form.webViewLink;
+        try {
+            const shortLinkResponse = await gapi.client.request({
+                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
+                method: 'GET'
+            });
+            if (shortLinkResponse.result.responderUri) {
+                formShortLink = shortLinkResponse.result.responderUri;
+                updateStatus(`✓ Đã lấy link Form rút gọn`);
+            }
+        } catch (err) {
+            console.warn('Không thể lấy link rút gọn, dùng link đầy đủ:', err);
+        }
+
+        // 11. Save Profile
         const newProfile = {
             id: folder.id,
             name: name,
             assignments: assignments,
             sheetLink: sheet.webViewLink,
             formLink: form.webViewLink,
+            formShortLink: formShortLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
             formId: form.id
