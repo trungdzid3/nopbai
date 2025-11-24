@@ -1640,9 +1640,21 @@ async function processFormFileUploads(classFolderId, sheetId) {
         });
         
         const headers = headerData.result.values?.[0] || [];
-        const nameColIdx = headers.findIndex(h => h && h.toLowerCase().includes('họ và tên'));
-        const assignmentColIdx = headers.findIndex(h => h && (h.toLowerCase().includes('chọn bài') || h.toLowerCase().includes('loại bài')));
-        const fileColIdx = headers.findIndex(h => h && h.toLowerCase().includes('tải lên'));
+        const nameColIdx = headers.findIndex(h => h && (
+            h.toLowerCase().includes('tên học sinh') || 
+            h.toLowerCase().includes('họ và tên') ||
+            h.toLowerCase().includes('họ tên')
+        ));
+        const assignmentColIdx = headers.findIndex(h => h && (
+            h.toLowerCase().includes('chọn bài') || 
+            h.toLowerCase().includes('loại bài') ||
+            h.toLowerCase().includes('bài tập')
+        ));
+        const fileColIdx = headers.findIndex(h => h && (
+            h.toLowerCase().includes('nộp bài') ||
+            h.toLowerCase().includes('tải lên') ||
+            h.toLowerCase().includes('file')
+        ));
         
         if (nameColIdx === -1 || assignmentColIdx === -1 || fileColIdx === -1) {
             updateStatus('   ⚠️ Không tìm thấy cột cần thiết trong sheet');
