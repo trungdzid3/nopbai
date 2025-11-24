@@ -986,9 +986,9 @@ async function createClassSystemAutomatic() {
                 scriptProjectId = formScript.id;
                 await gapi.client.drive.files.update({
                     fileId: scriptProjectId,
-                    resource: { name: `Script - ${name}` }
+                    resource: { name: `Google Form nộp bài - ${name}` }
                 });
-                updateStatus(`   ✓ Đã đổi tên Script: "Script - ${name}" (từ "${formScript.name}")`);
+                updateStatus(`   ✓ Đã đổi tên Script: "Google Form nộp bài - ${name}" (từ "${formScript.name}")`);
             } else {
                 updateStatus(`   ⚠ Không tìm thấy Script project`);
             }

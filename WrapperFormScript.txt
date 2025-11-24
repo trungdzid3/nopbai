@@ -61,21 +61,26 @@ function onFormSubmit(e) {
 
 /**
  * Đọc email từ Sheet Config (cell I6)
- * Sheet ID được lấy từ Form destination
+ * Sheet ID được lấy từ Script Properties (được webapp ghi khi tạo lớp)
  */
 function getEmailFromSheetConfig() {
   try {
-    const form = FormApp.getActiveForm();
+    // Ưu tiên 1: Lấy Sheet ID từ Script Properties (được webapp ghi khi tạo lớp)
+    const scriptProperties = PropertiesService.getScriptProperties();
+    let sheetId = scriptProperties.getProperty('SHEET_ID');
     
-    // Lấy destination spreadsheet của Form
-    const destinationId = form.getDestinationId();
+    // Ưu tiên 2: Nếu không có, thử lấy từ form destination (nếu đã link)
+    if (!sheetId) {
+      const form = FormApp.getActiveForm();
+      sheetId = form.getDestinationId();
+    }
     
-    if (!destinationId) {
-      Logger.log('⚠️ Form chưa được link với Sheet nào');
+    if (!sheetId) {
+      Logger.log('⚠️ Không tìm thấy Sheet ID (chưa link form hoặc chưa cấu hình Script Properties)');
       return null;
     }
     
-    const ss = SpreadsheetApp.openById(destinationId);
+    const ss = SpreadsheetApp.openById(sheetId);
     const configSheet = ss.getSheetByName('Cấu Hình');
     
     if (!configSheet) {
@@ -143,6 +148,61 @@ function quickSetup() {
   try {
     Logger.log('🚀 Bắt đầu Quick Setup...');
     
+    // 0. Tự động detect và lưu Sheet ID
+    const scriptProperties = PropertiesService.getScriptProperties();
+    let sheetId = scriptProperties.getProperty('SHEET_ID');
+    
+    if (!sheetId) {
+      Logger.log('🔍 Đang tự động tìm Sheet ID...');
+      
+      // Thử 1: Lấy từ form destination (nếu đã link)
+      try {
+        const form = FormApp.getActiveForm();
+        sheetId = form.getDestinationId();
+        
+        if (sheetId) {
+          scriptProperties.setProperty('SHEET_ID', sheetId);
+          Logger.log(`✅ Đã tự động lưu Sheet ID từ form destination: ${sheetId}`);
+        }
+      } catch (e) {
+        Logger.log(`⚠️ Không tìm thấy form destination: ${e.message}`);
+      }
+      
+      // Thử 2: Tìm trong cùng folder với Form
+      if (!sheetId) {
+        try {
+          const formFile = DriveApp.getFileById(FormApp.getActiveForm().getId());
+          const formParents = formFile.getParents();
+          
+          if (formParents.hasNext()) {
+            const folder = formParents.next();
+            const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+            
+            while (files.hasNext()) {
+              const file = files.next();
+              // Tìm file sheet có tên chứa "Bảng nhận xét"
+              if (file.getName().includes('Bảng nhận xét')) {
+                sheetId = file.getId();
+                scriptProperties.setProperty('SHEET_ID', sheetId);
+                Logger.log(`✅ Đã tự động tìm và lưu Sheet ID từ Drive: ${sheetId} (${file.getName()})`);
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          Logger.log(`⚠️ Không tìm thấy Sheet trong folder: ${e.message}`);
+        }
+      }
+      
+      if (!sheetId) {
+        Logger.log('⚠️ CẢNH BÁO: Không tìm thấy Sheet ID!');
+        Logger.log('💡 Giải pháp: File → Project properties → Script properties');
+        Logger.log('   → Add: SHEET_ID = [ID của Sheet "Bảng nhận xét"]');
+      }
+    } else {
+      Logger.log(`✅ Sheet ID đã có: ${sheetId}`);
+    }
+    
     // 1. Xóa tất cả triggers cũ
     const oldTriggers = ScriptApp.getProjectTriggers();
     oldTriggers.forEach(trigger => {
@@ -172,7 +232,7 @@ function quickSetup() {
     Logger.log('✅ Đã tạo trigger: reconcileCheckboxes (Every 1 hour)');
     
     // 5. Kiểm tra email config
-    let recipientEmail = PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+    let recipientEmail = scriptProperties.getProperty('RECIPIENT_EMAIL');
     
     if (!recipientEmail) {
       try {
