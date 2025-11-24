@@ -1118,19 +1118,30 @@ async function apiUpdateFormChoices(formId, assignments) {
         
         const form = formResponse.result;
         
-        // 2. Find the question with title containing "Loại bài tập" or "Bài tập"
+        // 2. Find the question with title containing assignment/homework keywords
         let questionItemId = null;
+        const keywords = ['loại bài tập', 'bài tập', 'chọn bài', 'assignment', 'homework'];
+        
         if (form.items) {
             for (const item of form.items) {
-                if (item.title && (item.title.includes('Loại bài tập') || item.title.includes('bài tập'))) {
-                    questionItemId = item.itemId;
-                    break;
+                if (item.title) {
+                    const titleLower = item.title.toLowerCase();
+                    for (const keyword of keywords) {
+                        if (titleLower.includes(keyword)) {
+                            questionItemId = item.itemId;
+                            console.log(`[FORM] Tìm thấy câu hỏi: "${item.title}" (ID: ${questionItemId})`);
+                            break;
+                        }
+                    }
+                    if (questionItemId) break;
                 }
             }
         }
         
         if (!questionItemId) {
-            console.warn('[FORM] Không tìm thấy câu hỏi "Loại bài tập" trong form');
+            console.warn('[FORM] Không tìm thấy câu hỏi loại bài tập trong form');
+            console.log('[FORM] Danh sách câu hỏi:', form.items?.map(i => i.title));
+            updateStatus(`⚠️ Không tìm thấy câu hỏi "Loại bài tập" - cần update thủ công`);
             return;
         }
         
@@ -1165,6 +1176,7 @@ async function apiUpdateFormChoices(formId, assignments) {
         console.log(`[FORM] Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
     } catch (e) {
         console.error('[FORM] Lỗi cập nhật form choices:', e);
+        updateStatus(`⚠️ Lỗi cập nhật Form: ${e.result?.error?.message || e.message}`);
         // Don't throw - form still usable, just needs manual update
     }
 }
