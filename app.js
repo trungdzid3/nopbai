@@ -1436,7 +1436,7 @@ function gisLoaded() {
                 } else {
                     // Critical fix: Set the token for the GAPI client
                     gapi.client.setToken(tokenResponse);
-                    updateStatus("✓ Đăng nhập thành công.");
+                    updateStatus("✓ Đã đăng nhập.");
                     if (!LOGIN_HINT) fetchAndSaveEmailHint();
                     const savedAutoRefreshState = localStorage.getItem('autoRefreshState');
                     if (savedAutoRefreshState === 'on') startAutoRefresh();
@@ -1484,18 +1484,14 @@ function checkInitStatus() {
     checkSystemReady();
     if (gapiInited && gisInited) {
         if (LOGIN_HINT) {
-            updateStatus("→ Thử đăng nhập tự động với: " + LOGIN_HINT);
+            updateStatus("→ Đăng nhập tự động...");
+            // Try silent login immediately
             tokenClient.requestAccessToken({
                 prompt: 'none',
-                hint: LOGIN_HINT,
-                error_handler: (error) => {
-                    updateStatus(`⚠ Đăng nhập tự động thất bại. Vui lòng đăng nhập thủ công.`, true);
-                    console.log("Auto-login failed:", error);
-                    checkSystemReady();
-                }
+                hint: LOGIN_HINT
             });
         } else {
-            updateStatus("✓ Ứng dụng sẵn sàng. Vui lòng đăng nhập.");
+            updateStatus("✓ Sẵn sàng. Vui lòng đăng nhập.");
         }
     }
 }
