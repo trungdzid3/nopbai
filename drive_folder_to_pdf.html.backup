@@ -407,10 +407,10 @@
         body.dark[data-design="apple"] .bg-surface-container-highest,
         body.dark[data-design="apple"] .m3-setting-card,
         body.dark[data-design="apple"] .m3-modal-content {
-            background-color: color-mix(in srgb, var(--c-glass) 45%, transparent);
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
             backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
             -webkit-backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
-            border: 1px solid color-mix(in srgb, var(--c-light) 25%, transparent);
+            border: 1px solid color-mix(in srgb, var(--c-light) 12%, transparent);
             box-shadow:
                 inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
                 inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent),
@@ -845,8 +845,7 @@
         #settings-modal-content,
         #assignment_types_container,
         #submission-status-list,
-        #class_form_modal .overflow-y-auto,
-        #guide_modal_content {
+        #class_form_modal .overflow-y-auto {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
@@ -857,8 +856,7 @@
         #settings-modal-content::-webkit-scrollbar,
         #assignment_types_container::-webkit-scrollbar,
         #submission-status-list::-webkit-scrollbar,
-        #class_form_modal .overflow-y-auto::-webkit-scrollbar,
-        #guide_modal_content::-webkit-scrollbar {
+        #class_form_modal .overflow-y-auto::-webkit-scrollbar {
             display: none;
         }
 
@@ -2005,58 +2003,6 @@
         body[data-design="apple"] #accent-color-section {
             display: none !important;
         }
-
-        /* --- DARK MODE TEXT IMPROVEMENTS FOR MODALS --- */
-        body.dark #settings_modal .text-on-surface,
-        body.dark #class_form_modal .text-on-surface,
-        body.dark #settings_modal h2,
-        body.dark #settings_modal h3,
-        body.dark #class_form_modal h2,
-        body.dark #class_form_modal h3,
-        body.dark #settings_modal label,
-        body.dark #class_form_modal label {
-            color: rgba(255, 255, 255, 0.95) !important;
-        }
-
-        body.dark #settings_modal .text-on-surface-variant,
-        body.dark #class_form_modal .text-on-surface-variant,
-        body.dark #settings_modal p,
-        body.dark #class_form_modal p {
-            color: rgba(255, 255, 255, 0.75) !important;
-        }
-
-        body.dark #settings_modal input,
-        body.dark #settings_modal textarea,
-        body.dark #class_form_modal input,
-        body.dark #class_form_modal textarea {
-            color: rgba(255, 255, 255, 0.9) !important;
-        }
-
-        body.dark #settings_modal .m3-settings-nav-button span,
-        body.dark #settings_modal .m3-settings-nav-button {
-            color: rgba(255, 255, 255, 0.8) !important;
-        }
-
-        body.dark #settings_modal .m3-settings-nav-button[data-active="true"] span,
-        body.dark #settings_modal .m3-settings-nav-button[data-active="true"] {
-            color: rgba(255, 255, 255, 0.95) !important;
-        }
-
-        /* --- LIQUID GLASS DARK MODE - ADDITIONAL TEXT IMPROVEMENTS --- */
-        body[data-design="apple"].dark #settings_modal .text-on-surface,
-        body[data-design="apple"].dark #class_form_modal .text-on-surface,
-        body[data-design="apple"].dark #settings_modal h2,
-        body[data-design="apple"].dark #settings_modal h3,
-        body[data-design="apple"].dark #class_form_modal h2,
-        body[data-design="apple"].dark #class_form_modal h3,
-        body.dark[data-design="apple"] #settings_modal .text-on-surface,
-        body.dark[data-design="apple"] #class_form_modal .text-on-surface,
-        body.dark[data-design="apple"] #settings_modal h2,
-        body.dark[data-design="apple"] #settings_modal h3,
-        body.dark[data-design="apple"] #class_form_modal h2,
-        body.dark[data-design="apple"] #class_form_modal h3 {
-            color: rgba(255, 255, 255, 0.98) !important;
-        }
     </style>
 </head>
 
@@ -2135,19 +2081,12 @@
             </section>
             <footer class="mt-auto pt-4 border-t border-outline-variant flex items-center justify-between">
                 <p class="text-xs text-outline text-center">Bản quyền bởi Nguyễn Thành Trung</p>
-                <div class="flex items-center gap-2">
-                    <button id="open_guide_button" class="m3-button m3-button-icon" title="Hướng dẫn sử dụng"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                        </svg></button>
-                    <button id="open_settings_button" class="m3-button m3-button-icon" title="Cài đặt"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.2-0.37-0.26-0.59-0.18l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.62c-0.05-0.22-0.25-0.38-0.48-0.38 h-3.84c-0.24,0-0.44,0.17-0.48,0.38L9.26,5.3C8.67,5.54,8.14,5.86,7.64,6.24L5.25,5.28C5.03,5.2,4.78,5.27,4.66,5.47 L2.74,8.79C2.62,8.99,2.68,9.26,2.86,9.4l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94 l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.2,0.37,0.26,0.59,0.18l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94 l0.38,2.68c0.05,0.22,0.25,0.38,0.48,0.38h3.84c0.24,0,0.44-0.17,0.48,0.38l0.38-2.68c0.59-0.24,1.12-0.56,1.62-0.94 l2.39,0.96c0.22,0.08,0.47,0.02,0.59-0.18l1.92-3.32C21.07,13.35,21.02,13.08,19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-                        </svg></button>
-                </div>
+                <button id="open_settings_button" class="m3-button m3-button-icon" title="Cài đặt"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.2-0.37-0.26-0.59-0.18l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.62c-0.05-0.22-0.25-0.38-0.48-0.38 h-3.84c-0.24,0-0.44,0.17-0.48,0.38L9.26,5.3C8.67,5.54,8.14,5.86,7.64,6.24L5.25,5.28C5.03,5.2,4.78,5.27,4.66,5.47 L2.74,8.79C2.62,8.99,2.68,9.26,2.86,9.4l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94 l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.2,0.37,0.26,0.59,0.18l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94 l0.38,2.68c0.05,0.22,0.25,0.38,0.48,0.38h3.84c0.24,0,0.44-0.17,0.48,0.38l0.38-2.68c0.59-0.24,1.12-0.56,1.62-0.94 l2.39,0.96c0.22,0.08,0.47,0.02,0.59-0.18l1.92-3.32C21.07,13.35,21.02,13.08,19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                    </svg></button>
             </footer>
         </aside>
 
@@ -2261,170 +2200,6 @@
         </main>
     </div>
 
-    <!-- GUIDE MODAL -->
-    <div id="guide_modal" aria-hidden="true"
-        class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="m3-modal-content bg-white dark:bg-gray-900 rounded-[28px] shadow-2xl border-2 border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] max-w-3xl w-full">
-            <header class="px-6 py-5 flex items-center justify-between border-b border-outline-variant flex-shrink-0">
-                <h2 class="text-xl font-semibold text-on-surface">📘 Hướng dẫn sử dụng</h2>
-                <button id="close_guide_button" class="m3-button m3-button-icon" title="Đóng">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="currentColor">
-                        <path
-                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                    </svg>
-                </button>
-            </header>
-            <div id="guide_modal_content" class="flex-1 overflow-y-auto p-6">
-                <div class="space-y-6 text-on-surface">
-                    
-                    <!-- Bước 1: Đăng nhập -->
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-[20px] p-4 border-2 border-blue-300 dark:border-blue-700">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-blue-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
-                                1
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100 mb-2">🔐 Đăng nhập Google</h3>
-                                <p class="text-sm text-blue-800 dark:text-blue-200 mb-3">Click nút <strong>"Đăng nhập"</strong> ở thanh bên trái để kết nối với tài khoản Google của bạn.</p>
-                                <div class="bg-white dark:bg-gray-800 rounded-[12px] p-3 text-xs border border-blue-100 dark:border-blue-900">
-                                    <p class="text-gray-600 dark:text-gray-400">💡 <strong>Lưu ý:</strong> App cần quyền truy cập Google Drive, Sheets và Forms để hoạt động.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bước 2: Tạo lớp -->
-                    <div class="bg-green-50 dark:bg-green-900/20 rounded-[20px] p-4 border-2 border-green-300 dark:border-green-700">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-green-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
-                                2
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-green-900 dark:text-green-100 mb-2">➕ Tạo lớp mới</h3>
-                                <p class="text-sm text-green-800 dark:text-green-200 mb-3">Click nút <strong>"+"</strong> bên cạnh dropdown "Chọn Lớp Đang Xử Lý" để tạo lớp học mới.</p>
-                                <ul class="list-disc list-inside space-y-1 text-sm text-green-800 dark:text-green-200 mb-3">
-                                    <li>Nhập <strong>Tên lớp</strong> (ví dụ: Lớp 6A1)</li>
-                                    <li>Nhập <strong>Danh sách học sinh</strong> (mỗi dòng 1 tên)</li>
-                                    <li>Nhập <strong>Các loại bài tập</strong> (ví dụ: BTVN Tuần 1, Bài tập Chương 2)</li>
-                                </ul>
-                                <div class="bg-white dark:bg-gray-800 rounded-[12px] p-3 text-xs border border-green-100 dark:border-green-900">
-                                    <p class="text-gray-600 dark:text-gray-400">✨ Hệ thống tự động tạo: Folder trên Drive, Sheet điểm, Form nộp bài và các Sheet theo dõi cho từng loại bài tập!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bước 3: Truy cập nhanh -->
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-[20px] p-4 border-2 border-purple-300 dark:border-purple-700">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-purple-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
-                                3
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-purple-900 dark:text-purple-100 mb-2">🚀 Truy cập nhanh</h3>
-                                <p class="text-sm text-purple-800 dark:text-purple-200 mb-3">Sử dụng các nút truy cập nhanh ở phần "Quick Actions Toolbar":</p>
-                                <div class="space-y-2">
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 flex items-center gap-2 border border-purple-100 dark:border-purple-900">
-                                        <span class="text-xl">📁</span>
-                                        <div>
-                                            <p class="font-medium text-sm text-gray-900 dark:text-gray-100">Folder Lớp</p>
-                                            <p class="text-xs text-gray-600 dark:text-gray-400">Mở folder chứa bài tập của học sinh</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 flex items-center gap-2 border border-purple-100 dark:border-purple-900">
-                                        <span class="text-xl">📊</span>
-                                        <div>
-                                            <p class="font-medium text-sm text-gray-900 dark:text-gray-100">Sheet Điểm</p>
-                                            <p class="text-xs text-gray-600 dark:text-gray-400">Mở bảng điểm và theo dõi tiến độ</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 flex items-center gap-2 border border-purple-100 dark:border-purple-900">
-                                        <span class="text-xl">📝</span>
-                                        <div>
-                                            <p class="font-medium text-sm text-gray-900 dark:text-gray-100">Form Nộp</p>
-                                            <p class="text-xs text-gray-600 dark:text-gray-400">Mở form nộp bài (click trái) hoặc copy link (click phải)</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bước 4: Xử lý PDF -->
-                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-[20px] p-4 border-2 border-orange-300 dark:border-orange-700">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
-                                4
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-orange-900 dark:text-orange-100 mb-2">📄 Chuyển đổi PDF</h3>
-                                <p class="text-sm text-orange-800 dark:text-orange-200 mb-3">Chọn loại bài tập và click <strong>"Bắt đầu Xử lý"</strong> để:</p>
-                                <ul class="list-disc list-inside space-y-1 text-sm text-orange-800 dark:text-orange-200 mb-3">
-                                    <li>Tự động chuyển đổi file DOCX thành PDF</li>
-                                    <li>Ghép tất cả PDF của mỗi học sinh thành 1 file</li>
-                                    <li>Thêm trang bìa với tên học sinh và loại bài tập</li>
-                                    <li>Lưu file PDF đã ghép vào folder riêng</li>
-                                </ul>
-                                <div class="bg-white dark:bg-gray-800 rounded-[12px] p-3 text-xs border border-orange-100 dark:border-orange-900">
-                                    <p class="text-gray-600 dark:text-gray-400">⚡ <strong>Mẹo:</strong> File PDF cuối cùng được lưu trong folder "PDF_Đã_Ghép" với tên chuẩn hóa!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bước 5: Theo dõi -->
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-[20px] p-4 border-2 border-indigo-300 dark:border-indigo-700">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-indigo-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
-                                5
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-indigo-900 dark:text-indigo-100 mb-2">📈 Theo dõi tiến độ</h3>
-                                <p class="text-sm text-indigo-800 dark:text-indigo-200 mb-3">Phần <strong>"Tình trạng Nộp bài"</strong> hiển thị:</p>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 border border-indigo-100 dark:border-indigo-900">
-                                        <p class="text-xs text-gray-900 dark:text-gray-100">✅ <strong>Đã nộp:</strong> Có file trong folder</p>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 border border-indigo-100 dark:border-indigo-900">
-                                        <p class="text-xs text-gray-900 dark:text-gray-100">❌ <strong>Chưa nộp:</strong> Chưa có file</p>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 border border-indigo-100 dark:border-indigo-900">
-                                        <p class="text-xs text-gray-900 dark:text-gray-100">📄 <strong>Đã ghép PDF:</strong> Hoàn thành xử lý</p>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 rounded-[10px] p-2.5 border border-indigo-100 dark:border-indigo-900">
-                                        <p class="text-xs text-gray-900 dark:text-gray-100">⏳ <strong>Đang xử lý:</strong> Hệ thống đang chuyển đổi</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tính năng nâng cao -->
-                    <div class="bg-amber-50 dark:bg-amber-900/20 rounded-[20px] p-4 border-2 border-amber-300 dark:border-amber-700">
-                        <h3 class="text-base font-semibold text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
-                            <span>🎯</span>
-                            <span>Tính năng nâng cao</span>
-                        </h3>
-                        <div class="space-y-1.5 text-sm text-amber-800 dark:text-amber-200">
-                            <p>• <strong>Chế độ giao diện:</strong> Chuyển đổi giữa Material Design và Apple Design trong Cài đặt</p>
-                            <p>• <strong>Dark Mode:</strong> Bật/tắt chế độ tối cho trải nghiệm tốt hơn</p>
-                            <p>• <strong>Sửa lớp:</strong> Click nút ✏️ để chỉnh sửa thông tin lớp đã tạo</p>
-                            <p>• <strong>Xóa lớp:</strong> Trong modal sửa lớp, có nút xóa lớp (cẩn thận!)</p>
-                            <p>• <strong>Copy link Form:</strong> Chuột phải vào nút "Form Nộp" để copy link chia sẻ</p>
-                        </div>
-                    </div>
-
-                    <!-- Liên hệ hỗ trợ -->
-                    <div class="bg-gray-50 dark:bg-gray-800 rounded-[16px] p-3 border border-gray-200 dark:border-gray-700 text-center">
-                        <p class="text-gray-600 dark:text-gray-400 text-xs">💬 Gặp vấn đề? Liên hệ: <strong class="text-blue-600 dark:text-blue-400">Nguyễn Thành Trung</strong></p>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- SETTINGS MODAL -->
     <div id="settings_modal" aria-hidden="true"
         class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -2464,12 +2239,12 @@
                     <div id="settings-panel-appearance" class="m3-settings-panel space-y-6" data-active="true">
                         <section class="m3-setting-card rounded-2xl">
                             <h2 class="text-lg font-medium text-on-surface mb-4">Phong cách thiết kế</h2>
-                            <div class="flex gap-2 justify-start">
+                            <div class="flex gap-2">
                                 <button id="design-material"
-                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
                                     data-value="material">Material 3</button>
                                 <button id="design-apple"
-                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
                                     data-value="apple">Liquid Glass</button>
                             </div>
                         </section>
@@ -2640,9 +2415,9 @@
             <div class="px-6 py-6 space-y-6 overflow-y-auto flex-1">
                 <input type="hidden" id="form_class_id">
 
-                <!-- [MỚI] CHẾ ĐỘ TẠO MỚI TỰ ĐỘNG - LUÔN BẬT -->
+                <!-- [MỚI] CHẾ ĐỘ TẠO MỚI TỰ ĐỘNG -->
                 <div id="auto_create_section"
-                    class="p-5 bg-surface-variant rounded-2xl border border-outline-variant">
+                    class="p-5 bg-surface-variant rounded-2xl border border-outline-variant hidden">
                     <div class="flex items-start gap-3">
                         <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center flex-shrink-0 mt-0.5">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -2652,9 +2427,16 @@
                         </div>
                         <div class="flex-1">
                             <h3 class="text-sm font-bold text-on-surface mb-1.5 uppercase tracking-wide">Tạo lớp tự động</h3>
-                            <p class="text-xs text-on-surface-variant leading-relaxed">
-                                Hệ thống sẽ tự động tạo Folder, Form, Sheet và các sheet nhận xét cho từng loại bài tập.
+                            <p class="text-xs text-on-surface-variant mb-4 leading-relaxed">
+                                Hệ thống sẽ tự động tạo Folder, Form và Sheet mới cho lớp này từ cấu hình gốc.
                             </p>
+                            <label class="flex items-center gap-2.5 cursor-pointer group">
+                                <input type="checkbox" id="is_auto_create" 
+                                    class="w-5 h-5 rounded border-2 border-outline text-on-surface focus:ring-2 focus:ring-outline cursor-pointer">
+                                <span class="text-sm font-medium text-on-surface group-hover:opacity-80 transition-opacity">
+                                    Kích hoạt tạo tự động toàn bộ
+                                </span>
+                            </label>
                         </div>
                     </div>
                 </div>

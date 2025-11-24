@@ -13,8 +13,8 @@ const TEMPLATE_FORM_ID = "1I9u9P3MlP4623JPnRpjuiySHxGl0z6mSOOGCxbCI3Pg";
 const TEMPLATE_SHEET_ID = "1J18DezSL6Y-doQw7NMox8o14qzQeixsTM1AI1-9LnQg";
 
 // --- CẤU HÌNH AUTO-UPDATE ---
-const CURRENT_VERSION = "1.1.1"; // Phiên bản hiện tại
-const VERSION_CHECK_URL = ""; // Disabled - CORS issue with GitHub Pages
+const CURRENT_VERSION = "1.1.0"; // Phiên bản hiện tại
+const VERSION_CHECK_URL = "https://drive.google.com/uc?export=download&id=1q7DggAUw1bLT6E4GHXPWgKklt0OUQtWV";
 
 let activeAssignment = null;
 let classProfiles = [];
@@ -34,7 +34,7 @@ const DISCOVERY_DOCS = [
     "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
     "https://sheets.googleapis.com/$discovery/rest?version=v4"
 ];
-const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/forms";
+const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets";
 
 let tokenClient;
 let gapiInited = false;
@@ -80,6 +80,7 @@ const btnOpenSheet = document.getElementById('btn_open_sheet');
 const btnOpenForm = document.getElementById('btn_open_form');
 const inpRootFolderId = document.getElementById('root_folder_id');
 const btnSaveSystemConfig = document.getElementById('save_system_config');
+const chkAutoCreate = document.getElementById('is_auto_create');
 const divAutoCreateSection = document.getElementById('auto_create_section');
 
 // --- [NEW] Custom Dropdown Elements ---
@@ -193,8 +194,8 @@ function initApp() {
 
     loadExternalAPIs();
 
-    // [DISABLED] Auto-update check - CORS issue on GitHub Pages
-    // setTimeout(checkForUpdates, 3000);
+    // [NEW] Kiểm tra phiên bản mới sau 3 giây
+    setTimeout(checkForUpdates, 3000);
 
     updateStatus("✓ Sẵn sàng. Chọn Lớp & Đăng nhập.");
     checkSystemReady();
@@ -239,29 +240,11 @@ function bindQuickActions() {
         else updateStatus("⚠ Lớp này chưa liên kết Sheet.", true);
     };
 
-    if (btnOpenForm) {
-        btnOpenForm.onclick = () => {
-            const profile = getClassProfile(classProfileSelect.value);
-            if (profile && profile.formLink) window.open(profile.formLink, '_blank');
-            else updateStatus("⚠ Lớp này chưa liên kết Form.", true);
-        };
-        
-        btnOpenForm.oncontextmenu = (e) => {
-            e.preventDefault();
-            const profile = getClassProfile(classProfileSelect.value);
-            if (profile && (profile.formShortLink || profile.formLink)) {
-                const linkToCopy = profile.formShortLink || profile.formLink;
-                navigator.clipboard.writeText(linkToCopy).then(() => {
-                    updateStatus(`✓ Đã copy link Form: ${linkToCopy}`);
-                }).catch(err => {
-                    console.error('Lỗi copy:', err);
-                    updateStatus("⚠ Không thể copy link.", true);
-                });
-            } else {
-                updateStatus("⚠ Lớp này chưa có link Form.", true);
-            }
-        };
-    }
+    if (btnOpenForm) btnOpenForm.onclick = () => {
+        const profile = getClassProfile(classProfileSelect.value);
+        if (profile && profile.formLink) window.open(profile.formLink, '_blank');
+        else updateStatus("⚠ Lớp này chưa liên kết Form.", true);
+    };
 
     if (btnSaveSystemConfig) btnSaveSystemConfig.onclick = () => {
         localStorage.setItem('root_folder_id', inpRootFolderId.value);
@@ -334,20 +317,6 @@ function bindClassManagementEvents() {
 }
 
 function bindModalEvents() {
-    // Guide Modal
-    const guideModal = document.getElementById('guide_modal');
-    const openGuideButton = document.getElementById('open_guide_button');
-    const closeGuideButton = document.getElementById('close_guide_button');
-    
-    openGuideButton.onclick = () => guideModal.setAttribute('aria-hidden', 'false');
-    closeGuideButton.onclick = () => guideModal.setAttribute('aria-hidden', 'true');
-    guideModal.onclick = (e) => {
-        if (e.target === guideModal) {
-            guideModal.setAttribute('aria-hidden', 'true');
-        }
-    };
-    
-    // Settings Modal
     openSettingsButton.onclick = () => settingsModal.setAttribute('aria-hidden', 'false');
     closeSettingsButton.onclick = () => settingsModal.setAttribute('aria-hidden', 'true');
     settingsModal.onclick = (e) => {
@@ -356,7 +325,6 @@ function bindModalEvents() {
         }
     };
 
-    // Class Form Modal
     closeClassFormModalButton.onclick = () => classFormModal.setAttribute('aria-hidden', 'true');
     classFormModal.onclick = (e) => {
         if (e.target === classFormModal) {
@@ -434,17 +402,7 @@ function updateAssignmentSelectionUI() {
         return;
     }
 
-    // Filter out "File responses" folders
-    const validAssignments = currentProfile.assignments.filter(a => 
-        !a.name.toLowerCase().includes('file responses')
-    );
-
-    if (validAssignments.length === 0) {
-        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">Lớp này chưa có loại bài tập hợp lệ.</p>';
-        return;
-    }
-
-    validAssignments.forEach(assignment => {
+    currentProfile.assignments.forEach(assignment => {
         const btn = document.createElement('button');
         btn.className = 'assignment-type-btn m3-button m3-button-outlined text-sm py-2 px-4 smooth-transition flex-1 rounded-full';
         btn.textContent = assignment.name;
@@ -522,7 +480,7 @@ async function reprocessAndDownload(folderId, folderName) {
 
     if (statusElement) {
         originalText = statusElement.querySelector('span:last-child').textContent;
-        statusElement.classList.remove('bg-primary-container', 'text-on-primary-container', 'bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-processed');
+        statusElement.classList.remove('bg-primary-container', 'text-on-primary-container', 'submission-item-processed');
         statusElement.classList.add('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
         statusElement.querySelector('span:last-child').textContent = 'Đang tải lại...';
     }
@@ -542,7 +500,7 @@ async function reprocessAndDownload(folderId, folderName) {
     } finally {
         if (statusElement) {
             statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-            statusElement.classList.add('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-reprocessable');
+            statusElement.classList.add('bg-primary-container', 'text-on-primary-container', 'submission-item-reprocessable');
             statusElement.querySelector('span:last-child').textContent = originalText;
         }
         processButton.disabled = false;
@@ -808,9 +766,13 @@ function createAssignmentInputRow() {
 
 
 
-// [NEW] Logic Save (Always Auto)
+// [NEW] Logic Save (Manual or Auto)
 async function handleSaveClassProfile() {
-    await createClassSystemAutomatic();
+    if (chkAutoCreate && chkAutoCreate.checked) {
+        await createClassSystemAutomatic();
+    } else {
+        await saveClassProfileManual();
+    }
 }
 
 async function saveClassProfileManual() {
@@ -884,7 +846,6 @@ async function saveClassProfileManual() {
             assignments,
             sheetLink: existingProfile ? existingProfile.sheetLink : null,
             formLink: existingProfile ? existingProfile.formLink : null,
-            formShortLink: existingProfile ? existingProfile.formShortLink : null,
             folderLink: folderLink,
             sheetId: existingProfile ? existingProfile.sheetId : null,
             formId: existingProfile ? existingProfile.formId : null
@@ -964,27 +925,6 @@ async function createClassSystemAutomatic() {
         updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
-        
-        // 2.1. Publish form to accept responses
-        try {
-            await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}:batchUpdate`,
-                method: 'POST',
-                body: {
-                    requests: [{
-                        updateSettings: {
-                            settings: {
-                                quizSettings: null
-                            },
-                            updateMask: 'quizSettings'
-                        }
-                    }]
-                }
-            });
-            updateStatus(`✓ Form đã được xuất bản`);
-        } catch (err) {
-            console.warn('Không thể xuất bản form:', err);
-        }
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
@@ -1032,45 +972,16 @@ async function createClassSystemAutomatic() {
                 updateStatus("7. Đang ghi cấu hình bài tập vào Sheet...");
                 await apiWriteAssignmentsToConfig(sheet.id, assignments);
                 updateStatus(`✓ Đã ghi ${assignments.length} loại bài tập vào sheet Cấu Hình`);
-                
-                // 7.1. Update Form choices
-                updateStatus("8. Đang cập nhật Form với danh sách bài tập...");
-                await apiUpdateFormChoices(form.id, assignments);
-                updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn`);
-            }
-            
-            // 8.1. Create assignment sheets automatically
-            if (assignments.length > 0) {
-                updateStatus("9. Đang tạo sheet cho từng loại bài tập...");
-                await apiCreateAssignmentSheets(sheet.id, assignments);
-                updateStatus(`✓ Đã tạo ${assignments.length} sheet nhận xét`);
             }
         }
 
-        // 10. Get shortened form link
-        updateStatus("10. Đang lấy link rút gọn của Form...");
-        let formShortLink = form.webViewLink;
-        try {
-            const shortLinkResponse = await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
-                method: 'GET'
-            });
-            if (shortLinkResponse.result.responderUri) {
-                formShortLink = shortLinkResponse.result.responderUri;
-                updateStatus(`✓ Đã lấy link Form rút gọn`);
-            }
-        } catch (err) {
-            console.warn('Không thể lấy link rút gọn, dùng link đầy đủ:', err);
-        }
-
-        // 11. Save Profile
+        // 8. Save Profile
         const newProfile = {
             id: folder.id,
             name: name,
             assignments: assignments,
             sheetLink: sheet.webViewLink,
-            formLink: formShortLink,
-            formShortLink: formShortLink,
+            formLink: form.webViewLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
             formId: form.id
@@ -1079,22 +990,13 @@ async function createClassSystemAutomatic() {
         classProfiles.push(newProfile);
         localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
 
-        // Close modal first
-        classFormModal.setAttribute('aria-hidden', 'true');
-        
-        // Then update UI
         loadClassProfiles();
-        
-        // Sync both native select and custom dropdown
-        if (classProfileSelect) classProfileSelect.value = folder.id;
-        if (classProfileSelectValue) classProfileSelectValue.value = folder.id;
-        if (classProfileText) classProfileText.textContent = name;
-        updateDropdownSelection(folder.id);
-        
+        classProfileSelect.value = folder.id;
         handleClassSelectChange();
 
         updateStatus(`🎉 Hoàn tất! Đã tạo lớp "${name}" với ${assignments.length} loại bài tập.`);
         updateStatus(`📋 Bước tiếp theo: Mở Sheet → Menu "Tiện ích Lớp Học" → "Cài đặt Lịch trình"`);
+        classFormModal.setAttribute('aria-hidden', 'true');
     } catch (e) {
         updateStatus(`✗ Lỗi tạo tự động: ${e.message || e.result?.error?.message}`, true);
         console.error(e);
@@ -1186,96 +1088,6 @@ async function apiLinkFormToSheet(formId, sheetId) {
     }
 }
 
-async function apiUpdateFormChoices(formId, assignments) {
-    try {
-        console.log('[FORM] Bắt đầu cập nhật form choices:', formId);
-        console.log('[FORM] Assignments:', assignments);
-        
-        // 1. Get form structure to find the question item
-        const formResponse = await gapi.client.request({
-            path: `https://forms.googleapis.com/v1/forms/${formId}`,
-            method: 'GET'
-        });
-        
-        console.log('[FORM] Form structure:', formResponse.result);
-        const form = formResponse.result;
-        
-        // 2. Find the question with title containing assignment/homework keywords
-        let questionItemId = null;
-        const keywords = ['loại bài tập', 'bài tập', 'chọn bài', 'assignment', 'homework'];
-        
-        if (form.items) {
-            for (const item of form.items) {
-                if (item.title) {
-                    const titleLower = item.title.toLowerCase();
-                    for (const keyword of keywords) {
-                        if (titleLower.includes(keyword)) {
-                            questionItemId = item.itemId;
-                            console.log(`[FORM] Tìm thấy câu hỏi: "${item.title}" (ID: ${questionItemId})`);
-                            break;
-                        }
-                    }
-                    if (questionItemId) break;
-                }
-            }
-        }
-        
-        if (!questionItemId) {
-            console.warn('[FORM] Không tìm thấy câu hỏi loại bài tập trong form');
-            console.log('[FORM] Danh sách câu hỏi:', form.items?.map(i => i.title));
-            updateStatus(`⚠️ Không tìm thấy câu hỏi "Loại bài tập" - cần update thủ công`);
-            return;
-        }
-        
-        // 3. Create choices from assignments
-        const choices = assignments.map(a => ({ value: a.name }));
-        
-        // 4. Update the question with new choices
-        console.log('[FORM] Updating question with choices:', choices);
-        
-        // Get current item location first
-        const currentItem = form.items.find(item => item.itemId === questionItemId);
-        if (!currentItem) {
-            throw new Error('Cannot find item in form structure');
-        }
-        
-        const updateResponse = await gapi.client.request({
-            path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
-            method: 'POST',
-            body: {
-                requests: [{
-                    updateItem: {
-                        item: {
-                            itemId: questionItemId,
-                            questionItem: {
-                                question: {
-                                    required: true,
-                                    choiceQuestion: {
-                                        type: 'RADIO',
-                                        options: choices
-                                    }
-                                }
-                            }
-                        },
-                        location: {
-                            index: form.items.indexOf(currentItem)
-                        },
-                        updateMask: 'questionItem.question.choiceQuestion.options'
-                    }
-                }],
-                includeFormInResponse: false
-            }
-        });
-        
-        console.log('[FORM] Update response:', updateResponse);
-        console.log(`[FORM] ✓ Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
-    } catch (e) {
-        console.error('[FORM] Lỗi cập nhật form choices:', e);
-        updateStatus(`⚠️ Lỗi cập nhật Form: ${e.result?.error?.message || e.message}`);
-        // Don't throw - form still usable, just needs manual update
-    }
-}
-
 async function apiSetFormScriptProperty(formId, recipientEmail) {
     // Sử dụng Apps Script API để set Script Properties cho Form
     // Cần Script ID từ Form, nhưng không có API trực tiếp
@@ -1307,48 +1119,6 @@ async function apiWriteUserEmailToConfig(spreadsheetId, email) {
         valueInputOption: 'RAW',
         resource: { values: [[email]] }
     });
-}
-
-async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
-    try {
-        // 1. Get template sheet "(Mẫu) Bảng nhận xét"
-        const sheetData = await gapi.client.sheets.spreadsheets.get({
-            spreadsheetId: spreadsheetId
-        });
-        
-        const sheets = sheetData.result.sheets;
-        const templateSheet = sheets.find(s => s.properties.title === '(Mẫu) Bảng nhận xét');
-        
-        if (!templateSheet) {
-            console.warn('[SHEETS] Không tìm thấy sheet template');
-            return;
-        }
-        
-        const templateSheetId = templateSheet.properties.sheetId;
-        
-        // 2. Duplicate template for each assignment
-        const requests = [];
-        for (const assignment of assignments) {
-            requests.push({
-                duplicateSheet: {
-                    sourceSheetId: templateSheetId,
-                    newSheetName: assignment.name,
-                    insertSheetIndex: sheets.length
-                }
-            });
-        }
-        
-        await gapi.client.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: spreadsheetId,
-            resource: { requests: requests }
-        });
-        
-        console.log(`[SHEETS] Đã tạo ${assignments.length} sheet từ template`);
-        
-    } catch (error) {
-        console.error('[SHEETS] Lỗi tạo assignment sheets:', error);
-        updateStatus(`⚠️ Lỗi tạo sheet: ${error.result?.error?.message || error.message}`);
-    }
 }
 
 async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
@@ -1532,6 +1302,7 @@ function clearClassForm() {
     assignmentTypesContainer.innerHTML = '';
 
     deleteClassProfileButton.style.display = 'none';
+    if (chkAutoCreate) chkAutoCreate.checked = false;
 }
 
 function deleteClassProfile() {
@@ -1665,7 +1436,7 @@ function gisLoaded() {
                 } else {
                     // Critical fix: Set the token for the GAPI client
                     gapi.client.setToken(tokenResponse);
-                    updateStatus("✓ Đã đăng nhập.");
+                    updateStatus("✓ Đăng nhập thành công.");
                     if (!LOGIN_HINT) fetchAndSaveEmailHint();
                     const savedAutoRefreshState = localStorage.getItem('autoRefreshState');
                     if (savedAutoRefreshState === 'on') startAutoRefresh();
@@ -1680,15 +1451,6 @@ function gisLoaded() {
         });
         gisInited = true;
         updateStatus("✓ GIS sẵn sàng.");
-        
-        // Check if returning from OAuth redirect
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('code') || urlParams.has('state')) {
-            updateStatus("→ Xử lý OAuth redirect...");
-            // Clean URL without reloading
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        
         checkInitStatus();
     } catch (error) { updateStatus(`✗ Lỗi GIS init: ${error.message}. Kiểm tra Client ID.`, true); console.error(error); }
 }
@@ -1713,20 +1475,24 @@ function checkInitStatus() {
     checkSystemReady();
     if (gapiInited && gisInited) {
         if (LOGIN_HINT) {
-            updateStatus("→ Đăng nhập tự động...");
-            // Try silent login immediately
+            updateStatus("→ Thử đăng nhập tự động với: " + LOGIN_HINT);
             tokenClient.requestAccessToken({
                 prompt: 'none',
-                hint: LOGIN_HINT
+                hint: LOGIN_HINT,
+                error_handler: (error) => {
+                    updateStatus(`⚠ Đăng nhập tự động thất bại. Vui lòng đăng nhập thủ công.`, true);
+                    console.log("Auto-login failed:", error);
+                    checkSystemReady();
+                }
             });
         } else {
-            updateStatus("✓ Sẵn sàng. Vui lòng đăng nhập.");
+            updateStatus("✓ Ứng dụng sẵn sàng. Vui lòng đăng nhập.");
         }
     }
 }
 
 function handleAuthClick() {
-    if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
     else updateStatus("✗ Lỗi: Hệ thống Đăng nhập (GIS) chưa sẵn sàng.", true);
 }
 
@@ -1746,125 +1512,6 @@ function handleSignoutClick() {
     }
 }
 
-async function processFormFileUploads(classFolderId, sheetId) {
-    try {
-        // 1. Find "File responses" folder
-        const { folders } = await listFilesInFolder(classFolderId);
-        const fileResponsesFolder = folders.find(f => 
-            f.name.includes('File responses') || 
-            f.name.includes('Nộp bài tập về nhà') ||
-            f.name.includes('responses')
-        );
-        
-        if (!fileResponsesFolder) {
-            updateStatus('   ℹ️ Không tìm thấy folder File responses');
-            return;
-        }
-        
-        updateStatus(`   → Tìm thấy folder: ${fileResponsesFolder.name}`);
-        
-        // 2. Get form responses from Sheet
-        const responsesData = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Form Responses 1!A2:Z1000' // Adjust range as needed
-        });
-        
-        const responses = responsesData.result.values || [];
-        if (responses.length === 0) {
-            updateStatus('   ℹ️ Chưa có responses nào trong sheet');
-            return;
-        }
-        
-        // 3. Find column indices (assuming: Timestamp, Email, Name, Assignment Type, File Upload)
-        const headerData = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Form Responses 1!A1:Z1'
-        });
-        
-        const headers = headerData.result.values?.[0] || [];
-        const nameColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('tên học sinh') || 
-            h.toLowerCase().includes('họ và tên') ||
-            h.toLowerCase().includes('họ tên')
-        ));
-        const assignmentColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('chọn bài') || 
-            h.toLowerCase().includes('loại bài') ||
-            h.toLowerCase().includes('bài tập')
-        ));
-        const fileColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('nộp bài') ||
-            h.toLowerCase().includes('tải lên') ||
-            h.toLowerCase().includes('file')
-        ));
-        
-        if (nameColIdx === -1 || assignmentColIdx === -1 || fileColIdx === -1) {
-            updateStatus('   ⚠️ Không tìm thấy cột cần thiết trong sheet');
-            return;
-        }
-        
-        updateStatus(`   → Xử lý ${responses.length} responses...`);
-        
-        // 4. Get all files from file responses folder
-        const fileResponsesList = await listFilesInFolder(fileResponsesFolder.id);
-        const uploadedFiles = fileResponsesList.files || [];
-        
-        // 5. Process each response
-        let movedCount = 0;
-        for (const response of responses) {
-            const studentName = response[nameColIdx];
-            const assignmentType = response[assignmentColIdx];
-            const fileUrls = response[fileColIdx];
-            
-            if (!studentName || !assignmentType || !fileUrls) continue;
-            
-            // Find student's assignment folder
-            const profile = classProfiles.find(p => p.id === classFolderId);
-            const assignment = profile?.assignments?.find(a => a.name === assignmentType);
-            
-            if (!assignment) continue;
-            
-            // Find or create student folder
-            const studentFolderName = studentName.trim();
-            const { folders: assignmentSubfolders } = await listFilesInFolder(assignment.folderId);
-            let studentFolder = assignmentSubfolders.find(f => f.name === studentFolderName);
-            
-            if (!studentFolder) {
-                studentFolder = await apiCreateFolder(studentFolderName, assignment.folderId);
-                updateStatus(`   → Tạo folder: ${studentFolderName}`);
-            }
-            
-            // Move files from file responses to student folder
-            const fileUrlsList = fileUrls.split(',').map(u => u.trim());
-            for (const fileUrl of fileUrlsList) {
-                // Extract file ID from URL
-                const fileIdMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                if (!fileIdMatch) continue;
-                
-                const fileId = fileIdMatch[1];
-                
-                try {
-                    // Move file to student folder
-                    await gapi.client.drive.files.update({
-                        fileId: fileId,
-                        addParents: studentFolder.id,
-                        removeParents: fileResponsesFolder.id
-                    });
-                    movedCount++;
-                } catch (err) {
-                    console.error(`Lỗi move file ${fileId}:`, err);
-                }
-            }
-        }
-        
-        updateStatus(`   ✓ Đã phân loại ${movedCount} file vào folder bài tập`);
-        
-    } catch (error) {
-        console.error('Lỗi processFormFileUploads:', error);
-        updateStatus(`   ⚠️ Lỗi phân loại file: ${error.message}`);
-    }
-}
-
 async function handleProcessClick() {
     if (!activeAssignment) { updateStatus("✗ LỖI: Bạn chưa chọn loại bài tập để xử lý.", true); return; }
     const parentFolderIdToProcess = activeAssignment.folderId;
@@ -1874,22 +1521,9 @@ async function handleProcessClick() {
     processButton.querySelector('span').textContent = "Đang xử lý...";
 
     try {
-        // Step 0: Process file uploads from Form responses folder
-        const selectedProfile = classProfiles.find(p => p.id === classProfileSelectValue.value);
-        if (selectedProfile && selectedProfile.sheetId && selectedProfile.formId) {
-            updateStatus("→ Đang phân loại file uploads từ Form...");
-            await processFormFileUploads(selectedProfile.id, selectedProfile.sheetId);
-        }
-        
         updateStatus("→ Đang quét thư mục con...");
         const allFoldersFromDrive = await findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }]);
-        
-        // Filter out "File responses" folder (case-insensitive)
-        const filteredFolders = allFoldersFromDrive.filter(folder => 
-            !folder.name.toLowerCase().includes('file responses')
-        );
-        
-        updateStatus(`✓ Quét xong: ${filteredFolders.length} thư mục con (bỏ qua ${allFoldersFromDrive.length - filteredFolders.length} folder File responses).`);
+        updateStatus(`✓ Quét xong: ${allFoldersFromDrive.length} thư mục con.`);
 
         const key = getStatusCacheKey();
         const cachedData = localStorage.getItem(key);
@@ -1897,7 +1531,7 @@ async function handleProcessClick() {
         const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
 
         const syncedStatusList = [];
-        filteredFolders.forEach(folder => {
+        allFoldersFromDrive.forEach(folder => {
             const isProcessed = folder.name.includes('[Đã xử lý]');
             const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
             const cleanName = sanitizeFolderDisplayName(folder.name);
@@ -1917,7 +1551,7 @@ async function handleProcessClick() {
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
 
-        const foldersToActuallyProcess = filteredFolders.filter(f => !f.name.includes('[Đã xử lý]') && !f.name.toLowerCase().includes('quá hạn'));
+        const foldersToActuallyProcess = allFoldersFromDrive.filter(f => !f.name.includes('[Đã xử lý]') && !f.name.toLowerCase().includes('quá hạn'));
         updateStatus(`→ ${foldersToActuallyProcess.length} thư mục mới cần xử lý.`);
 
         if (foldersToActuallyProcess.length > 0) {
@@ -1958,10 +1592,10 @@ function displaySubmissionStatus(statusList) {
         let extraItemClass = '';
 
         switch (itemData.status) {
-            case 'processed': statusText = 'Đã xử lý'; classesToAdd.push('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'); extraItemClass = 'submission-item-reprocessable'; break;
+            case 'processed': statusText = 'Đã xử lý'; classesToAdd.push('bg-primary-container', 'text-on-primary-container'); extraItemClass = 'submission-item-reprocessable'; break;
             case 'overdue': statusText = 'Quá hạn'; classesToAdd.push('bg-orange-200', 'text-orange-900', 'dark:bg-orange-800', 'dark:text-orange-100'); extraItemClass = 'submission-item-reprocessable'; break;
             case 'processing': statusText = 'Đang xử lý...'; classesToAdd.push('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'); break;
-            case 'error': statusText = 'Lỗi'; classesToAdd.push('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'); break;
+            case 'error': statusText = 'Lỗi'; classesToAdd.push('bg-error-container', 'text-on-error-container'); break;
             default: statusText = 'Chưa xử lý'; classesToAdd.push('bg-tertiary-container', 'text-on-tertiary-container'); break;
         }
 
@@ -2062,7 +1696,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                     statusElement.dataset.status = 'processed';
                     statusElement.querySelector('span:last-child').textContent = 'Đã xử lý';
                     statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-reprocessable');
+                    statusElement.classList.add('bg-primary-container', 'text-on-primary-container', 'submission-item-reprocessable');
                 }
             } else {
                 updateStatus(`⚠ Tạm dừng "${folder.name}" do lỗi.`, true);
@@ -2071,7 +1705,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                     statusElement.dataset.status = 'error';
                     statusElement.querySelector('span:last-child').textContent = 'Lỗi';
                     statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200');
+                    statusElement.classList.add('bg-error-container', 'text-on-error-container');
                 }
             }
         } catch (error) {
@@ -2255,10 +1889,7 @@ async function markFolderAsScanned(folderId, formFile, sheetFile) {
 async function listAssignmentFolders(classFolderId) {
     try {
         const { folders } = await listFilesInFolder(classFolderId);
-        // Filter out "File responses" folders (case-insensitive)
-        return folders
-            .filter(f => !f.name.toLowerCase().includes('file responses'))
-            .map(f => ({ name: f.name, folderId: f.id }));
+        return folders.map(f => ({ name: f.name, folderId: f.id }));
     } catch (err) {
         console.error(`[METADATA] Lỗi list assignment folders:`, err);
         return [];
@@ -2350,13 +1981,10 @@ async function scanAndSyncClasses(silent = false) {
                     // Mark folder for faster future scans
                     await markFolderAsScanned(classFolder.id, formFile, sheetFile);
 
-                    // Filter out "File responses" folders
-                    const assignments = assignmentFolderCandidates
-                        .filter(folder => !folder.name.toLowerCase().includes('file responses'))
-                        .map(folder => ({
-                            name: folder.name,
-                            folderId: folder.id
-                        }));
+                    const assignments = assignmentFolderCandidates.map(folder => ({
+                        name: folder.name,
+                        folderId: folder.id
+                    }));
 
                     detectedClasses.push({
                         id: classFolder.id,

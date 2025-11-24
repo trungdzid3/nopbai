@@ -1,0 +1,1161 @@
+/**
+ * ============================================================================
+ * LIBRARY: Form Automation Script (Standalone Project)
+ * ============================================================================
+ * 
+ * ĐÂY LÀ LIBRARY DÙNG CHUNG CHO TẤT CẢ CÁC LỚP
+ * 
+ * Hướng dẫn setup:
+ * 1. Tạo standalone Apps Script project mới
+ * 2. Copy toàn bộ code này vào
+ * 3. Deploy → New deployment → Type: Library
+ * 4. Copy Script ID và phiên bản
+ * 5. Trong mỗi Form template/lớp:
+ *    - Resources → Libraries → Add library (paste Script ID)
+ *    - Chọn phiên bản mới nhất
+ *    - Identifier: "FormLib"
+ * 
+ * Khi cần update:
+ * - Sửa code trong library này
+ * - Deploy phiên bản mới
+ * - TẤT CẢ lớp tự động dùng code mới!
+ * 
+ * ============================================================================
+ */
+
+// ==================================================================
+// PHẦN CẤU HÌNH CƠ BẢN
+// ==================================================================
+
+const CONFIG_SHEET_NAME = "Cấu Hình";
+const TEMPLATE_SHEET_NAME = "(Mẫu) Bảng nhận xét";
+const ATTENDANCE_SHEET_NAME = "Điểm danh";
+
+// Cấu hình Sheet cột
+const CONFIG_COL = {
+  NAME: 0,        // A: Tên Bài Tập
+  CLASS_TIME: 1,  // B: Thời gian vào giờ dạy
+  START_TIME: 2,  // C: Bắt đầu (cho phép nộp)
+  DEADLINE: 3,    // D: Hạn chót
+  AUTO_CLEAN: 4,  // E: Dọn dẹp (checkbox)
+  SHEET_NAME: 5   // F: Tên Sheet
+};
+
+// Cấu hình Sheet nhận xét
+const SHEET_COL = {
+  NAME: "B",      // Cột tên học sinh
+  CHECKBOX: "G",  // Cột checkbox
+  NOTE: "F"       // Cột ghi chú
+};
+
+// Các constants giữ nguyên
+const GRACE_PERIOD_MINUTES = 10;
+const TYPO_THRESHOLD = 2;
+const EARLY_DAYS_REQUIRED = 2;
+const CLEANUP_WINDOW_MIN = 30;
+const CLEANUP_WINDOW_MAX = 60;
+
+const STUDENT_NAME_QUESTION_TITLE = "Tên học sinh (chỉ điền tên đệm và tên):";
+const ASSIGNMENT_TYPE_QUESTION_TITLE = "Chọn bài tập:";
+
+const EARLY_SUBMISSION_COMMENT = "Làm bài tập về nhà chăm chỉ, tinh thần học tập tốt, làm và nộp BTVN từ sớm.";
+const LATE_SUBMISSION_COMMENT = "Nộp muộn";
+
+const ADVANTAGE_KEYWORDS = [
+  "ưu điểm", "ưu", "tốt", "giỏi", "khen", "nhận xét",
+  "tích cực", "phê", "thưởng", "cộng"
+];
+
+const PREFIX_KEYWORDS_TO_REMOVE = ["con", "em", "bạn", "cháu", "hs", "hoc sinh"];
+
+// ==================================================================
+// CONFIG MANAGER - ĐỌC CẤU HÌNH TỪ SHEET
+// ==================================================================
+
+class ConfigManager {
+  static loadAll() {
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+      
+      if (!configSheet) {
+        Logger.log(`CẢNH BÁO: Không tìm thấy sheet "${CONFIG_SHEET_NAME}". Hệ thống sẽ không hoạt động.`);
+        return [];
+      }
+      
+      const lastRow = configSheet.getLastRow();
+      if (lastRow < 2) {
+        Logger.log('Không có config nào trong sheet. Hệ thống chưa được cấu hình.');
+        return [];
+      }
+      
+      const dataRange = configSheet.getRange(2, 1, lastRow - 1, 6);
+      const values = dataRange.getValues();
+      const configs = [];
+      
+      for (let i = 0; i < values.length; i++) {
+        const row = values[i];
+        
+        if (!row[CONFIG_COL.NAME]) continue;
+        
+        const config = {
+          name: row[CONFIG_COL.NAME].toString().trim(),
+          classTime: this.parseMultiSchedule(row[CONFIG_COL.CLASS_TIME]),
+          startTime: row[CONFIG_COL.START_TIME] ? this.parseMultiSchedule(row[CONFIG_COL.START_TIME]) : [],
+          deadline: row[CONFIG_COL.DEADLINE] ? this.parseMultiSchedule(row[CONFIG_COL.DEADLINE]) : [],
+          autoCleanup: row[CONFIG_COL.AUTO_CLEAN] === true,
+          sheetName: row[CONFIG_COL.SHEET_NAME] ? row[CONFIG_COL.SHEET_NAME].toString().trim() : null,
+          isAttendance: row[CONFIG_COL.NAME].toString().trim() === ATTENDANCE_SHEET_NAME
+        };
+        
+        if (!config.isAttendance) {
+          const props = PropertiesService.getScriptProperties();
+          config.formId = props.getProperty(`CONFIG_${config.name}_FORM_ID`);
+          config.folderId = props.getProperty(`CONFIG_${config.name}_FOLDER_ID`);
+          config.sheetTabId = props.getProperty(`CONFIG_${config.name}_SHEET_TAB_ID`);
+        }
+        
+        configs.push(config);
+        Logger.log(`Loaded config: ${config.name} (Sheet: ${config.sheetName}, Attendance: ${config.isAttendance})`);
+      }
+      
+      return configs;
+      
+    } catch (err) {
+      Logger.log(`Lỗi khi load config: ${err.message}`);
+      return [];
+    }
+  }
+  
+  static parseMultiSchedule(scheduleStr) {
+    if (!scheduleStr || typeof scheduleStr !== 'string') return [];
+    
+    const schedules = [];
+    const parts = scheduleStr.split(/[;,]/).map(s => s.trim()).filter(Boolean);
+    
+    for (const part of parts) {
+      const match = part.match(/^T(\d)-(\d{1,2}):(\d{2})$/);
+      if (!match) {
+        Logger.log(`CẢNH BÁO: Format thời gian không hợp lệ: "${part}". Bỏ qua.`);
+        continue;
+      }
+      
+      const day = parseInt(match[1], 10);
+      const hour = parseInt(match[2], 10);
+      const minute = parseInt(match[3], 10);
+      const dayOfWeek = day === 1 ? 0 : day;
+      
+      schedules.push({
+        day: dayOfWeek,
+        hour: hour,
+        minute: minute,
+        timeNum: (dayOfWeek * 10000) + (hour * 100) + minute,
+        original: part
+      });
+    }
+    
+    return schedules;
+  }
+  
+  static findByName(assignmentName) {
+    const configs = this.loadAll();
+    return configs.find(c => c.name === assignmentName) || null;
+  }
+  
+  static findByFolderId(folderId) {
+    const configs = this.loadAll();
+    return configs.find(c => c.folderId === folderId) || null;
+  }
+  
+  static saveFormId(assignmentName, formId) {
+    const props = PropertiesService.getScriptProperties();
+    props.setProperty(`CONFIG_${assignmentName}_FORM_ID`, formId);
+  }
+  
+  static saveFolderId(assignmentName, folderId) {
+    const props = PropertiesService.getScriptProperties();
+    props.setProperty(`CONFIG_${assignmentName}_FOLDER_ID`, folderId);
+  }
+  
+  static saveSheetTabId(assignmentName, sheetTabId) {
+    const props = PropertiesService.getScriptProperties();
+    props.setProperty(`CONFIG_${assignmentName}_SHEET_TAB_ID`, sheetTabId);
+  }
+  
+  static getSubmissionStatus(config, now, withGrace = true) {
+    if (config.isAttendance || config.deadline.length === 0) {
+      return "OnTime";
+    }
+    
+    const realDay = now.getDay();
+    const realHour = now.getHours();
+    const realMinute = now.getMinutes();
+    const realTimeNum = (realDay * 10000) + (realHour * 100) + realMinute;
+    
+    const adjustedTime = new Date(now.getTime() - GRACE_PERIOD_MINUTES * 60000);
+    const adjustedDay = adjustedTime.getDay();
+    const adjustedHour = adjustedTime.getHours();
+    const adjustedMinute = adjustedTime.getMinutes();
+    const adjustedTimeNum = (adjustedDay * 10000) + (adjustedHour * 100) + adjustedMinute;
+    
+    for (let i = 0; i < config.startTime.length; i++) {
+      const start = config.startTime[i];
+      const end = config.deadline[i] || config.deadline[0];
+      
+      const inWindow = this.isTimeInRange(realTimeNum, start.timeNum, end.timeNum);
+      
+      if (inWindow) {
+        if (withGrace && adjustedTimeNum <= end.timeNum) {
+          return "OnTime";
+        } else if (realTimeNum <= end.timeNum) {
+          return "LateGrace";
+        } else {
+          return "Overdue";
+        }
+      }
+    }
+    
+    return "Overdue";
+  }
+  
+  static isTimeInRange(timeNum, startNum, endNum) {
+    if (startNum <= endNum) {
+      return timeNum >= startNum && timeNum <= endNum;
+    } else {
+      return timeNum >= startNum || timeNum <= endNum;
+    }
+  }
+  
+  static isEarlySubmission(config, now) {
+    if (config.isAttendance || config.deadline.length === 0) return false;
+    
+    const realTimeNum = (now.getDay() * 10000) + (now.getHours() * 100) + now.getMinutes();
+    let closestDeadline = null;
+    let minDiff = Infinity;
+    
+    for (const deadline of config.deadline) {
+      let diff = deadline.timeNum - realTimeNum;
+      if (diff < 0) diff += 70000;
+      
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestDeadline = deadline;
+      }
+    }
+    
+    if (!closestDeadline) return false;
+    
+    const msInDay = 24 * 60 * 60 * 1000;
+    const requiredMsEarly = EARLY_DAYS_REQUIRED * msInDay;
+    
+    let deadlineDate = new Date(now.getTime());
+    const dayOffset = (closestDeadline.day - now.getDay() + 7) % 7;
+    deadlineDate.setDate(deadlineDate.getDate() + dayOffset);
+    deadlineDate.setHours(closestDeadline.hour, closestDeadline.minute, 0, 0);
+    
+    if (deadlineDate.getTime() < now.getTime()) {
+      deadlineDate.setDate(deadlineDate.getDate() + 7);
+    }
+    
+    const timeDifference = deadlineDate.getTime() - now.getTime();
+    return timeDifference >= requiredMsEarly;
+  }
+}
+
+// ==================================================================
+// HÀM PUBLIC - ĐƯỢC GỌI TỪ FORM SCRIPT
+// ==================================================================
+
+/**
+ * Hàm chính xử lý khi có form submission
+ * GỌI TỪ FORM: FormLib.onFormSubmit(e, recipientEmail)
+ */
+function onFormSubmit(e, recipientEmail) {
+  try {
+    const form = FormApp.getActiveForm();
+    const formResponse = e.response;
+    const now = new Date();
+    
+    const studentName = getResponseByTitle(formResponse, STUDENT_NAME_QUESTION_TITLE);
+    if (!studentName) {
+      Logger.log(`Không tìm thấy tên học sinh. Bỏ qua.`);
+      return;
+    }
+    
+    let assignmentType = getResponseByTitle(formResponse, ASSIGNMENT_TYPE_QUESTION_TITLE);
+    if (!assignmentType) {
+      Logger.log(`Không tìm thấy loại bài tập cho "${studentName}". Bỏ qua.`);
+      return;
+    }
+    
+    const config = ConfigManager.findByName(assignmentType);
+    if (!config) {
+      Logger.log(`Không tìm thấy config cho "${assignmentType}". Bỏ qua.`);
+      return;
+    }
+    
+    if (config.isAttendance) {
+      Logger.log(`Bài tập "${assignmentType}" là Điểm danh, không xử lý nộp bài.`);
+      return;
+    }
+    
+    const submissionStatus = ConfigManager.getSubmissionStatus(config, now, true);
+    const isEarly = ConfigManager.isEarlySubmission(config, now);
+    const isOverdue = (submissionStatus === "Overdue");
+    
+    Logger.log(`Nộp bài: ${studentName} | ${assignmentType} | Status: ${submissionStatus} | Early: ${isEarly}`);
+    
+    // Xử lý file trên Drive
+    if (!config.folderId) {
+      Logger.log(`CẢNH BÁO: Config "${assignmentType}" chưa có Folder ID. Không thể lưu file.`);
+    } else {
+      const targetParentFolder = DriveApp.getFolderById(config.folderId);
+      const studentFolderName = isOverdue ? `[Quá hạn] ${studentName}` : studentName;
+      let studentFolder = findExistingStudentFolder(targetParentFolder, studentName);
+      
+      if (!studentFolder) {
+        studentFolder = targetParentFolder.createFolder(studentFolderName);
+        Logger.log(`Tạo thư mục mới: "${studentFolderName}"`);
+      } else {
+        Logger.log(`Tìm thấy thư mục: "${studentFolder.getName()}"`);
+        
+        if (isOverdue && !studentFolder.getName().toLowerCase().includes("quá hạn")) {
+          const oldName = studentFolder.getName();
+          const newName = studentFolderName;
+          studentFolder.setName(newName);
+          Logger.log(`Đổi tên thư mục: "${oldName}" → "${newName}"`);
+        }
+      }
+      
+      // Xử lý file upload
+      const fileResponses = formResponse.getItemResponses().filter(item => 
+        item.getItem().getType() === FormApp.ItemType.FILE_UPLOAD
+      );
+      
+      if (fileResponses.length > 0) {
+        fileResponses.forEach(fileResponse => {
+          const fileIds = fileResponse.getResponse();
+          
+          fileIds.forEach(fileId => {
+            try {
+              const file = DriveApp.getFileById(fileId);
+              const fileName = file.getName();
+              const fileSize = file.getSize();
+              
+              const existingFiles = studentFolder.getFilesByName(fileName);
+              if (existingFiles.hasNext()) {
+                const existingFile = existingFiles.next();
+                const existingSize = existingFile.getSize();
+                
+                if (fileSize > existingSize) {
+                  existingFile.setTrashed(true);
+                  file.moveTo(studentFolder);
+                  Logger.log(`Thay thế file cũ: "${fileName}" (${existingSize} → ${fileSize} bytes)`);
+                } else if (fileSize === existingSize) {
+                  file.setTrashed(true);
+                  Logger.log(`File trùng: "${fileName}" (${fileSize} bytes). Xóa bản mới.`);
+                } else {
+                  const newName = `${fileName.replace(/\.[^.]+$/, '')}_${Date.now()}${fileName.match(/\.[^.]+$/)[0]}`;
+                  file.setName(newName);
+                  file.moveTo(studentFolder);
+                  Logger.log(`Đổi tên file nhỏ hơn: "${fileName}" → "${newName}"`);
+                }
+              } else {
+                file.moveTo(studentFolder);
+                Logger.log(`Di chuyển file: "${fileName}" vào "${studentFolder.getName()}"`);
+              }
+              
+              if (/\.docx?$/i.test(fileName)) {
+                convertFileToPdf(file, studentFolder);
+              }
+              
+            } catch (fileErr) {
+              Logger.log(`Lỗi xử lý file ID ${fileId}: ${fileErr.message}`);
+            }
+          });
+        });
+      }
+    }
+    
+    // Cập nhật Google Sheet
+    findAndMarkCheckbox(studentName, assignmentType, "onFormSubmit", isEarly, submissionStatus);
+    
+    // Gửi email thông báo
+    if (recipientEmail && recipientEmail !== "your_email@example.com") {
+      try {
+        const subject = `Biểu mẫu: ${assignmentType}`;
+        const body = `Học sinh "${studentName}" đã nộp bài "${assignmentType}".\nTrạng thái: ${submissionStatus}\nThời gian: ${now.toLocaleString('vi-VN')}`;
+        MailApp.sendEmail(recipientEmail, subject, body);
+      } catch (mailErr) {
+        Logger.log(`Lỗi gửi email: ${mailErr.message}`);
+      }
+    }
+    
+  } catch (err) {
+    Logger.log(`Lỗi nghiêm trọng trong onFormSubmit: ${err.message}`);
+  }
+}
+
+/**
+ * Web App handler để sửa lỗi tên
+ * GỌI TỪ FORM: FormLib.doGet(e)
+ */
+function doGet(e) {
+  Logger.log("Đã nhận được yêu cầu Web App (doGet)");
+  let message = "Đã xảy ra lỗi. Vui lòng thử lại.";
+  
+  try {
+    const params = e.parameter;
+    const action = params.action;
+    const sheetTabId = params.sheetTabId;
+    const formName = params.formName;
+    
+    if (!sheetTabId) {
+      message = "LỖI: Yêu cầu thiếu sheetTabId.";
+      Logger.log(message);
+      return HtmlService.createHtmlOutput(`<h2>Lỗi</h2><p>${message}</p>`);
+    }
+    
+    const lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheet = getSheetByTabId(ss, sheetTabId);
+      
+      if (!sheet) {
+        message = `LỖI: Không tìm thấy sheet với Tab ID: ${sheetTabId}`;
+        Logger.log(message);
+        return HtmlService.createHtmlOutput(`<h2>Lỗi</h2><p>${message}</p>`);
+      }
+      
+      const sheetName = sheet.getName();
+      
+      if (action === "correct") {
+        const suspectName = params.suspect;
+        const correctName = params.correct;
+        const checkboxCol = params.col;
+        const rowNum = params.row;
+        
+        if (!suspectName || !correctName || !checkboxCol || !rowNum) {
+          message = "LỖI: Thiếu tham số (suspect, correct, col, row).";
+          Logger.log(message);
+          return HtmlService.createHtmlOutput(`<h2>Lỗi</h2><p>${message}</p>`);
+        }
+        
+        const checkboxCell = sheet.getRange(`${checkboxCol}${rowNum}`);
+        checkboxCell.setValue(true);
+        
+        const cache = PropertiesService.getScriptProperties();
+        const cacheKey = `RECONCILE_EMAIL_SENT_${sheetName}_${correctName}`;
+        cache.deleteProperty(cacheKey);
+        
+        message = `Đã sửa thành công: "${suspectName}" → "${correctName}" và đánh dấu checkbox tại ${checkboxCol}${rowNum}.`;
+        Logger.log(message);
+        
+      } else {
+        message = `Action không hợp lệ: "${action}". Chỉ chấp nhận 'correct'.`;
+        Logger.log(message);
+      }
+      
+    } catch (err) {
+      message = `Lỗi khi cập nhật Sheet: ${err.message}`;
+      Logger.log(message);
+    } finally {
+      lock.releaseLock();
+    }
+    
+  } catch (err) {
+    message = `Lỗi nghiêm trọng trong doGet: ${err.message}`;
+    Logger.log(message);
+  }
+  
+  return HtmlService.createHtmlOutput(`
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+          h2 { color: #1a73e8; }
+          p { color: #5f6368; }
+        </style>
+      </head>
+      <body>
+        <h2>Kết quả</h2>
+        <p>${message}</p>
+      </body>
+    </html>
+  `);
+}
+
+/**
+ * Chạy cleanup theo lịch
+ * GỌI TỪ FORM: FormLib.runScheduledCleanupAndEnsureOpen()
+ */
+function runScheduledCleanupAndEnsureOpen() {
+  try {
+    const form = FormApp.getActiveForm();
+    
+    if (!form.isAcceptingResponses()) {
+      form.setAcceptingResponses(true);
+      Logger.log('Đã mở Form tự động.');
+    }
+    
+    const configs = ConfigManager.loadAll();
+    const now = new Date();
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const todayKey = now.toLocaleDateString("vi-VN");
+    
+    for (const config of configs) {
+      if (!config.autoCleanup) continue;
+      
+      for (const classTime of config.classTime) {
+        const minutesUntilClass = getMinutesUntil(now, classTime);
+        
+        if (minutesUntilClass >= CLEANUP_WINDOW_MIN && minutesUntilClass <= CLEANUP_WINDOW_MAX) {
+          const cleanupKey = `CLEANUP_${config.name}_${todayKey}`;
+          
+          if (scriptProperties.getProperty(cleanupKey)) {
+            Logger.log(`Đã dọn dẹp "${config.name}" hôm nay. Bỏ qua.`);
+            continue;
+          }
+          
+          Logger.log(`Bắt đầu dọn dẹp "${config.name}" (${minutesUntilClass} phút trước giờ dạy)`);
+          
+          if (config.sheetName) {
+            cleanSheet(config.sheetName, "C:G");
+          }
+          
+          if (!config.isAttendance) {
+            if (config.formId) {
+              cleanFormResponses(form, config.name);
+            }
+            cleanEmails(config.name);
+          }
+          
+          scriptProperties.setProperty(cleanupKey, "done");
+          Logger.log(`Hoàn tất dọn dẹp "${config.name}"`);
+          break;
+        }
+      }
+    }
+    
+  } catch (err) {
+    Logger.log(`Lỗi trong runScheduledCleanupAndEnsureOpen: ${err.message}`);
+  }
+}
+
+/**
+ * Quét và chuyển đổi DOCX định kỳ
+ * GỌI TỪ FORM: FormLib.periodicCleanup()
+ */
+function periodicCleanup() {
+  Logger.log("--- Bắt đầu quét DOCX định kỳ ---");
+  
+  const configs = ConfigManager.loadAll();
+  let totalConverted = 0;
+  
+  for (const config of configs) {
+    if (config.isAttendance || !config.folderId) continue;
+    
+    try {
+      const folder = DriveApp.getFolderById(config.folderId);
+      totalConverted += scanAndConvertFolder(folder);
+    } catch (err) {
+      Logger.log(`Lỗi quét folder "${config.name}": ${err.message}`);
+    }
+  }
+  
+  Logger.log(`--- Hoàn tất quét DOCX: ${totalConverted} files ---`);
+}
+
+/**
+ * Đối soát checkboxes
+ * GỌI TỪ FORM: FormLib.reconcileCheckboxes()
+ */
+function reconcileCheckboxes() {
+  Logger.log("--- Bắt đầu Đối soát định kỳ ---");
+  
+  const configs = ConfigManager.loadAll();
+  
+  for (const config of configs) {
+    if (config.isAttendance || !config.folderId) continue;
+    
+    try {
+      const folder = DriveApp.getFolderById(config.folderId);
+      const subfolders = folder.getFolders();
+      
+      while (subfolders.hasNext()) {
+        const subfolder = subfolders.next();
+        const studentName = subfolder.getName().replace(/^\[Quá hạn\]\s*/i, '').trim();
+        
+        findAndMarkCheckbox(studentName, config.name, "reconcile", false, "OnTime");
+      }
+      
+    } catch (err) {
+      Logger.log(`Lỗi đối soát "${config.name}": ${err.message}`);
+    }
+  }
+  
+  Logger.log("--- Hoàn tất Đối soát ---");
+}
+
+// ==================================================================
+// HÀM INTERNAL - KHÔNG GỌI TRỰC TIẾP TỪ BÊN NGOÀI
+// ==================================================================
+
+function findAndMarkCheckbox(originalName, assignmentType, context, isEarly, submissionStatus) {
+  if (!originalName) return null;
+  
+  try {
+    const config = ConfigManager.findByName(assignmentType);
+    if (!config || config.isAttendance) {
+      Logger.log(`Config không hợp lệ hoặc là Điểm danh. Bỏ qua.`);
+      return null;
+    }
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet;
+    
+    if (config.sheetTabId) {
+      sheet = getSheetByTabId(ss, config.sheetTabId);
+    } else {
+      sheet = ss.getSheetByName(config.sheetName);
+    }
+    
+    if (!sheet) {
+      Logger.log(`Không tìm thấy sheet "${config.sheetName}"`);
+      return null;
+    }
+    
+    let advantageColumnLetter = null;
+    if (isEarly && context === 'onFormSubmit') {
+      advantageColumnLetter = findAndCacheAdvantageColumn(sheet, config.sheetTabId || sheet.getSheetId());
+    }
+    
+    const nameColumnValues = sheet.getRange(`${SHEET_COL.NAME}1:${SHEET_COL.NAME}${sheet.getLastRow()}`).getValues();
+    const checkboxValues = sheet.getRange(`${SHEET_COL.CHECKBOX}1:${SHEET_COL.CHECKBOX}${sheet.getLastRow()}`).getValues();
+    
+    const mapList = [];
+    for (let i = 0; i < nameColumnValues.length; i++) {
+      const cellValue = nameColumnValues[i][0];
+      const isChecked = checkboxValues[i][0];
+      
+      if (!cellValue || typeof cellValue !== 'string') continue;
+      if (cellValue.toLowerCase().includes('tên') || cellValue.toLowerCase().includes('name')) continue;
+      
+      const originalLC = cellValue.toLowerCase().trim();
+      const normalized = normalizeString(cellValue);
+      const words = normalized.split(/\s+/).filter(Boolean);
+      const lastTwo = words.length >= 2 ? words.slice(-2).join(' ') : normalized;
+      
+      mapList.push({
+        original: cellValue,
+        originalLC: originalLC,
+        normalized: normalized,
+        lastTwo: lastTwo,
+        row: i + 1,
+        isChecked: isChecked
+      });
+    }
+    
+    if (mapList.length === 0) {
+      Logger.log('Sheet không có dữ liệu học sinh');
+      return null;
+    }
+    
+    const nameFromForm = originalName.toLowerCase().trim();
+    const normalizedNameFromForm = normalizeString(originalName);
+    const wordsFromForm = normalizedNameFromForm.split(/\s+/).filter(Boolean);
+    const lastTwoFromForm = wordsFromForm.length >= 2 ? wordsFromForm.slice(-2).join(' ') : normalizedNameFromForm;
+    
+    let bestMatch = null;
+    let matchLevel = null;
+    
+    // Phase 1: Exact match
+    bestMatch = mapList.find(item => item.originalLC === nameFromForm);
+    if (bestMatch) matchLevel = "Phase 1 - Exact";
+    
+    // Phase 2: Last two words (có dấu)
+    if (!bestMatch && wordsFromForm.length >= 2) {
+      bestMatch = mapList.find(item => {
+        if (item.normalized.split(/\s+/).length < 2) return false;
+        const itemWords = item.originalLC.split(/\s+/).filter(Boolean);
+        const itemLastTwo = itemWords.slice(-2).join(' ');
+        return itemLastTwo === wordsFromForm.slice(-2).join(' ');
+      });
+      if (bestMatch) matchLevel = "Phase 2 - Last2 (dấu)";
+    }
+    
+    // Phase 3: Last two words (không dấu)
+    if (!bestMatch && wordsFromForm.length >= 2) {
+      bestMatch = mapList.find(item => item.lastTwo === lastTwoFromForm);
+      if (bestMatch) matchLevel = "Phase 3 - Last2 (normalized)";
+    }
+    
+    if (bestMatch) {
+      Logger.log(`${matchLevel}: "${originalName}" → "${bestMatch.original}"`);
+      
+      const checkboxCell = sheet.getRange(`${SHEET_COL.CHECKBOX}${bestMatch.row}`);
+      const noteCell = sheet.getRange(`${SHEET_COL.NOTE}${bestMatch.row}`);
+      
+      if (submissionStatus === "OnTime") {
+        checkboxCell.setValue(true);
+        if (isEarly && advantageColumnLetter) {
+          addEarlyComment(sheet, advantageColumnLetter, bestMatch.row);
+        }
+      } else if (submissionStatus === "LateGrace") {
+        checkboxCell.setValue(true);
+        const currentNote = noteCell.getValue().toString();
+        if (!currentNote.includes(LATE_SUBMISSION_COMMENT)) {
+          const newNote = currentNote ? `${currentNote}\n${LATE_SUBMISSION_COMMENT}` : LATE_SUBMISSION_COMMENT;
+          noteCell.setValue(newNote);
+        }
+      } else {
+        const currentNote = noteCell.getValue().toString();
+        if (!currentNote.includes(LATE_SUBMISSION_COMMENT)) {
+          const newNote = currentNote ? `${currentNote}\n${LATE_SUBMISSION_COMMENT}` : LATE_SUBMISSION_COMMENT;
+          noteCell.setValue(newNote);
+        }
+      }
+      
+      return bestMatch.original;
+    }
+    
+    // Phase 4: Typo detection
+    let typoTargetMapList = mapList;
+    if (context === 'onFormSubmit') {
+      typoTargetMapList = mapList.filter(item => item.isChecked !== true);
+    }
+    
+    let typoCandidates = [];
+    for (const item of typoTargetMapList) {
+      const distance = levenshteinDistance(normalizedNameFromForm, item.normalized);
+      if (distance > 0 && distance <= TYPO_THRESHOLD) {
+        typoCandidates.push({
+          original: item.original,
+          normalized: item.normalized,
+          row: item.row,
+          distance: distance
+        });
+      }
+    }
+    
+    typoCandidates.sort((a, b) => a.distance - b.distance);
+    
+    if (typoCandidates.length > 0) {
+      const bestGuess = typoCandidates[0];
+      const otherCandidates = typoCandidates.slice(1, 4);
+      
+      Logger.log(`Phase 4 - Typo: "${originalName}" → Đoán "${bestGuess.original}" (distance: ${bestGuess.distance})`);
+      
+      const checkboxCell = sheet.getRange(`${SHEET_COL.CHECKBOX}${bestGuess.row}`);
+      checkboxCell.setValue(true);
+      
+      if (context === 'onFormSubmit') {
+        sendCorrectionEmail(
+          originalName,
+          config.sheetName,
+          config.sheetTabId || sheet.getSheetId(),
+          SHEET_COL.CHECKBOX,
+          bestGuess,
+          otherCandidates
+        );
+      }
+      
+      return bestGuess.original;
+    }
+    
+    Logger.log(`Không tìm thấy khớp cho "${originalName}"`);
+    return null;
+    
+  } catch (err) {
+    Logger.log(`Lỗi trong findAndMarkCheckbox: ${err.message}`);
+    return null;
+  }
+}
+
+function getMinutesUntil(now, classTime) {
+  const target = new Date(now.getTime());
+  
+  const dayDiff = (classTime.day - now.getDay() + 7) % 7;
+  target.setDate(target.getDate() + dayDiff);
+  target.setHours(classTime.hour, classTime.minute, 0, 0);
+  
+  if (target.getTime() < now.getTime()) {
+    target.setDate(target.getDate() + 7);
+  }
+  
+  const diffMs = target.getTime() - now.getTime();
+  return Math.floor(diffMs / 60000);
+}
+
+function cleanSheet(sheetName, columnRange) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(sheetName);
+    
+    if (!sheet) {
+      Logger.log(`Không tìm thấy sheet "${sheetName}"`);
+      return;
+    }
+    
+    const range = sheet.getRange(`${columnRange}2:${columnRange}`);
+    range.clearContent();
+    Logger.log(`Đã dọn dẹp sheet "${sheetName}" (cột ${columnRange})`);
+    
+  } catch (err) {
+    Logger.log(`Lỗi dọn dẹp sheet "${sheetName}": ${err.message}`);
+  }
+}
+
+function cleanFormResponses(form, assignmentType) {
+  try {
+    Logger.log(`Bắt đầu xóa câu trả lời Form cho "${assignmentType}"`);
+    let deleteCount = 0;
+    
+    const responses = form.getResponses();
+    const items = form.getItems();
+    let assignmentQuestionItemId = null;
+    
+    for (const item of items) {
+      if (item.getTitle() === ASSIGNMENT_TYPE_QUESTION_TITLE) {
+        assignmentQuestionItemId = item.getId();
+        break;
+      }
+    }
+    
+    if (!assignmentQuestionItemId) {
+      Logger.log('Không tìm thấy câu hỏi loại bài tập trong Form');
+      return;
+    }
+    
+    for (const response of responses) {
+      const itemResponses = response.getItemResponses();
+      
+      for (const itemResponse of itemResponses) {
+        if (itemResponse.getItem().getId() === assignmentQuestionItemId) {
+          const answer = itemResponse.getResponse();
+          
+          if (answer === assignmentType) {
+            form.deleteResponse(response.getId());
+            deleteCount++;
+            break;
+          }
+        }
+      }
+    }
+    
+    Logger.log(`Đã xóa ${deleteCount} câu trả lời cho "${assignmentType}"`);
+    
+  } catch (err) {
+    Logger.log(`Lỗi xóa Form responses: ${err.message}`);
+  }
+}
+
+function cleanEmails(assignmentType) {
+  try {
+    const searchQuery = `subject:"Biểu mẫu: ${assignmentType}" in:inbox is:read`;
+    const threads = GmailApp.search(searchQuery);
+    
+    if (threads.length > 0) {
+      GmailApp.moveThreadsToTrash(threads);
+      Logger.log(`Đã xóa ${threads.length} email cho "${assignmentType}"`);
+    }
+    
+  } catch (err) {
+    Logger.log(`Lỗi xóa email: ${err.message}`);
+  }
+}
+
+function findExistingStudentFolder(parentFolder, studentName) {
+  try {
+    const studentNameNormalized = normalizeString(studentName);
+    const studentNameWords = studentNameNormalized.split(/\s+/).filter(Boolean);
+    const allSubfolders = parentFolder.getFolders();
+    const foundFolders = [];
+    
+    while (allSubfolders.hasNext()) {
+      const subfolder = allSubfolders.next();
+      const subfolderName = subfolder.getName();
+      const subfolderNormalized = normalizeString(subfolderName);
+      const subfolderWords = subfolderNormalized.split(/\s+/).filter(Boolean);
+      
+      const matchA = studentNameWords.every(w => subfolderNormalized.includes(w));
+      const matchB = subfolderWords.every(w => studentNameNormalized.includes(w));
+      
+      if (matchA || matchB) {
+        foundFolders.push(subfolder);
+      }
+    }
+    
+    if (foundFolders.length === 1) {
+      return foundFolders[0];
+    } else if (foundFolders.length > 1) {
+      Logger.log(`Tìm thấy nhiều thư mục cho "${studentName}". Cần kiểm tra.`);
+      return null;
+    }
+    
+    return null;
+    
+  } catch (err) {
+    Logger.log(`Lỗi tìm thư mục: ${err.message}`);
+    return null;
+  }
+}
+
+function scanAndConvertFolder(parentFolder) {
+  if (!parentFolder) return 0;
+  
+  let filesConverted = 0;
+  const subfolders = parentFolder.getFolders();
+  
+  while (subfolders.hasNext()) {
+    const subfolder = subfolders.next();
+    const files = subfolder.getFilesByType(MimeType.MICROSOFT_WORD);
+    
+    while (files.hasNext()) {
+      const file = files.next();
+      convertFileToPdf(file, subfolder);
+      filesConverted++;
+    }
+    
+    const docxFiles = subfolder.getFiles();
+    while (docxFiles.hasNext()) {
+      const file = docxFiles.next();
+      if (/\.docx?$/i.test(file.getName())) {
+        convertFileToPdf(file, subfolder);
+        filesConverted++;
+      }
+    }
+  }
+  
+  return filesConverted;
+}
+
+function convertFileToPdf(file, targetFolder) {
+  const fileName = file.getName();
+  
+  try {
+    if (file.isTrashed()) return;
+    
+    const pdfName = fileName.replace(/\.docx?$/i, '.pdf');
+    const existingPdfs = targetFolder.getFilesByName(pdfName);
+    
+    if (existingPdfs.hasNext()) {
+      Logger.log(`PDF đã tồn tại: "${pdfName}"`);
+      return;
+    }
+    
+    Logger.log(`Chuyển đổi: "${fileName}"`);
+    
+    let pdfBlob;
+    try {
+      const docBlob = file.getBlob();
+      pdfBlob = docBlob.getAs('application/pdf');
+    } catch (conversionErr) {
+      Logger.log(`Lỗi chuyển đổi "${fileName}": ${conversionErr.message}`);
+      try {
+        file.moveTo(targetFolder);
+      } catch (e) {}
+      return;
+    }
+    
+    const pdfFile = targetFolder.createFile(pdfBlob).setName(pdfName);
+    Logger.log(`Đã chuyển đổi: "${fileName}" → "${pdfName}"`);
+    file.setTrashed(true);
+    
+  } catch (generalErr) {
+    Logger.log(`Lỗi với "${fileName}": ${generalErr.message}`);
+    try {
+      file.moveTo(targetFolder);
+    } catch (e) {}
+  }
+}
+
+function getResponseByTitle(formResponse, title) {
+  const itemResponses = formResponse.getItemResponses();
+  for (const itemResponse of itemResponses) {
+    if (itemResponse.getItem().getTitle() === title) {
+      return itemResponse.getResponse();
+    }
+  }
+  return null;
+}
+
+function sendCorrectionEmail(suspectName, sheetName, sheetTabId, checkboxCol, bestGuess, otherCandidates) {
+  const recipientEmail = PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+  if (!recipientEmail) return;
+  
+  try {
+    const webAppUrl = ScriptApp.getService().getUrl();
+    if (!webAppUrl) {
+      Logger.log('Chưa deploy Web App. Không thể gửi email sửa lỗi.');
+      return;
+    }
+    
+    let buttonsHtml = "";
+    otherCandidates.forEach(candidate => {
+      const url = `${webAppUrl}?action=correct&suspect=${encodeURIComponent(suspectName)}&correct=${encodeURIComponent(candidate.original)}&sheetTabId=${sheetTabId}&col=${checkboxCol}&row=${candidate.row}`;
+      buttonsHtml += `
+        <a href="${url}" style="display:inline-block;margin:5px;padding:10px 15px;background:#f1f3f4;color:#5f6368;text-decoration:none;border-radius:8px;font-weight:500;">
+          ${candidate.original} (khoảng cách: ${candidate.distance})
+        </a>
+      `;
+    });
+    
+    const subject = `[CẢNH BÁO] Đã tự động đoán tên: "${suspectName}"`;
+    const bodyHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #dadce0;border-radius:8px;">
+        <h2 style="color:#d93025;">Phát hiện tên có thể sai</h2>
+        <p>Hệ thống đã tự động đoán tên nộp bài <strong>"${suspectName}"</strong> là:</p>
+        <div style="background:#e8f0fe;padding:15px;border-radius:8px;margin:15px 0;">
+          <strong style="color:#1967d2;font-size:18px;">${bestGuess.original}</strong>
+          <br><span style="color:#5f6368;">(Khoảng cách: ${bestGuess.distance})</span>
+        </div>
+        <p>Nếu sai, click vào tên đúng bên dưới để sửa:</p>
+        <div style="margin:20px 0;">${buttonsHtml}</div>
+        <p style="font-size:12px;color:#5f6368;margin-top:20px;">Checkbox đã được tự động đánh dấu cho "${bestGuess.original}".</p>
+      </div>
+    `;
+    
+    MailApp.sendEmail({
+      to: recipientEmail,
+      subject: subject,
+      htmlBody: bodyHtml
+    });
+    
+    Logger.log(`Đã gửi email sửa lỗi cho "${suspectName}"`);
+    
+  } catch (e) {
+    Logger.log(`Lỗi gửi email: ${e.message}`);
+  }
+}
+
+function normalizeString(str) {
+  if (!str || typeof str !== 'string') return "";
+  
+  const prefixRegex = new RegExp(`^(${PREFIX_KEYWORDS_TO_REMOVE.join("|")})\\s+`, 'g');
+  
+  return str.toLowerCase()
+    .trim()
+    .replace(prefixRegex, "")
+    .replace(/[\(\[\{].*?[\)\]\}]/g, "")
+    .replace(/[-_,\/\\|]/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function levenshteinDistance(s1, s2) {
+  s1 = s1 || "";
+  s2 = s2 || "";
+  const m = s1.length;
+  const n = s2.length;
+  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(null));
+  
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+  }
+  
+  return dp[m][n];
+}
+
+function getSheetByTabId(spreadsheet, id) {
+  if (!spreadsheet || id == null) return null;
+  
+  const sheets = spreadsheet.getSheets();
+  for (const sheet of sheets) {
+    if (sheet.getSheetId() == id) {
+      return sheet;
+    }
+  }
+  return null;
+}
+
+function addEarlyComment(sheet, col, row) {
+  try {
+    if (!col || !row) return;
+    
+    const cellAddress = `${col}${row}`;
+    const cell = sheet.getRange(cellAddress);
+    const currentComment = cell.getValue().toString();
+    
+    if (currentComment.includes(EARLY_SUBMISSION_COMMENT)) {
+      return;
+    }
+    
+    const newComment = currentComment ? 
+      `${currentComment}\n${EARLY_SUBMISSION_COMMENT}` : 
+      EARLY_SUBMISSION_COMMENT;
+    
+    cell.setValue(newComment);
+    Logger.log(`Đã thêm nhận xét nộp sớm tại ${cellAddress}`);
+    
+  } catch (err) {
+    Logger.log(`Lỗi thêm nhận xét: ${err.message}`);
+  }
+}
+
+function findAndCacheAdvantageColumn(sheet, sheetTabId) {
+  const cache = PropertiesService.getScriptProperties();
+  const cacheKey = `ADV_COL_GID_${sheetTabId}`;
+  
+  const cachedCol = cache.getProperty(cacheKey);
+  if (cachedCol) {
+    return (cachedCol === "NONE") ? null : cachedCol;
+  }
+  
+  try {
+    const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    let foundColLetter = null;
+    
+    for (let i = 0; i < headerRow.length; i++) {
+      const cellValue = headerRow[i].toString().toLowerCase();
+      
+      for (const keyword of ADVANTAGE_KEYWORDS) {
+        if (cellValue.includes(keyword)) {
+          foundColLetter = colIndexToLetter(i + 1);
+          break;
+        }
+      }
+      
+      if (foundColLetter) break;
+    }
+    
+    if (foundColLetter) {
+      cache.setProperty(cacheKey, foundColLetter);
+      Logger.log(`Tìm thấy cột Ưu điểm: ${foundColLetter}`);
+      return foundColLetter;
+    } else {
+      cache.setProperty(cacheKey, "NONE");
+      Logger.log('Không tìm thấy cột Ưu điểm');
+      return null;
+    }
+    
+  } catch (err) {
+    Logger.log(`Lỗi tìm cột Ưu điểm: ${err.message}`);
+    return null;
+  }
+}
+
+function colIndexToLetter(colIndex) {
+  let temp, letter = '';
+  while (colIndex > 0) {
+    temp = (colIndex - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    colIndex = (colIndex - temp - 1) / 26;
+  }
+  return letter;
+}
