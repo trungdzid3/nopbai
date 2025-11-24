@@ -512,7 +512,7 @@ async function reprocessAndDownload(folderId, folderName) {
 
     if (statusElement) {
         originalText = statusElement.querySelector('span:last-child').textContent;
-        statusElement.classList.remove('bg-primary-container', 'text-on-primary-container', 'submission-item-processed');
+        statusElement.classList.remove('bg-primary-container', 'text-on-primary-container', 'bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-processed');
         statusElement.classList.add('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
         statusElement.querySelector('span:last-child').textContent = 'Đang tải lại...';
     }
@@ -532,7 +532,7 @@ async function reprocessAndDownload(folderId, folderName) {
     } finally {
         if (statusElement) {
             statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-            statusElement.classList.add('bg-primary-container', 'text-on-primary-container', 'submission-item-reprocessable');
+            statusElement.classList.add('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-reprocessable');
             statusElement.querySelector('span:last-child').textContent = originalText;
         }
         processButton.disabled = false;
@@ -1852,7 +1852,13 @@ async function handleProcessClick() {
         
         updateStatus("→ Đang quét thư mục con...");
         const allFoldersFromDrive = await findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }]);
-        updateStatus(`✓ Quét xong: ${allFoldersFromDrive.length} thư mục con.`);
+        
+        // Filter out "File responses" folder (case-insensitive)
+        const filteredFolders = allFoldersFromDrive.filter(folder => 
+            !folder.name.toLowerCase().includes('file responses')
+        );
+        
+        updateStatus(`✓ Quét xong: ${filteredFolders.length} thư mục con (bỏ qua ${allFoldersFromDrive.length - filteredFolders.length} folder File responses).`);
 
         const key = getStatusCacheKey();
         const cachedData = localStorage.getItem(key);
@@ -1860,7 +1866,7 @@ async function handleProcessClick() {
         const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
 
         const syncedStatusList = [];
-        allFoldersFromDrive.forEach(folder => {
+        filteredFolders.forEach(folder => {
             const isProcessed = folder.name.includes('[Đã xử lý]');
             const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
             const cleanName = sanitizeFolderDisplayName(folder.name);
@@ -1880,7 +1886,7 @@ async function handleProcessClick() {
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
 
-        const foldersToActuallyProcess = allFoldersFromDrive.filter(f => !f.name.includes('[Đã xử lý]') && !f.name.toLowerCase().includes('quá hạn'));
+        const foldersToActuallyProcess = filteredFolders.filter(f => !f.name.includes('[Đã xử lý]') && !f.name.toLowerCase().includes('quá hạn'));
         updateStatus(`→ ${foldersToActuallyProcess.length} thư mục mới cần xử lý.`);
 
         if (foldersToActuallyProcess.length > 0) {
@@ -1921,10 +1927,10 @@ function displaySubmissionStatus(statusList) {
         let extraItemClass = '';
 
         switch (itemData.status) {
-            case 'processed': statusText = 'Đã xử lý'; classesToAdd.push('bg-primary-container', 'text-on-primary-container'); extraItemClass = 'submission-item-reprocessable'; break;
+            case 'processed': statusText = 'Đã xử lý'; classesToAdd.push('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'); extraItemClass = 'submission-item-reprocessable'; break;
             case 'overdue': statusText = 'Quá hạn'; classesToAdd.push('bg-orange-200', 'text-orange-900', 'dark:bg-orange-800', 'dark:text-orange-100'); extraItemClass = 'submission-item-reprocessable'; break;
             case 'processing': statusText = 'Đang xử lý...'; classesToAdd.push('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'); break;
-            case 'error': statusText = 'Lỗi'; classesToAdd.push('bg-error-container', 'text-on-error-container'); break;
+            case 'error': statusText = 'Lỗi'; classesToAdd.push('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'); break;
             default: statusText = 'Chưa xử lý'; classesToAdd.push('bg-tertiary-container', 'text-on-tertiary-container'); break;
         }
 
@@ -2025,7 +2031,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                     statusElement.dataset.status = 'processed';
                     statusElement.querySelector('span:last-child').textContent = 'Đã xử lý';
                     statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-primary-container', 'text-on-primary-container', 'submission-item-reprocessable');
+                    statusElement.classList.add('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-reprocessable');
                 }
             } else {
                 updateStatus(`⚠ Tạm dừng "${folder.name}" do lỗi.`, true);
@@ -2034,7 +2040,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                     statusElement.dataset.status = 'error';
                     statusElement.querySelector('span:last-child').textContent = 'Lỗi';
                     statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-error-container', 'text-on-error-container');
+                    statusElement.classList.add('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200');
                 }
             }
         } catch (error) {

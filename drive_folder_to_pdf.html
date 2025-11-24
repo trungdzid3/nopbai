@@ -2210,7 +2210,7 @@
     <!-- GUIDE MODAL -->
     <div id="guide_modal" aria-hidden="true"
         class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="m3-modal-content bg-surface-container rounded-[28px] elevation-2 flex flex-col max-h-[90vh] max-w-3xl w-full">
+        <div class="m3-modal-content bg-white dark:bg-gray-900 rounded-[28px] shadow-2xl border-2 border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] max-w-3xl w-full">
             <header class="px-6 py-5 flex items-center justify-between border-b border-outline-variant flex-shrink-0">
                 <h2 class="text-xl font-semibold text-on-surface">📘 Hướng dẫn sử dụng</h2>
                 <button id="close_guide_button" class="m3-button m3-button-icon" title="Đóng">
@@ -2225,7 +2225,7 @@
                 <div class="space-y-6 text-on-surface">
                     
                     <!-- Bước 1: Đăng nhập -->
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-[20px] p-4 border border-blue-200 dark:border-blue-800">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-[20px] p-4 border-2 border-blue-300 dark:border-blue-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-blue-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 1
@@ -2241,7 +2241,7 @@
                     </div>
 
                     <!-- Bước 2: Tạo lớp -->
-                    <div class="bg-green-50 dark:bg-green-900/20 rounded-[20px] p-4 border border-green-200 dark:border-green-800">
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-[20px] p-4 border-2 border-green-300 dark:border-green-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-green-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 2
@@ -2262,7 +2262,7 @@
                     </div>
 
                     <!-- Bước 3: Truy cập nhanh -->
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-[20px] p-4 border border-purple-200 dark:border-purple-800">
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-[20px] p-4 border-2 border-purple-300 dark:border-purple-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-purple-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 3
@@ -2298,7 +2298,7 @@
                     </div>
 
                     <!-- Bước 4: Xử lý PDF -->
-                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-[20px] p-4 border border-orange-200 dark:border-orange-800">
+                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-[20px] p-4 border-2 border-orange-300 dark:border-orange-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 4
@@ -2320,7 +2320,7 @@
                     </div>
 
                     <!-- Bước 5: Theo dõi -->
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-[20px] p-4 border border-indigo-200 dark:border-indigo-800">
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-[20px] p-4 border-2 border-indigo-300 dark:border-indigo-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-indigo-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 5
@@ -2347,7 +2347,7 @@
                     </div>
 
                     <!-- Tính năng nâng cao -->
-                    <div class="bg-amber-50 dark:bg-amber-900/20 rounded-[20px] p-4 border border-amber-200 dark:border-amber-800">
+                    <div class="bg-amber-50 dark:bg-amber-900/20 rounded-[20px] p-4 border-2 border-amber-300 dark:border-amber-700">
                         <h3 class="text-base font-semibold text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
                             <span>🎯</span>
                             <span>Tính năng nâng cao</span>
@@ -2410,12 +2410,12 @@
                     <div id="settings-panel-appearance" class="m3-settings-panel space-y-6" data-active="true">
                         <section class="m3-setting-card rounded-2xl">
                             <h2 class="text-lg font-medium text-on-surface mb-4">Phong cách thiết kế</h2>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 justify-start">
                                 <button id="design-material"
-                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="material">Material 3</button>
                                 <button id="design-apple"
-                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="apple">Liquid Glass</button>
                             </div>
                         </section>
