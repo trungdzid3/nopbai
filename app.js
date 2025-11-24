@@ -925,12 +925,6 @@ async function createClassSystemAutomatic() {
         updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
-        
-        // 2.1. Create folder for form file uploads
-        updateStatus("2.1. Đang tạo thư mục lưu tệp đính kèm...");
-        const uploadFolder = await apiCreateFolder('[Tệp đính kèm Form]', folder.id);
-        updateStatus(`✓ Đã tạo thư mục: [Tệp đính kèm Form]`);
-        updateStatus(`⚠️ Lưu ý: Mở Form → Câu hỏi "Tải lên tệp" → Click biểu tượng folder → Chọn "[Tệp đính kèm Form]"`);
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
@@ -1610,6 +1604,113 @@ function handleSignoutClick() {
     }
 }
 
+async function processFormFileUploads(classFolderId, sheetId) {
+    try {
+        // 1. Find "File responses" folder
+        const { folders } = await listFilesInFolder(classFolderId);
+        const fileResponsesFolder = folders.find(f => 
+            f.name.includes('File responses') || 
+            f.name.includes('Nộp bài tập về nhà') ||
+            f.name.includes('responses')
+        );
+        
+        if (!fileResponsesFolder) {
+            updateStatus('   ℹ️ Không tìm thấy folder File responses');
+            return;
+        }
+        
+        updateStatus(`   → Tìm thấy folder: ${fileResponsesFolder.name}`);
+        
+        // 2. Get form responses from Sheet
+        const responsesData = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Form Responses 1!A2:Z1000' // Adjust range as needed
+        });
+        
+        const responses = responsesData.result.values || [];
+        if (responses.length === 0) {
+            updateStatus('   ℹ️ Chưa có responses nào trong sheet');
+            return;
+        }
+        
+        // 3. Find column indices (assuming: Timestamp, Email, Name, Assignment Type, File Upload)
+        const headerData = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Form Responses 1!A1:Z1'
+        });
+        
+        const headers = headerData.result.values?.[0] || [];
+        const nameColIdx = headers.findIndex(h => h && h.toLowerCase().includes('họ và tên'));
+        const assignmentColIdx = headers.findIndex(h => h && (h.toLowerCase().includes('chọn bài') || h.toLowerCase().includes('loại bài')));
+        const fileColIdx = headers.findIndex(h => h && h.toLowerCase().includes('tải lên'));
+        
+        if (nameColIdx === -1 || assignmentColIdx === -1 || fileColIdx === -1) {
+            updateStatus('   ⚠️ Không tìm thấy cột cần thiết trong sheet');
+            return;
+        }
+        
+        updateStatus(`   → Xử lý ${responses.length} responses...`);
+        
+        // 4. Get all files from file responses folder
+        const fileResponsesList = await listFilesInFolder(fileResponsesFolder.id);
+        const uploadedFiles = fileResponsesList.files || [];
+        
+        // 5. Process each response
+        let movedCount = 0;
+        for (const response of responses) {
+            const studentName = response[nameColIdx];
+            const assignmentType = response[assignmentColIdx];
+            const fileUrls = response[fileColIdx];
+            
+            if (!studentName || !assignmentType || !fileUrls) continue;
+            
+            // Find student's assignment folder
+            const profile = classProfiles.find(p => p.id === classFolderId);
+            const assignment = profile?.assignments?.find(a => a.name === assignmentType);
+            
+            if (!assignment) continue;
+            
+            // Find or create student folder
+            const studentFolderName = studentName.trim();
+            const { folders: assignmentSubfolders } = await listFilesInFolder(assignment.folderId);
+            let studentFolder = assignmentSubfolders.find(f => f.name === studentFolderName);
+            
+            if (!studentFolder) {
+                studentFolder = await apiCreateFolder(studentFolderName, assignment.folderId);
+                updateStatus(`   → Tạo folder: ${studentFolderName}`);
+            }
+            
+            // Move files from file responses to student folder
+            const fileUrlsList = fileUrls.split(',').map(u => u.trim());
+            for (const fileUrl of fileUrlsList) {
+                // Extract file ID from URL
+                const fileIdMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (!fileIdMatch) continue;
+                
+                const fileId = fileIdMatch[1];
+                
+                try {
+                    // Move file to student folder
+                    await gapi.client.drive.files.update({
+                        fileId: fileId,
+                        addParents: studentFolder.id,
+                        removeParents: fileResponsesFolder.id
+                    });
+                    movedCount++;
+                } catch (err) {
+                    console.error(`Lỗi move file ${fileId}:`, err);
+                }
+            }
+        }
+        
+        updateStatus(`   ✓ Đã phân loại ${movedCount} file vào folder bài tập`);
+        
+    } catch (error) {
+        console.error('Lỗi processFormFileUploads:', error);
+        updateStatus(`   ⚠️ Lỗi phân loại file: ${error.message}`);
+    }
+}
+
 async function handleProcessClick() {
     if (!activeAssignment) { updateStatus("✗ LỖI: Bạn chưa chọn loại bài tập để xử lý.", true); return; }
     const parentFolderIdToProcess = activeAssignment.folderId;
@@ -1619,6 +1720,13 @@ async function handleProcessClick() {
     processButton.querySelector('span').textContent = "Đang xử lý...";
 
     try {
+        // Step 0: Process file uploads from Form responses folder
+        const selectedProfile = classProfiles.find(p => p.id === classProfileSelectValue.value);
+        if (selectedProfile && selectedProfile.sheetId && selectedProfile.formId) {
+            updateStatus("→ Đang phân loại file uploads từ Form...");
+            await processFormFileUploads(selectedProfile.id, selectedProfile.sheetId);
+        }
+        
         updateStatus("→ Đang quét thư mục con...");
         const allFoldersFromDrive = await findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }]);
         updateStatus(`✓ Quét xong: ${allFoldersFromDrive.length} thư mục con.`);
