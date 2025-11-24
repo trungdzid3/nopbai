@@ -136,6 +136,87 @@ function reconcileCheckboxes() {
 // ==================================================================
 
 /**
+ * ⚡ SETUP NHANH - CHẠY HÀM NÀY 1 LẦN SAU KHI TẠO FORM MỚI
+ * Tự động cài đặt tất cả triggers cần thiết
+ */
+function quickSetup() {
+  try {
+    Logger.log('🚀 Bắt đầu Quick Setup...');
+    
+    // 1. Xóa tất cả triggers cũ
+    const oldTriggers = ScriptApp.getProjectTriggers();
+    oldTriggers.forEach(trigger => {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log(`🗑️ Đã xóa trigger cũ: ${trigger.getHandlerFunction()}`);
+    });
+    
+    // 2. Tạo Form Submit Trigger
+    ScriptApp.newTrigger('onFormSubmit')
+      .forForm(FormApp.getActiveForm())
+      .onFormSubmit()
+      .create();
+    Logger.log('✅ Đã tạo trigger: onFormSubmit (On form submit)');
+    
+    // 3. Tạo Periodic Cleanup Trigger (30 phút)
+    ScriptApp.newTrigger('periodicCleanup')
+      .timeBased()
+      .everyMinutes(30)
+      .create();
+    Logger.log('✅ Đã tạo trigger: periodicCleanup (Every 30 minutes)');
+    
+    // 4. Tạo Checkbox Reconciliation Trigger (1 giờ)
+    ScriptApp.newTrigger('reconcileCheckboxes')
+      .timeBased()
+      .everyHours(1)
+      .create();
+    Logger.log('✅ Đã tạo trigger: reconcileCheckboxes (Every 1 hour)');
+    
+    // 5. Kiểm tra email config
+    let recipientEmail = PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+    
+    if (!recipientEmail) {
+      try {
+        recipientEmail = getEmailFromSheetConfig();
+        if (recipientEmail) {
+          Logger.log(`📧 Tìm thấy email trong Sheet Config: ${recipientEmail}`);
+        }
+      } catch (err) {
+        Logger.log(`⚠️ Không đọc được email từ Sheet: ${err.message}`);
+      }
+    } else {
+      Logger.log(`📧 Email đã được cài đặt: ${recipientEmail}`);
+    }
+    
+    if (!recipientEmail) {
+      Logger.log('⚠️ CẢNH BÁO: Chưa có email thông báo!');
+      Logger.log('💡 Hãy ghi email vào Sheet "Cấu Hình" cell I6');
+    }
+    
+    // 6. Thử setup scheduled cleanup (nếu có config)
+    try {
+      setupScheduledCleanup();
+      Logger.log('✅ Đã cài đặt scheduled cleanup triggers');
+    } catch (err) {
+      Logger.log(`ℹ️ Scheduled cleanup: ${err.message}`);
+    }
+    
+    Logger.log('\n🎉 HOÀN TẤT QUICK SETUP!');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('📋 Các trigger đã được cài đặt:');
+    Logger.log('   1. onFormSubmit - Khi có học sinh nộp bài');
+    Logger.log('   2. periodicCleanup - Quét DOCX mỗi 30 phút');
+    Logger.log('   3. reconcileCheckboxes - Đối soát checkbox mỗi giờ');
+    Logger.log('   4. runScheduledCleanupAndEnsureOpen - Theo lịch dạy');
+    Logger.log('\n🧪 Test ngay: Nộp thử 1 bài qua Form và kiểm tra!');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+  } catch (err) {
+    Logger.log(`❌ Lỗi trong Quick Setup: ${err.message}`);
+    Logger.log(err.stack);
+  }
+}
+
+/**
  * Cài đặt triggers tự động
  * Chạy thủ công 1 lần sau khi:
  * - Đã add library

@@ -964,6 +964,38 @@ async function createClassSystemAutomatic() {
         updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
+        
+        // 2.1. Rename Form's script project to class name
+        let scriptProjectId = null;
+        try {
+            updateStatus("   → Đang đổi tên Script project...");
+            // Get form's container (script project)
+            const formDetails = await gapi.client.drive.files.get({
+                fileId: form.id,
+                fields: 'parents'
+            });
+            
+            // Find script.google.com file in same folder
+            const searchResponse = await gapi.client.drive.files.list({
+                q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.script'`,
+                fields: 'files(id, name)'
+            });
+            
+            const scriptFiles = searchResponse.result.files || [];
+            const formScript = scriptFiles.find(f => f.name.includes('Untitled') || f.name.includes('Biểu mẫu'));
+            
+            if (formScript) {
+                scriptProjectId = formScript.id;
+                await gapi.client.drive.files.update({
+                    fileId: scriptProjectId,
+                    resource: { name: `Script - ${name}` }
+                });
+                updateStatus(`   ✓ Đã đổi tên Script: "Script - ${name}"`);
+            }
+        } catch (err) {
+            console.warn('Không thể đổi tên script project:', err);
+            updateStatus(`   ⚠ Không thể đổi tên Script project`);
+        }
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
@@ -1026,52 +1058,19 @@ async function createClassSystemAutomatic() {
             }
         }
 
-        // 10. Get shortened form link and publish form automatically
-        updateStatus("10. Đang xuất bản Form và lấy link rút gọn...");
-        let formShortLink = form.webViewLink;
-        let formEditLink = `https://docs.google.com/forms/d/${form.id}/edit`;
+        // 10. Build form links (responder link from form ID)
+        updateStatus("10. Đang tạo link Form...");
+        const formEditLink = `https://docs.google.com/forms/d/${form.id}/edit`;
         
-        try {
-            // Force update form to ensure it's active - update title triggers publish
-            await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}:batchUpdate`,
-                method: 'POST',
-                body: {
-                    requests: [{
-                        updateFormInfo: {
-                            info: {
-                                title: `Biểu mẫu nộp bài - ${name}`,
-                                description: `Form nộp bài cho lớp ${name}. Vui lòng chọn loại bài tập và đính kèm file.`
-                            },
-                            updateMask: 'title,description'
-                        }
-                    }]
-                }
-            });
-            
-            // Small delay to let Google process
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Now fetch form to get responderUri
-            const formResponse = await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
-                method: 'GET'
-            });
-            
-            const formData = formResponse.result;
-            
-            if (formData.responderUri) {
-                formShortLink = formData.responderUri;
-                updateStatus(`✓ Form đã xuất bản với link rút gọn`);
-            } else {
-                // Fallback to constructed responder URL
-                formShortLink = `https://docs.google.com/forms/d/e/${form.id}/viewform`;
-                updateStatus(`✓ Đã tạo link Form`);
-            }
-        } catch (err) {
-            console.warn('Không thể xuất bản form tự động:', err);
-            formShortLink = `https://docs.google.com/forms/d/e/${form.id}/viewform`;
-        }
+        // Build responder link manually - this works even if form not opened yet
+        // Extract the file ID and construct viewform link
+        const formShortLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
+        
+        updateStatus(`✓ Đã tạo link Form (cần mở form editor lần đầu để kích hoạt)`);
+        
+        // Open form in new tab so user can activate it
+        window.open(formEditLink, '_blank');
+        updateStatus(`   → Đã mở Form editor - vui lòng đóng tab sau khi form tải xong`);
 
         // 11. Save Profile
         const newProfile = {
@@ -1083,7 +1082,8 @@ async function createClassSystemAutomatic() {
             formShortLink: formShortLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
-            formId: form.id
+            formId: form.id,
+            scriptProjectId: scriptProjectId
         };
 
         classProfiles.push(newProfile);
@@ -1104,7 +1104,31 @@ async function createClassSystemAutomatic() {
         handleClassSelectChange();
 
         updateStatus(`🎉 Hoàn tất! Đã tạo lớp "${name}" với ${assignments.length} loại bài tập.`);
-        updateStatus(`📋 Bước tiếp theo: Mở Sheet → Menu "Tiện ích Lớp Học" → "Cài đặt Lịch trình"`);
+        updateStatus(`📋 Bước tiếp theo: Thiết lập triggers cho Form...`);
+        
+        // Auto-open Form Apps Script editor with instructions
+        const formScriptUrl = `https://script.google.com/home/projects/${form.id}/edit`;
+        updateStatus(`⚙️ Đang mở Apps Script editor...`);
+        
+        // Wait a bit then show confirmation
+        setTimeout(() => {
+            const shouldOpen = confirm(
+                `✅ Lớp "${name}" đã được tạo!\n\n` +
+                `📝 BẮT BUỘC: Cần setup triggers cho Form (1 phút)\n\n` +
+                `Bước 1: Click OK để mở Apps Script editor\n` +
+                `Bước 2: Chọn Run → quickSetup\n` +
+                `Bước 3: Click Run ▶️ và authorize\n\n` +
+                `Sau đó Form sẽ tự động xử lý bài nộp!`
+            );
+            
+            if (shouldOpen) {
+                window.open(formScriptUrl, '_blank');
+                updateStatus(`📖 Đã mở Apps Script. Nhớ chạy: Run → quickSetup → Run ▶️`);
+            } else {
+                updateStatus(`⚠️ Nhớ setup triggers sau: ${formScriptUrl}`);
+            }
+        }, 500);
+        
     } catch (e) {
         updateStatus(`✗ Lỗi tạo tự động: ${e.message || e.result?.error?.message}`, true);
         console.error(e);
@@ -1556,6 +1580,14 @@ function deleteClassProfile() {
         console.error('Lỗi khi xóa folder trên Drive:', err);
         updateStatus(`⚠ Đã xóa lớp khỏi hệ thống nhưng không thể xóa folder trên Drive. Bạn có thể xóa thủ công.`);
     });
+    
+    // Delete script project if exists
+    if (profile.scriptProjectId) {
+        deleteScriptProject(profile.scriptProjectId).catch(err => {
+            console.error('Lỗi khi xóa script project:', err);
+            updateStatus(`⚠ Không thể xóa Script project. Bạn có thể xóa thủ công.`);
+        });
+    }
 
     classProfiles = classProfiles.filter(p => p.id !== idToDelete);
     localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
@@ -1582,6 +1614,18 @@ async function deleteClassFolderFromDrive(folderId) {
         updateStatus(`✓ Đã xóa folder trên Drive.`);
     } catch (error) {
         console.error('Drive deletion error:', error);
+        throw error;
+    }
+}
+
+async function deleteScriptProject(scriptId) {
+    try {
+        await gapi.client.drive.files.delete({
+            fileId: scriptId
+        });
+        updateStatus(`✓ Đã xóa Script project.`);
+    } catch (error) {
+        console.error('Script deletion error:', error);
         throw error;
     }
 }
