@@ -972,10 +972,15 @@ async function createClassSystemAutomatic() {
                 updateStatus("7. Đang ghi cấu hình bài tập vào Sheet...");
                 await apiWriteAssignmentsToConfig(sheet.id, assignments);
                 updateStatus(`✓ Đã ghi ${assignments.length} loại bài tập vào sheet Cấu Hình`);
+                
+                // 7.1. Update Form choices
+                updateStatus("8. Đang cập nhật Form với danh sách bài tập...");
+                await apiUpdateFormChoices(form.id, assignments);
+                updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn`);
             }
         }
 
-        // 8. Save Profile
+        // 9. Save Profile
         const newProfile = {
             id: folder.id,
             name: name,
@@ -990,13 +995,22 @@ async function createClassSystemAutomatic() {
         classProfiles.push(newProfile);
         localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
 
+        // Close modal first
+        classFormModal.setAttribute('aria-hidden', 'true');
+        
+        // Then update UI
         loadClassProfiles();
-        classProfileSelect.value = folder.id;
+        
+        // Sync both native select and custom dropdown
+        if (classProfileSelect) classProfileSelect.value = folder.id;
+        if (classProfileSelectValue) classProfileSelectValue.value = folder.id;
+        if (classProfileText) classProfileText.textContent = name;
+        updateDropdownSelection(folder.id);
+        
         handleClassSelectChange();
 
         updateStatus(`🎉 Hoàn tất! Đã tạo lớp "${name}" với ${assignments.length} loại bài tập.`);
         updateStatus(`📋 Bước tiếp theo: Mở Sheet → Menu "Tiện ích Lớp Học" → "Cài đặt Lịch trình"`);
-        classFormModal.setAttribute('aria-hidden', 'true');
     } catch (e) {
         updateStatus(`✗ Lỗi tạo tự động: ${e.message || e.result?.error?.message}`, true);
         console.error(e);
@@ -1085,6 +1099,67 @@ async function apiLinkFormToSheet(formId, sheetId) {
         console.error('[FORM-SHEET] Không thể link tự động:', e);
         // Không throw error vì đây không phải bước bắt buộc - user có thể link thủ công
         return null;
+    }
+}
+
+async function apiUpdateFormChoices(formId, assignments) {
+    try {
+        // 1. Get form structure to find the question item
+        const formResponse = await gapi.client.request({
+            path: `https://forms.googleapis.com/v1/forms/${formId}`,
+            method: 'GET'
+        });
+        
+        const form = formResponse.result;
+        
+        // 2. Find the question with title containing "Loại bài tập" or "Bài tập"
+        let questionItemId = null;
+        if (form.items) {
+            for (const item of form.items) {
+                if (item.title && (item.title.includes('Loại bài tập') || item.title.includes('bài tập'))) {
+                    questionItemId = item.itemId;
+                    break;
+                }
+            }
+        }
+        
+        if (!questionItemId) {
+            console.warn('[FORM] Không tìm thấy câu hỏi "Loại bài tập" trong form');
+            return;
+        }
+        
+        // 3. Create choices from assignments
+        const choices = assignments.map(a => ({ value: a.name }));
+        
+        // 4. Update the question with new choices
+        await gapi.client.request({
+            path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
+            method: 'POST',
+            body: {
+                requests: [{
+                    updateItem: {
+                        item: {
+                            itemId: questionItemId,
+                            questionItem: {
+                                question: {
+                                    choiceQuestion: {
+                                        type: 'RADIO',
+                                        options: choices
+                                    }
+                                }
+                            }
+                        },
+                        updateMask: 'questionItem.question.choiceQuestion.options'
+                    }
+                }],
+                includeFormInResponse: false
+            }
+        });
+        
+        console.log(`[FORM] Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
+    } catch (e) {
+        console.error('[FORM] Lỗi cập nhật form choices:', e);
+        // Don't throw - form still usable, just needs manual update
     }
 }
 
