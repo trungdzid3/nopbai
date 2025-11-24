@@ -334,6 +334,20 @@ function bindClassManagementEvents() {
 }
 
 function bindModalEvents() {
+    // Guide Modal
+    const guideModal = document.getElementById('guide_modal');
+    const openGuideButton = document.getElementById('open_guide_button');
+    const closeGuideButton = document.getElementById('close_guide_button');
+    
+    openGuideButton.onclick = () => guideModal.setAttribute('aria-hidden', 'false');
+    closeGuideButton.onclick = () => guideModal.setAttribute('aria-hidden', 'true');
+    guideModal.onclick = (e) => {
+        if (e.target === guideModal) {
+            guideModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+    
+    // Settings Modal
     openSettingsButton.onclick = () => settingsModal.setAttribute('aria-hidden', 'false');
     closeSettingsButton.onclick = () => settingsModal.setAttribute('aria-hidden', 'true');
     settingsModal.onclick = (e) => {
@@ -342,6 +356,7 @@ function bindModalEvents() {
         }
     };
 
+    // Class Form Modal
     closeClassFormModalButton.onclick = () => classFormModal.setAttribute('aria-hidden', 'true');
     classFormModal.onclick = (e) => {
         if (e.target === classFormModal) {

@@ -2081,12 +2081,19 @@
             </section>
             <footer class="mt-auto pt-4 border-t border-outline-variant flex items-center justify-between">
                 <p class="text-xs text-outline text-center">Bản quyền bởi Nguyễn Thành Trung</p>
-                <button id="open_settings_button" class="m3-button m3-button-icon" title="Cài đặt"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="currentColor">
-                        <path
-                            d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.2-0.37-0.26-0.59-0.18l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.62c-0.05-0.22-0.25-0.38-0.48-0.38 h-3.84c-0.24,0-0.44,0.17-0.48,0.38L9.26,5.3C8.67,5.54,8.14,5.86,7.64,6.24L5.25,5.28C5.03,5.2,4.78,5.27,4.66,5.47 L2.74,8.79C2.62,8.99,2.68,9.26,2.86,9.4l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94 l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.2,0.37,0.26,0.59,0.18l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94 l0.38,2.68c0.05,0.22,0.25,0.38,0.48,0.38h3.84c0.24,0,0.44-0.17,0.48,0.38l0.38-2.68c0.59-0.24,1.12-0.56,1.62-0.94 l2.39,0.96c0.22,0.08,0.47,0.02,0.59-0.18l1.92-3.32C21.07,13.35,21.02,13.08,19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-                    </svg></button>
+                <div class="flex items-center gap-2">
+                    <button id="open_guide_button" class="m3-button m3-button-icon" title="Hướng dẫn sử dụng"><svg
+                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg></button>
+                    <button id="open_settings_button" class="m3-button m3-button-icon" title="Cài đặt"><svg
+                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path
+                                d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.2-0.37-0.26-0.59-0.18l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.62c-0.05-0.22-0.25-0.38-0.48-0.38 h-3.84c-0.24,0-0.44,0.17-0.48,0.38L9.26,5.3C8.67,5.54,8.14,5.86,7.64,6.24L5.25,5.28C5.03,5.2,4.78,5.27,4.66,5.47 L2.74,8.79C2.62,8.99,2.68,9.26,2.86,9.4l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94 l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.2,0.37,0.26,0.59,0.18l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94 l0.38,2.68c0.05,0.22,0.25,0.38,0.48,0.38h3.84c0.24,0,0.44-0.17,0.48,0.38l0.38-2.68c0.59-0.24,1.12-0.56,1.62-0.94 l2.39,0.96c0.22,0.08,0.47,0.02,0.59-0.18l1.92-3.32C21.07,13.35,21.02,13.08,19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                        </svg></button>
+                </div>
             </footer>
         </aside>
 
@@ -2198,6 +2205,170 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- GUIDE MODAL -->
+    <div id="guide_modal" aria-hidden="true"
+        class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="m3-modal-content bg-surface-container rounded-[28px] elevation-2 flex flex-col max-h-[90vh] max-w-3xl w-full">
+            <header class="px-6 py-5 flex items-center justify-between border-b border-outline-variant flex-shrink-0">
+                <h2 class="text-2xl font-medium text-on-surface">📘 Hướng dẫn sử dụng</h2>
+                <button id="close_guide_button" class="m3-button m3-button-icon" title="Đóng">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg>
+                </button>
+            </header>
+            <div id="guide_modal_content" class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-6 text-on-surface">
+                    
+                    <!-- Bước 1: Đăng nhập -->
+                    <div class="bg-primary-container rounded-[24px] p-5">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-primary text-on-primary rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                                1
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-on-primary-container mb-2">🔐 Đăng nhập Google</h3>
+                                <p class="text-on-primary-container opacity-90 mb-3">Click nút <strong>"Đăng nhập"</strong> ở thanh bên trái để kết nối với tài khoản Google của bạn.</p>
+                                <div class="bg-surface rounded-[16px] p-3 text-sm text-on-surface">
+                                    <p class="opacity-70">💡 <strong>Lưu ý:</strong> App cần quyền truy cập Google Drive, Sheets và Forms để hoạt động.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bước 2: Tạo lớp -->
+                    <div class="bg-secondary-container rounded-[24px] p-5">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-secondary text-on-secondary rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                                2
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-on-secondary-container mb-2">➕ Tạo lớp mới</h3>
+                                <p class="text-on-secondary-container opacity-90 mb-3">Click nút <strong>"+"</strong> bên cạnh dropdown "Chọn Lớp Đang Xử Lý" để tạo lớp học mới.</p>
+                                <ul class="list-disc list-inside space-y-1 text-on-secondary-container opacity-90 mb-3">
+                                    <li>Nhập <strong>Tên lớp</strong> (ví dụ: Lớp 6A1)</li>
+                                    <li>Nhập <strong>Danh sách học sinh</strong> (mỗi dòng 1 tên)</li>
+                                    <li>Nhập <strong>Các loại bài tập</strong> (ví dụ: BTVN Tuần 1, Bài tập Chương 2)</li>
+                                </ul>
+                                <div class="bg-surface rounded-[16px] p-3 text-sm text-on-surface">
+                                    <p class="opacity-70">✨ Hệ thống tự động tạo: Folder trên Drive, Sheet điểm, Form nộp bài và các Sheet theo dõi cho từng loại bài tập!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bước 3: Truy cập nhanh -->
+                    <div class="bg-tertiary-container rounded-[24px] p-5">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-tertiary text-on-tertiary rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                                3
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-on-tertiary-container mb-2">🚀 Truy cập nhanh</h3>
+                                <p class="text-on-tertiary-container opacity-90 mb-3">Sử dụng các nút truy cập nhanh ở phần "Quick Actions Toolbar":</p>
+                                <div class="space-y-2">
+                                    <div class="bg-surface rounded-[12px] p-3 flex items-center gap-2">
+                                        <span class="text-2xl">📁</span>
+                                        <div>
+                                            <p class="font-medium text-on-surface">Folder Lớp</p>
+                                            <p class="text-sm text-on-surface opacity-70">Mở folder chứa bài tập của học sinh</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-surface rounded-[12px] p-3 flex items-center gap-2">
+                                        <span class="text-2xl">📊</span>
+                                        <div>
+                                            <p class="font-medium text-on-surface">Sheet Điểm</p>
+                                            <p class="text-sm text-on-surface opacity-70">Mở bảng điểm và theo dõi tiến độ</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-surface rounded-[12px] p-3 flex items-center gap-2">
+                                        <span class="text-2xl">📝</span>
+                                        <div>
+                                            <p class="font-medium text-on-surface">Form Nộp</p>
+                                            <p class="text-sm text-on-surface opacity-70">Mở form nộp bài (click trái) hoặc copy link (click phải)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bước 4: Xử lý PDF -->
+                    <div class="bg-surface-container rounded-[24px] p-5 border-2 border-primary">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-primary text-on-primary rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                                4
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-on-surface mb-2">📄 Chuyển đổi PDF</h3>
+                                <p class="text-on-surface opacity-90 mb-3">Chọn loại bài tập và click <strong>"Bắt đầu Xử lý"</strong> để:</p>
+                                <ul class="list-disc list-inside space-y-1 text-on-surface opacity-90 mb-3">
+                                    <li>Tự động chuyển đổi file DOCX thành PDF</li>
+                                    <li>Ghép tất cả PDF của mỗi học sinh thành 1 file</li>
+                                    <li>Thêm trang bìa với tên học sinh và loại bài tập</li>
+                                    <li>Lưu file PDF đã ghép vào folder riêng</li>
+                                </ul>
+                                <div class="bg-primary-container rounded-[16px] p-3 text-sm text-on-primary-container">
+                                    <p>⚡ <strong>Mẹo:</strong> File PDF cuối cùng được lưu trong folder "PDF_Đã_Ghép" với tên chuẩn hóa!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bước 5: Theo dõi -->
+                    <div class="bg-surface-variant rounded-[24px] p-5">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-outline text-surface rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                                5
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-on-surface-variant mb-2">📈 Theo dõi tiến độ</h3>
+                                <p class="text-on-surface-variant opacity-90 mb-3">Phần <strong>"Tình trạng Nộp bài"</strong> hiển thị:</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div class="bg-surface rounded-[12px] p-3">
+                                        <p class="text-sm text-on-surface">✅ <strong>Đã nộp:</strong> Có file trong folder</p>
+                                    </div>
+                                    <div class="bg-surface rounded-[12px] p-3">
+                                        <p class="text-sm text-on-surface">❌ <strong>Chưa nộp:</strong> Chưa có file</p>
+                                    </div>
+                                    <div class="bg-surface rounded-[12px] p-3">
+                                        <p class="text-sm text-on-surface">📄 <strong>Đã ghép PDF:</strong> Hoàn thành xử lý</p>
+                                    </div>
+                                    <div class="bg-surface rounded-[12px] p-3">
+                                        <p class="text-sm text-on-surface">⏳ <strong>Đang xử lý:</strong> Hệ thống đang chuyển đổi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tính năng nâng cao -->
+                    <div class="bg-error-container rounded-[24px] p-5">
+                        <h3 class="text-lg font-semibold text-on-error-container mb-3 flex items-center gap-2">
+                            <span>🎯</span>
+                            <span>Tính năng nâng cao</span>
+                        </h3>
+                        <div class="space-y-2 text-on-error-container opacity-90">
+                            <p>• <strong>Chế độ giao diện:</strong> Chuyển đổi giữa Material Design và Apple Design trong Cài đặt</p>
+                            <p>• <strong>Dark Mode:</strong> Bật/tắt chế độ tối cho trải nghiệm tốt hơn</p>
+                            <p>• <strong>Sửa lớp:</strong> Click nút ✏️ để chỉnh sửa thông tin lớp đã tạo</p>
+                            <p>• <strong>Xóa lớp:</strong> Trong modal sửa lớp, có nút xóa lớp (cẩn thận!)</p>
+                            <p>• <strong>Copy link Form:</strong> Chuột phải vào nút "Form Nộp" để copy link chia sẻ</p>
+                        </div>
+                    </div>
+
+                    <!-- Liên hệ hỗ trợ -->
+                    <div class="bg-surface-container-low rounded-[24px] p-5 border border-outline-variant text-center">
+                        <p class="text-on-surface opacity-70 text-sm">💬 Gặp vấn đề? Liên hệ: <strong class="text-primary">Nguyễn Thành Trung</strong></p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SETTINGS MODAL -->
