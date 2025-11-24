@@ -1148,6 +1148,13 @@ async function apiUpdateFormChoices(formId, assignments) {
         
         // 4. Update the question with new choices
         console.log('[FORM] Updating question with choices:', choices);
+        
+        // Get current item location first
+        const currentItem = form.items.find(item => item.itemId === questionItemId);
+        if (!currentItem) {
+            throw new Error('Cannot find item in form structure');
+        }
+        
         const updateResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
             method: 'POST',
@@ -1158,12 +1165,16 @@ async function apiUpdateFormChoices(formId, assignments) {
                             itemId: questionItemId,
                             questionItem: {
                                 question: {
+                                    required: true,
                                     choiceQuestion: {
                                         type: 'RADIO',
                                         options: choices
                                     }
                                 }
                             }
+                        },
+                        location: {
+                            index: form.items.indexOf(currentItem)
                         },
                         updateMask: 'questionItem.question.choiceQuestion.options'
                     }
