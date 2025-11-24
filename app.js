@@ -964,27 +964,6 @@ async function createClassSystemAutomatic() {
         updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
-        
-        // 2.1. Publish form to accept responses
-        try {
-            await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}:batchUpdate`,
-                method: 'POST',
-                body: {
-                    requests: [{
-                        updateSettings: {
-                            settings: {
-                                quizSettings: null
-                            },
-                            updateMask: 'quizSettings'
-                        }
-                    }]
-                }
-            });
-            updateStatus(`✓ Form đã được xuất bản`);
-        } catch (err) {
-            console.warn('Không thể xuất bản form:', err);
-        }
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
@@ -1047,20 +1026,51 @@ async function createClassSystemAutomatic() {
             }
         }
 
-        // 10. Get shortened form link
-        updateStatus("10. Đang lấy link rút gọn của Form...");
+        // 10. Get shortened form link and publish form automatically
+        updateStatus("10. Đang xuất bản Form và lấy link rút gọn...");
         let formShortLink = form.webViewLink;
+        let formEditLink = `https://docs.google.com/forms/d/${form.id}/edit`;
+        
         try {
-            const shortLinkResponse = await gapi.client.request({
+            // Force update form to ensure it's active - update title triggers publish
+            await gapi.client.request({
+                path: `https://forms.googleapis.com/v1/forms/${form.id}:batchUpdate`,
+                method: 'POST',
+                body: {
+                    requests: [{
+                        updateFormInfo: {
+                            info: {
+                                title: `Biểu mẫu nộp bài - ${name}`,
+                                description: `Form nộp bài cho lớp ${name}. Vui lòng chọn loại bài tập và đính kèm file.`
+                            },
+                            updateMask: 'title,description'
+                        }
+                    }]
+                }
+            });
+            
+            // Small delay to let Google process
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Now fetch form to get responderUri
+            const formResponse = await gapi.client.request({
                 path: `https://forms.googleapis.com/v1/forms/${form.id}`,
                 method: 'GET'
             });
-            if (shortLinkResponse.result.responderUri) {
-                formShortLink = shortLinkResponse.result.responderUri;
-                updateStatus(`✓ Đã lấy link Form rút gọn`);
+            
+            const formData = formResponse.result;
+            
+            if (formData.responderUri) {
+                formShortLink = formData.responderUri;
+                updateStatus(`✓ Form đã xuất bản với link rút gọn`);
+            } else {
+                // Fallback to constructed responder URL
+                formShortLink = `https://docs.google.com/forms/d/e/${form.id}/viewform`;
+                updateStatus(`✓ Đã tạo link Form`);
             }
         } catch (err) {
-            console.warn('Không thể lấy link rút gọn, dùng link đầy đủ:', err);
+            console.warn('Không thể xuất bản form tự động:', err);
+            formShortLink = `https://docs.google.com/forms/d/e/${form.id}/viewform`;
         }
 
         // 11. Save Profile
