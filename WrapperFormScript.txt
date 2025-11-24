@@ -1,0 +1,327 @@
+/**
+ * ============================================================================
+ * FORM TEMPLATE - WRAPPER SCRIPT
+ * ============================================================================
+ * 
+ * Script này được webapp tự động copy khi tạo lớp mới.
+ * Code chính nằm trong Library "FormLib" - chỉ cần cập nhật library là đủ!
+ * 
+ * Setup lần đầu:
+ * 1. Resources → Libraries
+ * 2. Add library → Paste Script ID của LibraryFormScript
+ * 3. Chọn phiên bản mới nhất
+ * 4. Identifier: "FormLib" (QUAN TRỌNG - phải đúng tên này!)
+ * 5. [TÙY CHỌN] Email thông báo:
+ *    - Tự động: Webapp sẽ ghi email người tạo lớp vào Sheet Config cell I6
+ *    - Thủ công: File → Project properties → Script properties
+ *      → Add: RECIPIENT_EMAIL = email khác (nếu cần override)
+ *    - Hoặc: Ghi trực tiếp vào Sheet "Cấu Hình" cell I6
+ * 
+ * Khi cần update logic:
+ * - KHÔNG SỬA FILE NÀY
+ * - Sửa LibraryFormScript → Deploy phiên bản mới
+ * - Tất cả Form tự động dùng code mới!
+ * 
+ * ============================================================================
+ */
+
+// ==================================================================
+// TRIGGER FUNCTIONS - ĐƯA GỌI TỪ FORM/TRIGGERS
+// ==================================================================
+
+/**
+ * Xử lý khi có submission mới
+ * Trigger: On form submit
+ */
+function onFormSubmit(e) {
+  // Lấy email từ nhiều nguồn (ưu tiên: Script Properties > Sheet Config)
+  let recipientEmail = PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+  
+  // Nếu không có trong Script Properties, đọc từ Sheet Config
+  if (!recipientEmail) {
+    try {
+      recipientEmail = getEmailFromSheetConfig();
+    } catch (err) {
+      Logger.log('⚠️ Không thể đọc email từ Sheet Config: ' + err.message);
+    }
+  }
+  
+  if (!recipientEmail) {
+    Logger.log('⚠️ RECIPIENT_EMAIL chưa được cài đặt!');
+    Logger.log('Cách 1: File → Project properties → Script properties → Add: RECIPIENT_EMAIL');
+    Logger.log('Cách 2: Ghi email vào Sheet "Cấu Hình" cell I6 (Email quản lý)');
+    return;
+  }
+  
+  Logger.log(`📧 Gửi thông báo tới: ${recipientEmail}`);
+  
+  // Gọi hàm chính từ library
+  FormLib.onFormSubmit(e, recipientEmail);
+}
+
+/**
+ * Đọc email từ Sheet Config (cell I6)
+ * Sheet ID được lấy từ Form destination
+ */
+function getEmailFromSheetConfig() {
+  try {
+    const form = FormApp.getActiveForm();
+    
+    // Lấy destination spreadsheet của Form
+    const destinationId = form.getDestinationId();
+    
+    if (!destinationId) {
+      Logger.log('⚠️ Form chưa được link với Sheet nào');
+      return null;
+    }
+    
+    const ss = SpreadsheetApp.openById(destinationId);
+    const configSheet = ss.getSheetByName('Cấu Hình');
+    
+    if (!configSheet) {
+      Logger.log('⚠️ Không tìm thấy sheet "Cấu Hình"');
+      return null;
+    }
+    
+    // Đọc email từ cell I6 (cột 9, dòng 6)
+    const email = configSheet.getRange('I6').getValue();
+    
+    if (email && typeof email === 'string' && email.includes('@')) {
+      Logger.log(`✅ Đã lấy email từ Sheet Config (I6): ${email}`);
+      return email;
+    }
+    
+    Logger.log('⚠️ Cell I6 không chứa email hợp lệ');
+    return null;
+  } catch (e) {
+    Logger.log('❌ Lỗi khi đọc email từ Sheet: ' + e.toString());
+    return null;
+  }
+}
+
+/**
+ * Web app để sửa email
+ * Trigger: None (được gọi từ link trong email)
+ */
+function doGet(e) {
+  return FormLib.doGet(e);
+}
+
+/**
+ * Cleanup và mở form theo lịch
+ * Trigger: Time-based (được tạo tự động theo config)
+ */
+function runScheduledCleanupAndEnsureOpen() {
+  FormLib.runScheduledCleanupAndEnsureOpen();
+}
+
+/**
+ * Quét và convert DOCX định kỳ
+ * Trigger: Time-based (30 phút 1 lần)
+ */
+function periodicCleanup() {
+  FormLib.periodicCleanup();
+}
+
+/**
+ * Đối chiếu checkbox giữa Drive và Sheet
+ * Trigger: Time-based hoặc manual
+ */
+function reconcileCheckboxes() {
+  FormLib.reconcileCheckboxes();
+}
+
+// ==================================================================
+// SETUP FUNCTIONS - GỌI MANUAL LẦN ĐẦU
+// ==================================================================
+
+/**
+ * Cài đặt triggers tự động
+ * Chạy thủ công 1 lần sau khi:
+ * - Đã add library
+ * - Đã set RECIPIENT_EMAIL
+ * - Đã có config trong sheet "Cấu Hình"
+ */
+function setupTriggers() {
+  // Xóa triggers cũ
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => ScriptApp.deleteTrigger(trigger));
+  
+  // Form submit trigger
+  ScriptApp.newTrigger('onFormSubmit')
+    .forForm(FormApp.getActiveForm())
+    .onFormSubmit()
+    .create();
+  
+  // Periodic DOCX cleanup (30 phút 1 lần)
+  ScriptApp.newTrigger('periodicCleanup')
+    .timeBased()
+    .everyMinutes(30)
+    .create();
+  
+  // Checkbox reconciliation (1 giờ 1 lần)
+  ScriptApp.newTrigger('reconcileCheckboxes')
+    .timeBased()
+    .everyHours(1)
+    .create();
+  
+  Logger.log('✅ Đã cài đặt triggers cơ bản. Chạy setupScheduledCleanup() để thêm cleanup theo lịch.');
+}
+
+/**
+ * Cài đặt cleanup triggers theo config
+ * Chạy sau khi đã có config trong sheet "Cấu Hình"
+ */
+function setupScheduledCleanup() {
+  try {
+    // Lấy config trực tiếp từ Sheet (không qua library)
+    const form = FormApp.getActiveForm();
+    const destinationId = form.getDestinationId();
+    
+    if (!destinationId) {
+      Logger.log('⚠️ Form chưa được link với Sheet. Vui lòng link Form với Sheet trước!');
+      return;
+    }
+    
+    const ss = SpreadsheetApp.openById(destinationId);
+    const configSheet = ss.getSheetByName('Cấu Hình');
+    
+    if (!configSheet) {
+      Logger.log('⚠️ Không tìm thấy sheet "Cấu Hình"');
+      return;
+    }
+    
+    // Đọc config từ sheet
+    const lastRow = configSheet.getLastRow();
+    if (lastRow < 2) {
+      Logger.log('⚠️ Sheet Cấu Hình trống, không có config nào');
+      return;
+    }
+    
+    const dataRange = configSheet.getRange(2, 1, lastRow - 1, 6);
+    const rows = dataRange.getValues();
+    
+    const schedules = new Set();
+    
+    // Parse lịch học từ mỗi dòng
+    rows.forEach(row => {
+      const name = String(row[0] || '').trim();
+      const classTimeStr = String(row[1] || '').trim();
+      
+      if (!name || !classTimeStr) return;
+      
+      // Parse multi-schedule: "T2-18:00;T6-09:00"
+      const parts = classTimeStr.split(/[;,]/).map(s => s.trim()).filter(s => s);
+      
+      parts.forEach(part => {
+        const match = part.match(/^T(\d)-(\d{1,2}):(\d{2})$/);
+        if (match) {
+          const dayOfWeek = parseInt(match[1]);
+          const hour = parseInt(match[2]);
+          const key = `${dayOfWeek}-${hour}`;
+          schedules.add(key);
+        }
+      });
+    });
+    
+    if (schedules.size === 0) {
+      Logger.log('⚠️ Không tìm thấy lịch học nào trong config');
+      return;
+    }
+    
+    // Tạo trigger cho mỗi lịch duy nhất
+    schedules.forEach(key => {
+      const [day, hour] = key.split('-').map(Number);
+      const weekday = convertDayToWeekday(day);
+      
+      // Cleanup 30 phút trước giờ học
+      const cleanupMinute = 30;
+      
+      ScriptApp.newTrigger('runScheduledCleanupAndEnsureOpen')
+        .timeBased()
+        .onWeekDay(weekday)
+        .atHour(hour)
+        .nearMinute(cleanupMinute)
+        .create();
+      
+      Logger.log(`📅 Created trigger: T${day} ${hour}:${cleanupMinute}`);
+    });
+    
+    Logger.log(`✅ Đã tạo ${schedules.size} cleanup triggers`);
+    
+  } catch (e) {
+    Logger.log('❌ Lỗi khi setup triggers: ' + e.toString());
+    Logger.log(e.stack);
+  }
+}
+
+/**
+ * Xem thông tin config hiện tại
+ */
+function showCurrentConfig() {
+  try {
+    const form = FormApp.getActiveForm();
+    const destinationId = form.getDestinationId();
+    
+    if (!destinationId) {
+      Logger.log('⚠️ Form chưa được link với Sheet');
+      return;
+    }
+    
+    const ss = SpreadsheetApp.openById(destinationId);
+    const configSheet = ss.getSheetByName('Cấu Hình');
+    
+    if (!configSheet) {
+      Logger.log('⚠️ Không tìm thấy sheet "Cấu Hình"');
+      return;
+    }
+    
+    const lastRow = configSheet.getLastRow();
+    if (lastRow < 2) {
+      Logger.log('⚠️ Sheet Cấu Hình trống');
+      return;
+    }
+    
+    const dataRange = configSheet.getRange(2, 1, lastRow - 1, 6);
+    const rows = dataRange.getValues();
+    
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('📋 CURRENT CONFIGURATION');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    rows.forEach((row, index) => {
+      const name = String(row[0] || '').trim();
+      if (!name) return;
+      
+      Logger.log(`\n📌 ${name}`);
+      Logger.log(`   Lịch học: ${row[1] || '(chưa có)'}`);
+      Logger.log(`   Thời gian mở: ${row[2] || '(chưa có)'}`);
+      Logger.log(`   Deadline: ${row[3] || '(chưa có)'}`);
+      Logger.log(`   Tự động dọn: ${row[4] ? '✓' : '✗'}`);
+      Logger.log(`   Sheet: ${row[5] || '(chưa có)'}`);
+    });
+    
+    Logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`Total: ${rows.filter(r => r[0]).length} configs`);
+    
+  } catch (e) {
+    Logger.log('❌ Lỗi: ' + e.toString());
+  }
+}
+
+// ==================================================================
+// HELPER FUNCTIONS
+// ==================================================================
+
+function convertDayToWeekday(day) {
+  const mapping = {
+    1: ScriptApp.WeekDay.SUNDAY,
+    2: ScriptApp.WeekDay.MONDAY,
+    3: ScriptApp.WeekDay.TUESDAY,
+    4: ScriptApp.WeekDay.WEDNESDAY,
+    5: ScriptApp.WeekDay.THURSDAY,
+    6: ScriptApp.WeekDay.FRIDAY,
+    7: ScriptApp.WeekDay.SATURDAY
+  };
+  return mapping[day];
+}

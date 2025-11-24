@@ -1,0 +1,28 @@
+{
+  "name": "Drive Folder to PDF",
+  "short_name": "Drive2PDF",
+  "description": "Công cụ quản lý lớp học và chuyển đổi thư mục Drive sang PDF",
+  "start_url": "./drive_folder_to_pdf.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Mở danh sách lớp",
+      "short_name": "Lớp học",
+      "description": "Xem danh sách các lớp học",
+      "url": "./drive_folder_to_pdf.html",
+      "icons": [{ "src": "icon.png", "sizes": "512x512" }]
+    }
+  ]
+}

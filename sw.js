@@ -1,0 +1,77 @@
+// Service Worker for PWA
+const CACHE_NAME = 'drive2pdf-v1.1.0';
+const urlsToCache = [
+  './drive_folder_to_pdf.html',
+  './app.js',
+  './manifest.json'
+];
+
+// Install event - cache resources
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Activate event - clean old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // Skip cross-origin requests (Google APIs, Drive, etc.)
+  if (!url.origin.includes(self.location.origin)) {
+    return;
+  }
+
+  // Always fetch fresh for version.json (auto-update)
+  if (url.pathname.includes('version.json') || url.hostname.includes('drive.google.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+
+        // Clone the request
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(response => {
+          // Check if valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Clone the response
+          const responseToCache = response.clone();
+
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+
+          return response;
+        });
+      })
+  );
+});

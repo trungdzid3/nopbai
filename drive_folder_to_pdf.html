@@ -1,0 +1,2527 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Công cụ quản lý lớp học và chuyển đổi thư mục Drive sang PDF">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Drive2PDF">
+    <link rel="manifest" href="manifest.json">
+    <title>Google Drive Smart PDF Exporter (Dual Design)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- PDF Libraries -->
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/downloadjs@1.4.7/download.min.js"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* ==================================================================
+       1. CẤU HÌNH CHUNG & MATERIAL 3 (Mặc định)
+       ================================================================== */
+        :root {
+            /* Font mặc định (Material) */
+            --font-family: 'Roboto', sans-serif;
+
+            /* Material 3 Variables */
+            --m3-primary: #0061A4;
+            --m3-on-primary: #FFFFFF;
+            --m3-primary-container: #D1E4FF;
+            --m3-on-primary-container: #001D36;
+            --m3-secondary: #535F70;
+            --m3-on-secondary: #FFFFFF;
+            --m3-secondary-container: #D6E4F7;
+            --m3-on-secondary-container: #0F1C2B;
+            --m3-tertiary: #6B5778;
+            --m3-on-tertiary: #FFFFFF;
+            --m3-tertiary-container: #F3DAFF;
+            --m3-on-tertiary-container: #251431;
+            --m3-error: #BA1A1A;
+            --m3-error-container: #FFDAD6;
+            --m3-on-error: #FFFFFF;
+            --m3-on-error-container: #410002;
+            --m3-background: #FDFCFF;
+            --m3-on-background: #1A1C1E;
+            --m3-surface: #FDFCFF;
+            --m3-on-surface: #1A1C1E;
+            --m3-surface-variant: #DFE2EB;
+            --m3-on-surface-variant: #42474E;
+            --m3-outline: #73777F;
+            --m3-outline-variant: #C2C7CF;
+            --m3-shadow: #000000;
+            --m3-surface-container-highest: #E2E2E6;
+            --m3-surface-container: #F0F0F3;
+            --m3-surface-container-low: #f6f6f9;
+
+            /* Radius mặc định */
+            --radius-card: 28px;
+            --radius-btn: 99px;
+            --radius-input: 16px;
+        }
+
+        /* Dark Mode Material */
+        .dark,
+        body.dark {
+            --m3-primary: #9ECAFF;
+            --m3-on-primary: #003258;
+            --m3-primary-container: #00497D;
+            --m3-on-primary-container: #D1E4FF;
+            --m3-secondary: #BAC8DB;
+            --m3-on-secondary: #253141;
+            --m3-secondary-container: #3B4858;
+            --m3-on-secondary-container: #D6E4F7;
+            --m3-tertiary: #D7BDE4;
+            --m3-on-tertiary: #3B2948;
+            --m3-tertiary-container: #52405F;
+            --m3-on-tertiary-container: #F3DAFF;
+            --m3-error: #FFB4AB;
+            --m3-error-container: #93000A;
+            --m3-on-error: #690005;
+            --m3-on-error-container: #FFDAD6;
+            --m3-background: #1A1C1E;
+            --m3-on-background: #E2E2E6;
+            --m3-surface: #1A1C1E;
+            --m3-on-surface: #E2E2E6;
+            --m3-surface-variant: #42474E;
+            --m3-on-surface-variant: #C2C7CF;
+            --m3-outline: #8C9199;
+            --m3-outline-variant: #42474E;
+            --m3-shadow: #000000;
+            --m3-surface-container-highest: #33363A;
+            --m3-surface-container: #1E2022;
+            --m3-surface-container-low: #1e1e1e;
+        }
+
+        /* Accent Colors (Material Only) */
+        [data-accent="green"] {
+            --m3-primary: #006D3B;
+            --m3-primary-container: #9EF6B5;
+            --m3-on-primary-container: #00210E;
+        }
+
+        .dark[data-accent="green"],
+        body.dark[data-accent="green"] {
+            --m3-primary: #82D99A;
+            --m3-primary-container: #00522B;
+            --m3-on-primary-container: #9EF6B5;
+        }
+
+        [data-accent="purple"] {
+            --m3-primary: #6750A4;
+            --m3-primary-container: #EADDFF;
+            --m3-on-primary-container: #21005E;
+        }
+
+        .dark[data-accent="purple"],
+        body.dark[data-accent="purple"] {
+            --m3-primary: #D0BCFF;
+            --m3-primary-container: #4F378A;
+            --m3-on-primary-container: #EADDFF;
+        }
+
+        [data-accent="red"] {
+            --m3-primary: #B3261E;
+            --m3-primary-container: #F9DEDC;
+            --m3-on-primary-container: #410002;
+        }
+
+        .dark[data-accent="red"],
+        body.dark[data-accent="red"] {
+            --m3-primary: #F2B8B5;
+            --m3-primary-container: #8E0E08;
+            --m3-on-primary-container: #F9DEDC;
+        }
+
+        /* Base Styles */
+        body {
+            font-family: var(--font-family);
+            background-color: var(--m3-background);
+            color: var(--m3-on-background);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* ==================================================================
+       2. GIAO DIỆN LIQUID GLASS (Apple Style) - Khi kích hoạt
+       ================================================================== */
+
+        body[data-design="apple"] {
+            --font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Liquid Glass Variables */
+            --c-glass: #bbbbbc;
+            --c-light: #fff;
+            --c-dark: #000;
+            --c-content: #1d1d1f;
+            --c-action: #8B5CF6;
+            /* Violet */
+            --c-bg: transparent;
+
+            /* Add new interactive colors */
+            --lg-red: #FF3B30;
+            --lg-purple: #BF5AF2;
+            --lg-orange: #FF9500;
+
+            --glass-reflex-dark: 1;
+            --glass-reflex-light: 1;
+            --saturation: 150%;
+
+            /* Override Material Colors to Liquid Logic */
+            --m3-background: transparent;
+            --m3-surface: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            --m3-surface-container: color-mix(in srgb, var(--c-glass) 25%, transparent);
+            --m3-surface-container-highest: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            --m3-surface-variant: color-mix(in srgb, var(--c-glass) 12%, transparent);
+
+            --m3-on-surface: var(--c-content);
+            --m3-on-surface-variant: var(--c-content);
+            --m3-on-background: var(--c-content);
+            --m3-outline: color-mix(in srgb, var(--c-content) 20%, transparent);
+            --m3-outline-variant: color-mix(in srgb, var(--c-content) 10%, transparent);
+
+            /* Shapes */
+            --radius-card: 28px;
+            --radius-btn: 20px;
+            /* Squircle */
+            --radius-input: 14px;
+        }
+
+        body[data-design="apple"].dark,
+        body.dark[data-design="apple"] {
+            /* iOS Dark Mode Colors */
+            --c-glass: #2C2C2E;
+            --c-light: #fff;
+            --c-dark: #000;
+            --c-content: #FFFFFF;
+            --c-content-secondary: #EBEBF5;
+            --c-action: #BF5AF2;
+            --c-bg: #000000;
+            
+            /* Glass effect parameters for dark */
+            --glass-reflex-dark: 0.8;
+            --glass-reflex-light: 0.15;
+            --saturation: 100%;
+
+            /* Override Material Colors for Dark Mode */
+            --m3-background: #000000;
+            --m3-surface: rgba(44, 44, 46, 0.72);
+            --m3-surface-container: rgba(58, 58, 60, 0.72);
+            --m3-surface-container-highest: rgba(44, 44, 46, 0.72);
+            --m3-surface-variant: rgba(58, 58, 60, 0.72);
+            --m3-surface-container-low: rgba(28, 28, 30, 0.72);
+            
+            --m3-on-surface: #FFFFFF;
+            --m3-on-surface-variant: rgba(235, 235, 245, 0.6);
+            --m3-on-background: #FFFFFF;
+            
+            --m3-outline: rgba(255, 255, 255, 0.16);
+            --m3-outline-variant: rgba(255, 255, 255, 0.08);
+            
+            --m3-primary: #BF5AF2;
+            --m3-on-primary: #FFFFFF;
+            --m3-error: #FF453A;
+            
+            /* iOS specific dark colors */
+            --lg-red: #FF453A;
+            --lg-purple: #BF5AF2;
+            --lg-orange: #FF9F0A;
+            --lg-blue: #0A84FF;
+            --lg-green: #32D74B;
+        }
+
+        /* Nền Gradient cho Apple Theme */
+        body[data-design="apple"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #F9F5FF 0%, #FFF5F9 100%);
+            opacity: 1;
+            transition: background 0.4s ease, opacity 0.4s ease;
+        }
+
+        body[data-design="apple"].dark::before,
+        body.dark[data-design="apple"]::before {
+            background: #000000;
+        }
+
+        /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
+
+        body[data-design="apple"] .m3-button {
+            border-radius: var(--radius-btn);
+            box-shadow:
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
+                inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 90%), transparent),
+                inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 80%), transparent),
+                0px 1px 5px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            font-weight: 600;
+        }
+
+        body[data-design="apple"].dark .m3-button,
+        body.dark[data-design="apple"] .m3-button {
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+                inset 1.8px 3px 0px -2px rgba(255, 255, 255, 0.15),
+                inset -2px -2px 0px -2px rgba(255, 255, 255, 0.1),
+                0px 4px 12px rgba(0, 0, 0, 0.5),
+                0px 2px 4px rgba(0, 0, 0, 0.3),
+                0px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        body[data-design="apple"] .m3-button:active {
+            transform: scale(0.98);
+        }
+
+        body[data-design="apple"] .m3-button-filled {
+            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
+            color: var(--c-content);
+            border: none;
+        }
+
+        body[data-design="apple"].dark .m3-button-filled,
+        body.dark[data-design="apple"] .m3-button-filled {
+            background-color: var(--c-action);
+            color: var(--c-light);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
+                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+        }
+
+        body[data-design="apple"] .m3-button-filled:hover {
+            background-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+        }
+
+        body[data-design="apple"].dark .m3-button-filled:hover,
+        body.dark[data-design="apple"] .m3-button-filled:hover {
+            background-color: color-mix(in srgb, var(--c-action) 90%, var(--c-dark));
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 45%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                0px 16px 40px color-mix(in srgb, var(--c-action) 70%, transparent),
+                0px 8px 20px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
+        }
+
+        body[data-design="apple"] .m3-button-tonal,
+        body[data-design="apple"] .m3-button-icon-tonal,
+        body[data-design="apple"] .m3-button-outlined {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            color: var(--c-content);
+            border: none;
+            backdrop-filter: blur(5px) url(#liquid-filter);
+        }
+
+        body[data-design="apple"].dark .m3-button-tonal,
+        body[data-design="apple"].dark .m3-button-icon-tonal,
+        body[data-design="apple"].dark .m3-button-outlined,
+        body.dark[data-design="apple"] .m3-button-tonal,
+        body.dark[data-design="apple"] .m3-button-icon-tonal,
+        body.dark[data-design="apple"] .m3-button-outlined {
+            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            color: var(--c-content);
+            border: 1px solid color-mix(in srgb, var(--c-light) 8%, transparent);
+            backdrop-filter: blur(30px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(30px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                        0 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent);
+        }
+
+        body[data-design="apple"] .m3-button-tonal:hover,
+        body[data-design="apple"] .m3-button-icon-tonal:hover,
+        body[data-design="apple"] .m3-button-outlined:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 25%, transparent);
+        }
+
+        body[data-design="apple"].dark .m3-button-tonal:hover,
+        body[data-design="apple"].dark .m3-button-icon-tonal:hover,
+        body[data-design="apple"].dark .m3-button-outlined:hover,
+        body.dark[data-design="apple"] .m3-button-tonal:hover,
+        body.dark[data-design="apple"] .m3-button-icon-tonal:hover,
+        body.dark[data-design="apple"] .m3-button-outlined:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 20%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
+                        0 8px 24px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent);
+            border-color: color-mix(in srgb, var(--c-light) 12%, transparent);
+        }
+
+        body[data-design="apple"] .m3-button-outlined[data-active="true"] {
+            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
+            color: var(--c-content);
+            font-weight: 700;
+        }
+
+        body[data-design="apple"].dark .m3-button-outlined[data-active="true"],
+        body.dark[data-design="apple"] .m3-button-outlined[data-active="true"] {
+            background-color: color-mix(in srgb, var(--c-action) 20%, transparent);
+            color: var(--c-content);
+            font-weight: 700;
+            border-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+            backdrop-filter: blur(30px) saturate(150%);
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 25%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent),
+                        0 2px 12px color-mix(in srgb, var(--c-action) 25%, transparent),
+                        0 4px 20px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent);
+        }
+
+        /* Cards & Containers */
+        body[data-design="apple"] .bg-surface-variant,
+        body[data-design="apple"] .bg-surface-container-highest,
+        body[data-design="apple"] .m3-setting-card,
+        body[data-design="apple"] .m3-modal-content {
+            background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation)) url(#liquid-filter);
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation)) url(#liquid-filter);
+            border: 1px solid color-mix(in srgb, var(--c-light) 10%, transparent);
+            border-radius: var(--radius-card);
+            box-shadow:
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
+                0px 6px 16px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent);
+        }
+
+        body[data-design="apple"].dark .bg-surface-variant,
+        body[data-design="apple"].dark .bg-surface-container-highest,
+        body[data-design="apple"].dark .m3-setting-card,
+        body[data-design="apple"].dark .m3-modal-content,
+        body.dark[data-design="apple"] .bg-surface-variant,
+        body.dark[data-design="apple"] .bg-surface-container-highest,
+        body.dark[data-design="apple"] .m3-setting-card,
+        body.dark[data-design="apple"] .m3-modal-content {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
+            -webkit-backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
+            border: 1px solid color-mix(in srgb, var(--c-light) 12%, transparent);
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent),
+                0px 30px 60px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 70%), transparent),
+                0px 10px 30px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent),
+                0px 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+        }
+
+        /* Inputs & Select */
+        body[data-design="apple"] .m3-input,
+        body[data-design="apple"] .m3-select {
+            background-color: color-mix(in srgb, var(--c-glass) 30%, transparent);
+            border: none;
+            color: var(--c-content);
+            border-radius: var(--radius-input);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        body[data-design="apple"].dark .m3-input,
+        body[data-design="apple"].dark .m3-select,
+        body.dark[data-design="apple"] .m3-input,
+        body.dark[data-design="apple"] .m3-select {
+            background-color: color-mix(in srgb, var(--c-glass) 6%, transparent);
+            color: var(--c-content);
+            backdrop-filter: blur(40px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(40px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 20%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
+                        0 8px 24px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent);
+            border: 1px solid color-mix(in srgb, var(--c-light) 8%, transparent);
+        }
+
+        body[data-design="apple"].dark .m3-select,
+        body.dark[data-design="apple"] .m3-select {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%23ddd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+        }
+
+        body[data-design="apple"].dark .m3-select:hover,
+        body.dark[data-design="apple"] .m3-select:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 25%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                        0 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent),
+                        0 12px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+            transform: translateY(-1px);
+        }
+
+        body[data-design="apple"].dark .m3-select:focus,
+        body.dark[data-design="apple"] .m3-select:focus {
+            background-color: color-mix(in srgb, var(--c-glass) 8%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 25%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 0 0 3px color-mix(in srgb, var(--c-action) 30%, transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-action) 20%, transparent),
+                        0 8px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
+            border-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+        }
+
+        body[data-design="apple"].dark .m3-input:focus,
+        body.dark[data-design="apple"] .m3-input:focus {
+            background-color: color-mix(in srgb, var(--c-glass) 8%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 25%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 0 0 3px color-mix(in srgb, var(--c-action) 30%, transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-action) 20%, transparent),
+                        0 8px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
+            border-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+        }
+
+        body[data-design="apple"] .m3-input:focus,
+        body[data-design="apple"] .m3-select:focus {
+            box-shadow: 0 0 0 2px var(--c-action);
+        }
+
+        body[data-design="apple"].dark .m3-input::placeholder,
+        body[data-design="apple"].dark .m3-select::placeholder,
+        body.dark[data-design="apple"] .m3-input::placeholder,
+        body.dark[data-design="apple"] .m3-select::placeholder {
+            color: rgba(235, 235, 245, 0.3);
+        }
+
+        /* List Items (Liquid Glass Style) */
+        body[data-design="apple"] #submission-status-list li {
+            border-radius: 16px;
+            padding: 6px 12px;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            border: none;
+            color: var(--c-content);
+            margin-bottom: 6px;
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="submitted"],
+        body[data-design="apple"] #submission-status-list li[data-status="processed"],
+        body[data-design="apple"] #submission-status-list li[data-status="overdue"] {
+            font-weight: 500;
+            backdrop-filter: blur(5px) url(#liquid-filter);
+            box-shadow:
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
+                inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 90%), transparent),
+                inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 80%), transparent),
+                0px 1px 5px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="submitted"] {
+            background-color: transparent;
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="submitted"],
+        body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"] {
+            background-color: color-mix(in srgb, var(--c-glass) 6%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                        0 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent);
+            border: 1px solid color-mix(in srgb, var(--c-light) 8%, transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="processed"] {
+            background-color: color-mix(in srgb, var(--lg-purple) 15%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
+        body.dark[data-design="apple"] #submission-status-list li[data-status="processed"] {
+            background-color: color-mix(in srgb, var(--lg-purple) 12%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 18%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 28%), transparent),
+                        0 2px 10px color-mix(in srgb, var(--lg-purple) 15%, transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent);
+            border: 1px solid color-mix(in srgb, var(--lg-purple) 25%, transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
+            background-color: color-mix(in srgb, var(--lg-purple) 25%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="processed"]:hover,
+        body.dark[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
+            background-color: color-mix(in srgb, var(--lg-purple) 25%, transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="overdue"] {
+            background-color: color-mix(in srgb, var(--lg-orange) 15%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="overdue"],
+        body.dark[data-design="apple"] #submission-status-list li[data-status="overdue"] {
+            background-color: color-mix(in srgb, var(--lg-orange) 12%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 18%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 28%), transparent),
+                        0 2px 10px color-mix(in srgb, var(--lg-orange) 15%, transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent);
+            border: 1px solid color-mix(in srgb, var(--lg-orange) 25%, transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="overdue"]:hover {
+            background-color: color-mix(in srgb, var(--lg-orange) 25%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="overdue"]:hover,
+        body.dark[data-design="apple"] #submission-status-list li[data-status="overdue"]:hover {
+            background-color: color-mix(in srgb, var(--lg-orange) 25%, transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="processing"] {
+            background: color-mix(in srgb, var(--c-action) 10%, transparent);
+            border: 1.5px solid color-mix(in srgb, var(--c-action) 20%, transparent);
+            font-weight: 500;
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="error"] {
+            background: color-mix(in srgb, var(--lg-red) 15%, transparent);
+            border: 1.5px solid color-mix(in srgb, var(--lg-red) 30%, transparent);
+            font-weight: 500;
+        }
+
+        /* Selected State (Material 3) */
+        #submission-status-list li[data-selected="true"] {
+            outline: 2px solid var(--m3-primary);
+            outline-offset: 2px;
+            background-color: color-mix(in srgb, var(--m3-primary) 15%, var(--m3-surface)) !important;
+            font-weight: 600;
+        }
+
+        /* Selected State (Liquid Glass) */
+        body[data-design="apple"] #submission-status-list li[data-selected="true"] {
+            background-color: color-mix(in srgb, var(--c-action) 30%, transparent) !important;
+            color: var(--c-content) !important;
+            font-weight: 600 !important;
+            box-shadow:
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
+                inset 2px 1px 0px -1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 90%), transparent),
+                inset -1.5px -1px 0px -1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 80%), transparent),
+                0px 3px 6px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-selected="true"],
+        body.dark[data-design="apple"] #submission-status-list li[data-selected="true"] {
+            background-color: rgba(191, 90, 242, 0.4) !important;
+            color: #FFFFFF !important;
+            border: 1px solid rgba(191, 90, 242, 0.6);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+                0px 4px 12px 0px rgba(191, 90, 242, 0.3);
+        }
+
+        body[data-design="apple"] ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        body[data-design="apple"].dark ::-webkit-scrollbar,
+        body.dark[data-design="apple"] ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        body[data-design="apple"] ::-webkit-scrollbar-thumb {
+            background-color: color-mix(in srgb, var(--c-glass) 50%, transparent);
+            border-radius: 10px;
+        }
+
+        body[data-design="apple"].dark ::-webkit-scrollbar-thumb,
+        body.dark[data-design="apple"] ::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        body[data-design="apple"].dark ::-webkit-scrollbar-thumb:hover,
+        body.dark[data-design="apple"] ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        body[data-design="apple"] ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* iOS Icon Style (SF Symbols) - Stroke width 1.5-2 */
+        body[data-design="apple"] svg {
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            display: block;
+            background: transparent !important;
+        }
+
+        body[data-design="apple"] svg[fill="currentColor"] {
+            fill: currentColor;
+            stroke: none;
+        }
+
+        /* Remove Material Theme Colors in Liquid Glass */
+        body[data-design="apple"] .text-primary,
+        body[data-design="apple"] .bg-primary,
+        body[data-design="apple"] .bg-primary-container {
+            color: var(--c-content) !important;
+            background-color: color-mix(in srgb, var(--c-glass) 25%, transparent) !important;
+        }
+
+        body[data-design="apple"] .text-on-primary,
+        body[data-design="apple"] .text-on-primary-container {
+            color: var(--c-content) !important;
+        }
+
+        body[data-design="apple"] .text-secondary,
+        body[data-design="apple"] .bg-secondary,
+        body[data-design="apple"] .bg-secondary-container {
+            color: var(--c-content) !important;
+            background-color: color-mix(in srgb, var(--c-glass) 20%, transparent) !important;
+        }
+
+        body[data-design="apple"] .text-error {
+            color: var(--lg-red) !important;
+        }
+
+        body[data-design="apple"] .bg-error,
+        body[data-design="apple"] .bg-error-container {
+            background-color: color-mix(in srgb, var(--lg-red) 20%, transparent) !important;
+        }
+
+        body[data-design="apple"] .border-primary,
+        body[data-design="apple"] .border-secondary,
+        body[data-design="apple"] .border-outline {
+            border-color: color-mix(in srgb, var(--c-glass) 40%, transparent) !important;
+        }
+
+        body[data-design="apple"] .ring-primary,
+        body[data-design="apple"] .focus\:ring-primary:focus {
+            --tw-ring-color: color-mix(in srgb, var(--c-glass) 50%, transparent) !important;
+        }
+
+        /* Neutral icon colors */
+        body[data-design="apple"] svg {
+            color: var(--c-content);
+            opacity: 0.85;
+        }
+
+        body[data-design="apple"].dark svg,
+        body.dark[data-design="apple"] svg {
+            color: #FFFFFF;
+            opacity: 0.9;
+        }
+
+        body[data-design="apple"] button:hover svg,
+        body[data-design="apple"] .text-on-primary svg,
+        body[data-design="apple"] .bg-surface-variant svg,
+        body[data-design="apple"] .bg-surface-container-highest svg {
+            opacity: 1;
+        }
+
+        /* Ensure icons fit properly in circular containers */
+        body[data-design="apple"] .rounded-full svg {
+            display: block;
+            margin: auto;
+        }
+
+        /* ==================================================================
+       3. CSS UTILITIES (Shared)
+       ================================================================== */
+        .bg-primary {
+            background-color: var(--m3-primary);
+        }
+
+        .text-on-primary {
+            color: var(--m3-on-primary);
+        }
+
+        .bg-primary-container {
+            background-color: var(--m3-primary-container);
+        }
+
+        .text-on-primary-container {
+            color: var(--m3-on-primary-container);
+        }
+
+        .bg-secondary {
+            background-color: var(--m3-secondary);
+        }
+
+        .text-on-secondary {
+            color: var(--m3-on-secondary);
+        }
+
+        .bg-secondary-container {
+            background-color: var(--m3-secondary-container);
+        }
+
+        .text-on-secondary-container {
+            color: var(--m3-on-secondary-container);
+        }
+
+        .bg-tertiary {
+            background-color: var(--m3-tertiary);
+        }
+
+        .text-on-tertiary {
+            color: var(--m3-on-tertiary);
+        }
+
+        .bg-tertiary-container {
+            background-color: var(--m3-tertiary-container);
+        }
+
+        .text-on-tertiary-container {
+            color: var(--m3-on-tertiary-container);
+        }
+
+        .bg-background {
+            background-color: var(--m3-background);
+        }
+
+        .text-on-background {
+            color: var(--m3-on-background);
+        }
+
+        .bg-surface {
+            background-color: var(--m3-surface);
+        }
+
+        .text-on-surface {
+            color: var(--m3-on-surface);
+        }
+
+        .bg-surface-variant {
+            background-color: var(--m3-surface-variant);
+        }
+
+        .text-on-surface-variant {
+            color: var(--m3-on-surface-variant);
+        }
+
+        .bg-surface-container-highest {
+            background-color: var(--m3-surface-container-highest);
+        }
+
+        .bg-surface-container {
+            background-color: var(--m3-surface-container);
+        }
+
+        .bg-surface-container-low {
+            background-color: var(--m3-surface-container-low);
+        }
+
+        .text-primary {
+            color: var(--m3-primary);
+        }
+
+        .text-error {
+            color: var(--m3-error);
+        }
+
+        .text-outline {
+            color: var(--m3-outline);
+        }
+
+        .border-outline {
+            border-color: var(--m3-outline);
+        }
+
+        .border-outline-variant {
+            border-color: var(--m3-outline-variant);
+        }
+
+        #status-log,
+        aside,
+        main,
+        #settings-modal-content,
+        #assignment_types_container,
+        #submission-status-list,
+        #class_form_modal .overflow-y-auto {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #status-log::-webkit-scrollbar,
+        aside::-webkit-scrollbar,
+        main::-webkit-scrollbar,
+        #settings-modal-content::-webkit-scrollbar,
+        #assignment_types_container::-webkit-scrollbar,
+        #submission-status-list::-webkit-scrollbar,
+        #class_form_modal .overflow-y-auto::-webkit-scrollbar {
+            display: none;
+        }
+
+        body:not([data-design="apple"]) .elevation-1 {
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+        }
+
+        body:not([data-design="apple"]) .elevation-2 {
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+        }
+
+        .m3-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+            -webkit-tap-highlight-color: transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body:not([data-design="apple"]) .m3-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        body:not([data-design="apple"]) .m3-button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .m3-button-outlined {
+            background-color: transparent;
+            border: 1px solid var(--m3-outline);
+            color: var(--m3-primary);
+        }
+
+        .m3-button-outlined[data-active="true"] {
+            background-color: var(--m3-primary);
+            color: var(--m3-on-primary);
+            border-color: var(--m3-primary);
+        }
+
+        .m3-button-tonal {
+            background-color: var(--m3-secondary-container);
+            color: var(--m3-on-secondary-container);
+        }
+
+        .m3-button-filled {
+            background-color: var(--m3-primary);
+            color: var(--m3-on-primary);
+        }
+
+        .m3-button-icon {
+            background: transparent;
+            color: var(--m3-on-surface-variant);
+            border-radius: 99px;
+            padding: 6px;
+            width: 36px;
+            height: 36px;
+        }
+
+        .m3-button-icon-tonal {
+            background-color: var(--m3-primary-container);
+            color: var(--m3-on-primary-container);
+            border-radius: 99px;
+            padding: 6px;
+            width: 36px;
+            height: 36px;
+        }
+
+        .m3-button-text-error {
+            background: transparent;
+            color: var(--m3-error);
+            font-weight: 500;
+        }
+
+        .m3-input,
+        .m3-select {
+            background-color: var(--m3-surface-container-low);
+            border: 1px solid var(--m3-outline);
+            color: var(--m3-on-surface);
+            padding: 12px 16px;
+            width: 100%;
+            font-size: 14px;
+            line-height: 1.5;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 44px;
+        }
+
+        .m3-select:hover {
+            background-color: var(--m3-surface-container);
+            border-color: var(--m3-on-surface-variant);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .m3-select:focus {
+            outline: none;
+            border-color: var(--m3-primary);
+            background-color: var(--m3-surface-container);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--m3-primary) 12%, transparent),
+                        0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .m3-select {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+        }
+
+        /* Material 3 Select Options */
+        .m3-select option {
+            padding: 12px 16px;
+            background-color: var(--m3-surface-container);
+            color: var(--m3-on-surface);
+        }
+
+        .m3-select option:hover,
+        .m3-select option:focus {
+            background-color: var(--m3-secondary-container);
+            color: var(--m3-on-secondary-container);
+        }
+
+        .m3-select option:checked {
+            background-color: var(--m3-primary-container);
+            color: var(--m3-on-primary-container);
+            font-weight: 500;
+        }
+
+        /* Liquid Glass Select Options */
+        body[data-design="apple"] .m3-select option {
+            background-color: color-mix(in srgb, var(--c-glass) 40%, transparent);
+            color: var(--c-content);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin: 2px 4px;
+        }
+
+        body[data-design="apple"] .m3-select option:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 50%, transparent);
+        }
+
+        body[data-design="apple"] .m3-select option:checked {
+            background-color: var(--c-action);
+            color: white;
+            font-weight: 500;
+        }
+
+        body[data-design="apple"].dark .m3-select option,
+        body.dark[data-design="apple"] .m3-select option {
+            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+        }
+
+        body[data-design="apple"].dark .m3-select option:hover,
+        body.dark[data-design="apple"] .m3-select option:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 18%, transparent);
+        }
+
+        body[data-design="apple"].dark .m3-select option:checked,
+        body.dark[data-design="apple"] .m3-select option:checked {
+            background-color: var(--c-action);
+            color: white;
+        }
+
+        /* Custom Dropdown Styles */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-dropdown-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background-color: var(--m3-surface-container-low);
+            border: 1px solid var(--m3-outline);
+            border-radius: 16px;
+            color: var(--m3-on-surface);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.5;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .custom-dropdown-trigger::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: color-mix(in srgb, var(--m3-primary) 15%, transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+
+        .custom-dropdown-trigger:hover {
+            background-color: var(--m3-surface-container);
+            border-color: var(--m3-on-surface-variant);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08),
+                        0 4px 12px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .custom-dropdown-trigger:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .custom-dropdown-trigger:focus,
+        .custom-dropdown-trigger[aria-expanded="true"] {
+            outline: none;
+            border-color: var(--m3-primary);
+            background-color: var(--m3-surface-container);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--m3-primary) 15%, transparent),
+                        0 2px 8px rgba(0, 0, 0, 0.1),
+                        0 4px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(0);
+        }
+
+        .custom-dropdown-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .custom-dropdown-icon {
+            flex-shrink: 0;
+            margin-left: 8px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .custom-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background-color: var(--m3-surface-container);
+            border: 1px solid var(--m3-outline-variant);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12),
+                        0 4px 12px rgba(0, 0, 0, 0.08),
+                        0 2px 4px rgba(0, 0, 0, 0.06);
+            max-height: 320px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: top center;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 8px 0;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-thumb {
+            background: var(--m3-outline-variant);
+            border-radius: 4px;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: var(--m3-outline);
+        }
+
+        .custom-dropdown-menu.hidden {
+            display: none;
+        }
+
+        .custom-dropdown-list {
+            list-style: none;
+            padding: 8px;
+            margin: 0;
+        }
+
+        .custom-dropdown-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--m3-on-surface);
+            font-size: 14px;
+            font-weight: 450;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin: 2px 0;
+        }
+
+        .custom-dropdown-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s ease, height 0.5s ease;
+        }
+
+        .custom-dropdown-item:active::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .custom-dropdown-item:hover {
+            background-color: var(--m3-secondary-container);
+            color: var(--m3-on-secondary-container);
+            transform: translateX(4px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .custom-dropdown-item[data-selected="true"] {
+            background-color: var(--m3-primary-container);
+            color: var(--m3-on-primary-container);
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .custom-dropdown-item[data-selected="true"]::after {
+            content: '✓';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .custom-dropdown-item:active {
+            transform: scale(0.97);
+        }
+
+        /* Liquid Glass Custom Dropdown */
+        body[data-design="apple"] .custom-dropdown-trigger {
+            background-color: color-mix(in srgb, var(--c-glass) 35%, transparent);
+            border: 1px solid color-mix(in srgb, var(--c-glass) 25%, transparent);
+            color: var(--c-content);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.05),
+                        0 2px 8px rgba(0, 0, 0, 0.06),
+                        0 1px 2px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+        }
+
+        body[data-design="apple"] .custom-dropdown-trigger::before {
+            background: color-mix(in srgb, var(--c-action) 12%, transparent);
+        }
+
+        body[data-design="apple"] .custom-dropdown-trigger:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 45%, transparent);
+            border-color: color-mix(in srgb, var(--c-glass) 35%, transparent);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.06),
+                        0 4px 16px rgba(0, 0, 0, 0.08),
+                        0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px) scale(1.005);
+        }
+
+        body[data-design="apple"] .custom-dropdown-trigger:focus,
+        body[data-design="apple"] .custom-dropdown-trigger[aria-expanded="true"] {
+            background-color: color-mix(in srgb, var(--c-glass) 40%, transparent);
+            border-color: color-mix(in srgb, var(--c-action) 50%, transparent);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.05),
+                        0 0 0 4px color-mix(in srgb, var(--c-action) 20%, transparent),
+                        0 8px 24px rgba(0, 0, 0, 0.12),
+                        0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(0) scale(1);
+        }
+
+        body[data-design="apple"] .custom-dropdown-menu {
+            background-color: color-mix(in srgb, var(--c-glass) 55%, transparent);
+            border: 1px solid color-mix(in srgb, var(--c-glass) 35%, transparent);
+            backdrop-filter: blur(60px) saturate(var(--saturation)) brightness(1.05);
+            -webkit-backdrop-filter: blur(60px) saturate(var(--saturation)) brightness(1.05);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.05),
+                        0 12px 48px rgba(0, 0, 0, 0.15),
+                        0 8px 32px rgba(0, 0, 0, 0.12),
+                        0 4px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+        }
+
+        body[data-design="apple"] .custom-dropdown-menu::-webkit-scrollbar-thumb {
+            background: color-mix(in srgb, var(--c-glass) 50%, transparent);
+            border-radius: 4px;
+        }
+
+        body[data-design="apple"] .custom-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: color-mix(in srgb, var(--c-glass) 65%, transparent);
+        }
+
+        body[data-design="apple"] .custom-dropdown-item {
+            color: var(--c-content);
+            border-radius: 14px;
+        }
+
+        body[data-design="apple"] .custom-dropdown-item::before {
+            background: color-mix(in srgb, var(--c-glass) 30%, transparent);
+        }
+
+        body[data-design="apple"] .custom-dropdown-item:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 45%, transparent);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3),
+                        0 2px 8px rgba(0, 0, 0, 0.08);
+            transform: translateX(6px) scale(1.02);
+        }
+
+        body[data-design="apple"] .custom-dropdown-item[data-selected="true"] {
+            background: linear-gradient(135deg, var(--c-action) 0%, color-mix(in srgb, var(--c-action) 85%, #000) 100%);
+            color: white;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3),
+                        0 4px 12px color-mix(in srgb, var(--c-action) 40%, transparent),
+                        0 2px 6px rgba(0, 0, 0, 0.1);
+            transform: translateX(0);
+        }
+
+        body[data-design="apple"] .custom-dropdown-item[data-selected="true"]::after {
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Liquid Glass Dark Mode Dropdown */
+        body[data-design="apple"].dark .custom-dropdown-trigger,
+        body.dark[data-design="apple"] .custom-dropdown-trigger {
+            background-color: color-mix(in srgb, var(--c-glass) 8%, transparent);
+            backdrop-filter: blur(60px) saturate(var(--saturation)) brightness(1.1);
+            -webkit-backdrop-filter: blur(60px) saturate(var(--saturation)) brightness(1.1);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 25%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                        0 2px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent),
+                        0 8px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent);
+            border: 1px solid color-mix(in srgb, var(--c-light) 12%, transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-trigger::before,
+        body.dark[data-design="apple"] .custom-dropdown-trigger::before {
+            background: color-mix(in srgb, var(--c-action) 20%, transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-trigger:hover,
+        body.dark[data-design="apple"] .custom-dropdown-trigger:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            border-color: color-mix(in srgb, var(--c-light) 18%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 30%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
+                        0 6px 20px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 60%), transparent),
+                        0 12px 40px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 45%), transparent);
+            transform: translateY(-2px) scale(1.005);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-trigger:focus,
+        body[data-design="apple"].dark .custom-dropdown-trigger[aria-expanded="true"],
+        body.dark[data-design="apple"] .custom-dropdown-trigger:focus,
+        body.dark[data-design="apple"] .custom-dropdown-trigger[aria-expanded="true"] {
+            background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            border-color: color-mix(in srgb, var(--c-action) 60%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 30%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                        0 0 0 4px color-mix(in srgb, var(--c-action) 35%, transparent),
+                        0 0 20px color-mix(in srgb, var(--c-action) 25%, transparent),
+                        0 8px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 60%), transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-action) 20%, transparent);
+            transform: translateY(0) scale(1);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-menu,
+        body.dark[data-design="apple"] .custom-dropdown-menu {
+            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            backdrop-filter: blur(80px) saturate(var(--saturation)) brightness(1.15);
+            -webkit-backdrop-filter: blur(80px) saturate(var(--saturation)) brightness(1.15);
+            border: 1px solid color-mix(in srgb, var(--c-light) 18%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 30%), transparent),
+                        inset 0 -1px 1px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                        0 12px 48px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 70%), transparent),
+                        0 20px 64px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 60%), transparent),
+                        0 8px 32px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-menu::-webkit-scrollbar-thumb,
+        body.dark[data-design="apple"] .custom-dropdown-menu::-webkit-scrollbar-thumb {
+            background: color-mix(in srgb, var(--c-light) 20%, transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-menu::-webkit-scrollbar-thumb:hover,
+        body.dark[data-design="apple"] .custom-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: color-mix(in srgb, var(--c-light) 30%, transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-item::before,
+        body.dark[data-design="apple"] .custom-dropdown-item::before {
+            background: color-mix(in srgb, var(--c-light) 15%, transparent);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-item:hover,
+        body.dark[data-design="apple"] .custom-dropdown-item:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 20%, transparent);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 20%), transparent),
+                        0 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+            transform: translateX(6px) scale(1.02);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-item[data-selected="true"],
+        body.dark[data-design="apple"] .custom-dropdown-item[data-selected="true"] {
+            background: linear-gradient(135deg, var(--c-action) 0%, color-mix(in srgb, var(--c-action) 90%, #000) 100%);
+            color: white;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+                        0 0 20px color-mix(in srgb, var(--c-action) 40%, transparent),
+                        0 6px 20px color-mix(in srgb, var(--c-action) 35%, transparent),
+                        0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateX(0);
+        }
+
+        body[data-design="apple"].dark .custom-dropdown-item[data-selected="true"]::after,
+        body.dark[data-design="apple"] .custom-dropdown-item[data-selected="true"]::after {
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .m3-setting-card {
+            background-color: var(--m3-surface-container);
+            padding: 16px;
+            border: 1px solid var(--m3-outline-variant);
+        }
+
+        .m3-modal {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease;
+        }
+
+        .m3-modal[aria-hidden="true"] {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .m3-modal[aria-hidden="false"] {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .m3-modal-content {
+            max-width: 900px;
+            width: calc(100% - 2rem);
+            max-height: calc(100% - 2rem);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
+        }
+
+        .m3-modal[aria-hidden="false"] .m3-modal-content {
+            transform: translateY(0);
+        }
+
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .log-entry {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .submission-item-reprocessable {
+            cursor: pointer;
+        }
+
+        body:not([data-design="apple"]) .submission-item-reprocessable[data-selected="true"] {
+            background-color: var(--m3-primary-container);
+            outline: 2px solid var(--m3-primary);
+            outline-offset: -2px;
+        }
+
+        .submission-item-reprocessable.dragging {
+            opacity: 0.5;
+        }
+
+        .assignment-type-btn.drag-over {
+            background-color: var(--m3-primary-container);
+            border-color: var(--m3-primary);
+            box-shadow: 0 0 0 2px var(--m3-primary);
+        }
+
+        body[data-design="apple"] .assignment-type-btn.drag-over {
+            background-color: color-mix(in srgb, var(--c-action) 35%, transparent);
+            color: var(--c-content);
+            font-weight: 700;
+            border: none;
+            backdrop-filter: blur(20px) saturate(var(--saturation)) url(#liquid-filter);
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation)) url(#liquid-filter);
+            box-shadow:
+                inset 0 0 0 2px color-mix(in srgb, var(--c-action) 60%, transparent),
+                inset 0 0 30px color-mix(in srgb, var(--c-action) 20%, transparent),
+                0px 8px 24px color-mix(in srgb, var(--c-action) 30%, transparent),
+                0px 2px 8px rgba(0, 0, 0, 0.2);
+            transform: scale(1.02);
+        }
+
+        body[data-design="apple"].dark .assignment-type-btn.drag-over,
+        body.dark[data-design="apple"] .assignment-type-btn.drag-over {
+            background: linear-gradient(135deg,
+                rgba(191, 90, 242, 0.35) 0%,
+                rgba(191, 90, 242, 0.4) 100%);
+            color: var(--c-light);
+            border: 1.5px solid rgba(191, 90, 242, 0.7);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+                inset 0 0 40px rgba(191, 90, 242, 0.3),
+                0px 12px 36px rgba(191, 90, 242, 0.5),
+                0px 4px 16px rgba(191, 90, 242, 0.3);
+            transform: scale(1.02);
+        }
+
+        body[data-design="apple"] .m3-settings-nav-button[data-active="true"] {
+            background-color: color-mix(in srgb, var(--c-action) 25%, transparent);
+            color: var(--c-content);
+            font-weight: 600;
+        }
+
+        body[data-design="apple"].dark .m3-settings-nav-button[data-active="true"],
+        body.dark[data-design="apple"] .m3-settings-nav-button[data-active="true"] {
+            background: linear-gradient(135deg,
+                rgba(191, 90, 242, 0.2) 0%,
+                rgba(191, 90, 242, 0.25) 100%);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(191, 90, 242, 0.4);
+            color: #FFFFFF;
+        }
+
+        /* Settings Modal Buttons - Dark Mode Glass Effect */
+        body[data-design="apple"].dark #settings_modal .m3-button-tonal,
+        body.dark[data-design="apple"] #settings_modal .m3-button-tonal {
+            background-color: color-mix(in srgb, var(--c-glass) 18%, transparent);
+            backdrop-filter: blur(30px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(30px) saturate(var(--saturation));
+            border: none;
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+                0px 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        body[data-design="apple"].dark #settings_modal .m3-button-tonal:hover,
+        body.dark[data-design="apple"] #settings_modal .m3-button-tonal:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 28%, transparent);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+                0px 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        body[data-design="apple"].dark #settings_modal .m3-button-filled[data-active="true"],
+        body.dark[data-design="apple"] #settings_modal .m3-button-filled[data-active="true"] {
+            background: linear-gradient(135deg,
+                rgba(191, 90, 242, 0.85) 0%,
+                rgba(191, 90, 242, 0.95) 100%);
+            backdrop-filter: blur(20px) saturate(200%);
+            -webkit-backdrop-filter: blur(20px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* MỚI: ANIMATION CHO TOOLBAR */
+        #quick_actions_toolbar {
+            animation: slideDown 0.4s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ==================================================================
+           ASSIGNMENT CHIPS STYLING (Material 3 & Liquid Glass)
+           ================================================================== */
+        .assignment-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 16px;
+            background-color: var(--m3-surface-container-highest);
+            border: 1px solid var(--m3-outline-variant);
+            color: var(--m3-on-surface);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .assignment-chip:hover {
+            background-color: var(--m3-primary-container);
+            border-color: var(--m3-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignment-chip[data-is-new="true"] {
+            border: 2px dashed var(--m3-primary);
+            background-color: var(--m3-primary-container);
+        }
+
+        .assignment-chip .remove-chip-btn {
+            margin-left: auto;
+            opacity: 0.6;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .assignment-chip:hover .remove-chip-btn {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Liquid Glass Style for Chips */
+        body[data-design="apple"] .assignment-chip {
+            background-color: color-mix(in srgb, var(--c-glass) 20%, transparent);
+            backdrop-filter: blur(10px) saturate(150%) url(#liquid-filter);
+            border: 1px solid color-mix(in srgb, var(--c-light) 15%, transparent);
+            border-radius: 14px;
+            box-shadow:
+                0px 0.5px 1px 0px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 30%), transparent) inset,
+                0px -0.5px 1px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 15%), transparent) inset,
+                0px 2px 6px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent);
+        }
+
+        body[data-design="apple"] .assignment-chip:hover {
+            background-color: color-mix(in srgb, var(--c-action) 25%, transparent);
+            border-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+            box-shadow:
+                0px 1px 2px 0px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent) inset,
+                0px -1px 2px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent) inset,
+                0px 4px 12px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 12%), transparent);
+        }
+
+        body[data-design="apple"] .assignment-chip[data-is-new="true"] {
+            background-color: color-mix(in srgb, var(--c-action) 20%, transparent);
+            border: 2px dashed color-mix(in srgb, var(--c-action) 50%, transparent);
+        }
+
+        /* Input trong chip */
+        .assignment-chip input.m3-input {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--m3-on-surface);
+        }
+
+        body[data-design="apple"] .assignment-chip input.m3-input {
+            color: var(--c-content);
+        }
+
+        .assignment-chip input.m3-input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* Material 3 Switch Toggle */
+        .m3-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 32px;
+            border-radius: 16px;
+            background-color: var(--m3-surface-variant);
+            border: 2px solid var(--m3-outline);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .m3-switch::before {
+            content: "";
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--m3-outline);
+            transition: all 0.3s ease;
+        }
+
+        .m3-switch[aria-checked="true"] {
+            background-color: var(--m3-primary);
+            border-color: var(--m3-primary);
+        }
+
+        .m3-switch[aria-checked="true"]::before {
+            transform: translateX(20px);
+            background-color: var(--m3-on-primary);
+        }
+
+        .m3-switch:active::before {
+            width: 28px;
+        }
+
+        /* Liquid Glass Switch (iOS 16 Style) */
+        body[data-design="apple"] .m3-switch {
+            width: 51px;
+            height: 31px;
+            border-radius: 15.5px;
+            background-color: rgba(120, 120, 128, 0.16);
+            border: none;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+
+        body[data-design="apple"] .m3-switch::before {
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
+            background-color: #fff;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
+        }
+
+        body[data-design="apple"] .m3-switch[aria-checked="true"] {
+            background-color: #34C759;
+        }
+
+        body[data-design="apple"] .m3-switch[aria-checked="true"]::before {
+            transform: translateX(20px);
+        }
+
+        body[data-design="apple"].dark .m3-switch,
+        body.dark[data-design="apple"] .m3-switch {
+            background-color: rgba(120, 120, 128, 0.24);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body[data-design="apple"].dark .m3-switch::before,
+        body.dark[data-design="apple"] .m3-switch::before {
+            background: linear-gradient(135deg, #FFFFFF 0%, #F5F5F7 100%);
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.4),
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        body[data-design="apple"].dark .m3-switch[aria-checked="true"],
+        body.dark[data-design="apple"] .m3-switch[aria-checked="true"] {
+            background: linear-gradient(135deg,
+                rgba(191, 90, 242, 0.85) 0%,
+                rgba(191, 90, 242, 0.95) 100%);
+            backdrop-filter: blur(20px) saturate(200%);
+            -webkit-backdrop-filter: blur(20px) saturate(200%);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+                0 4px 16px rgba(191, 90, 242, 0.5),
+                0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ==================================================================
+       4. TABLE STYLES (Material 3)
+       ================================================================== */
+        .m3-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .m3-table th,
+        .m3-table td {
+            padding: 1rem;
+            text-align: left;
+            border: 1px solid var(--m3-outline);
+        }
+
+        .m3-table th {
+            background-color: var(--m3-primary-container);
+            color: var(--m3-on-primary-container);
+            font-weight: 500;
+        }
+
+        .m3-table tr {
+            transition: background-color 0.3s ease;
+        }
+
+        .m3-table tr:hover {
+            background-color: var(--m3-surface-variant);
+        }
+
+        /* --- DATA TABLE SPECIFIC --- */
+        .data-table {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .data-table thead {
+            background-color: var(--m3-primary-container);
+        }
+
+        .data-table th {
+            position: relative;
+            padding: 1rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .data-table th::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(to right, transparent, var(--m3-primary), transparent);
+        }
+
+        .data-table td {
+            padding: 0.8rem;
+            text-align: center;
+        }
+
+        /* --- FORMATTED NUMBER --- */
+        .formatted-number {
+            font-family: "Roboto Mono", monospace;
+            font-weight: 500;
+            color: var(--m3-primary);
+        }
+
+        /* --- STATUS BADGES --- */
+        .status-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            color: var(--m3-on-primary);
+        }
+
+        .status-badge.submitted {
+            background-color: var(--m3-primary);
+        }
+
+        .status-badge.processed {
+            background-color: var(--lg-purple);
+        }
+
+        .status-badge.overdue {
+            background-color: var(--lg-orange);
+        }
+
+        .status-badge.error {
+            background-color: var(--lg-red);
+        }
+
+        /* --- HIDE ELEMENTS --- */
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- SHOW ELEMENTS --- */
+        .block {
+            display: block !important;
+        }
+
+        /* --- FLEX UTILITY --- */
+        .flex {
+            display: flex !important;
+        }
+
+        .inline-flex {
+            display: inline-flex !important;
+        }
+
+        /* --- GRID UTILITY --- */
+        .grid {
+            display: grid !important;
+        }
+
+        /* --- POSITION UTILITY --- */
+        .absolute {
+            position: absolute !important;
+        }
+
+        .relative {
+            position: relative !important;
+        }
+
+        /* --- OVERFLOW UTILITY --- */
+        .overflow-hidden {
+            overflow: hidden !important;
+        }
+
+        .overflow-auto {
+            overflow: auto !important;
+        }
+
+        /* --- TEXT UTILITY --- */
+        .text-center {
+            text-align: center !important;
+        }
+
+        .text-right {
+            text-align: right !important;
+        }
+
+        .text-left {
+            text-align: left !important;
+        }
+
+        /* --- MARGIN UTILITY --- */
+        .m-0 {
+            margin: 0 !important;
+        }
+
+        .mt-0 {
+            margin-top: 0 !important;
+        }
+
+        .mb-0 {
+            margin-bottom: 0 !important;
+        }
+
+        .mx-auto {
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        /* --- PADDING UTILITY --- */
+        .p-0 {
+            padding: 0 !important;
+        }
+
+        .pt-0 {
+            padding-top: 0 !important;
+        }
+
+        .pb-0 {
+            padding-bottom: 0 !important;
+        }
+
+        .px-0 {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* --- BORDER UTILITY --- */
+        .border-0 {
+            border: 0 !important;
+        }
+
+        .rounded-0 {
+            border-radius: 0 !important;
+        }
+
+        /* --- OPACITY UTILITY --- */
+        .opacity-0 {
+            opacity: 0 !important;
+        }
+
+        .opacity-100 {
+            opacity: 1 !important;
+        }
+
+        /* --- VISUALLY HIDDEN --- */
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            border: 0 !important;
+        }
+
+        /* --- DYNAMIC ICONS --- */
+        body[data-design="material"] .icon-apple {
+            display: none !important;
+        }
+
+        body[data-design="apple"] .icon-material {
+            display: none !important;
+        }
+
+        body[data-design="material"] .icon-material {
+            display: inline-block !important;
+        }
+
+        body[data-design="apple"] .icon-apple {
+            display: inline-block !important;
+        }
+
+        /* --- HIDE ACCENT COLOR SECTION IN LIQUID GLASS --- */
+        body[data-design="apple"] #accent-color-section {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-background antialiased min-h-screen" data-design="material">
+
+    <!-- SVG Filter -->
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
+        <filter id="liquid-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.02 0.05" numOctaves="2" result="turbulence" />
+            <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="15" />
+        </filter>
+    </svg>
+
+    <div class="flex h-screen">
+        <!-- SIDEBAR (Giữ nguyên) -->
+        <aside
+            class="w-80 bg-surface-container-highest p-4 flex flex-col space-y-4 overflow-y-auto min-h-screen sticky top-0 transition-colors duration-300">
+            <header class="p-2">
+                <h1 class="text-2xl font-medium text-on-surface">Chuyển đổi PDF bài tập</h1>
+                <p class="text-sm text-on-surface-variant">Tự động - Nhanh chóng - Tiện lợi</p>
+            </header>
+            <section class="p-2">
+                <h2 class="text-xs font-medium text-outline uppercase mb-3">Điều khiển</h2>
+                <div class="flex flex-col gap-3">
+                    <button id="authorize_button" style="display: none;"
+                        class="m3-button m3-button-filled font-medium py-3 px-6 rounded-full w-full smooth-transition disabled:opacity-50 disabled:cursor-not-allowed"><span>Đăng
+                            nhập</span></button>
+                    <button id="process_button" style="display: none;"
+                        class="m3-button m3-button-filled font-medium py-3 px-6 rounded-full w-full smooth-transition disabled:opacity-50 disabled:cursor-wait"><span>Bắt
+                            đầu Xử lý</span></button>
+                    <button id="signout_button" style="display: none;"
+                        class="m3-button m3-button-outlined font-medium py-3 px-6 rounded-full w-full smooth-transition"><span>Đăng
+                            xuất</span></button>
+                </div>
+            </section>
+            <section class="m3-setting-card flex-1 min-h-0 flex flex-col rounded-[28px]">
+                <h2 class="text-lg font-medium text-on-surface mb-4">Quản lý Lớp</h2>
+                <div class="mb-4">
+                    <label for="class_profile_dropdown"
+                        class="text-sm font-medium text-on-surface-variant mb-1 block">Chọn Lớp Đang Xử Lý</label>
+                    <div class="flex items-center gap-2">
+                        <!-- Custom Dropdown -->
+                        <div id="class_profile_dropdown" class="custom-dropdown flex-1 relative">
+                            <button type="button" id="class_profile_trigger" class="custom-dropdown-trigger" aria-expanded="false">
+                                <span id="class_profile_text" class="custom-dropdown-text">-- Chọn lớp --</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="custom-dropdown-icon">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div id="class_profile_menu" class="custom-dropdown-menu hidden opacity-0 -translate-y-2">
+                                <ul id="class_profile_list" class="custom-dropdown-list">
+                                    <li class="custom-dropdown-item" data-value="">-- Chưa có lớp nào --</li>
+                                </ul>
+                            </div>
+                            <input type="hidden" id="class_profile_select_value" value="">
+                        </div>
+                        <!-- Keep old select hidden for fallback -->
+                        <select id="class_profile_select" class="hidden">
+                            <option value="">-- Chưa có lớp nào --</option>
+                        </select>
+                        <button id="edit_class_button" class="m3-button m3-button-icon-tonal" title="Sửa lớp đang chọn"
+                            disabled><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg></button>
+                        <button id="add_class_button" class="m3-button m3-button-icon-tonal" title="Thêm lớp mới"><svg
+                                xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg></button>
+                    </div>
+                </div>
+            </section>
+            <footer class="mt-auto pt-4 border-t border-outline-variant flex items-center justify-between">
+                <p class="text-xs text-outline text-center">Bản quyền bởi Nguyễn Thành Trung</p>
+                <button id="open_settings_button" class="m3-button m3-button-icon" title="Cài đặt"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.2-0.37-0.26-0.59-0.18l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.62c-0.05-0.22-0.25-0.38-0.48-0.38 h-3.84c-0.24,0-0.44,0.17-0.48,0.38L9.26,5.3C8.67,5.54,8.14,5.86,7.64,6.24L5.25,5.28C5.03,5.2,4.78,5.27,4.66,5.47 L2.74,8.79C2.62,8.99,2.68,9.26,2.86,9.4l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94 l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.2,0.37,0.26,0.59,0.18l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94 l0.38,2.68c0.05,0.22,0.25,0.38,0.48,0.38h3.84c0.24,0,0.44-0.17,0.48,0.38l0.38-2.68c0.59-0.24,1.12-0.56,1.62-0.94 l2.39,0.96c0.22,0.08,0.47,0.02,0.59-0.18l1.92-3.32C21.07,13.35,21.02,13.08,19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                    </svg></button>
+            </footer>
+        </aside>
+
+        <!-- MAIN CONTENT (GIỮ NGUYÊN CẤU TRÚC, THÊM TOOLBAR LÊN TRÊN) -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto h-screen">
+            <div class="max-w-7xl mx-auto flex flex-col h-full">
+
+                <!-- [MỚI] QUICK ACTIONS TOOLBAR (Chèn vào vị trí trên cùng) -->
+                <div id="quick_actions_toolbar"
+                    class="bg-surface-variant elevation-2 p-4 rounded-[28px] mb-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-colors duration-300">
+                    <div class="flex items-center gap-3 px-2">
+                        <span class="text-sm font-medium text-on-surface-variant">Truy cập nhanh:</span>
+                        <button id="btn_open_drive"
+                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                </path>
+                            </svg>
+                            Folder Lớp
+                        </button>
+                        <button id="btn_open_sheet"
+                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                            Sheet Điểm
+                        </button>
+                        <button id="btn_open_form"
+                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Form Nộp
+                        </button>
+                    </div>
+                    <div class="text-xs text-on-surface-variant px-2">
+                        <span id="system_status_text" class="opacity-70">Chờ chọn lớp...</span>
+                    </div>
+                </div>
+
+                <!-- CẤU TRÚC CŨ (2 CỘT) -->
+                <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-[400px]">
+                    <!-- Left Column -->
+                    <div class="flex-1 flex flex-col gap-4">
+                        <!-- Assignment Selector -->
+                        <div
+                            class="bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col transition-colors duration-300">
+                            <section>
+                                <h2 class="text-lg font-medium text-on-surface-variant mb-2 px-2">Chọn Loại Bài Tập</h2>
+                                <div id="assignment-buttons-container" class="flex flex-wrap gap-2">
+                                    <p class="text-sm text-outline px-2">Vui lòng chọn một lớp để xem các loại bài tập.
+                                    </p>
+                                </div>
+                            </section>
+                        </div>
+                        <!-- Submission Status -->
+                        <div
+                            class="flex-1 bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col min-h-0 transition-colors duration-300">
+                            <h2 class="text-lg font-medium text-on-surface-variant mb-2 px-2">Tình trạng Nộp bài</h2>
+                            <div id="submission-status-list"
+                                class="w-full flex-1 bg-surface text-on-surface rounded-[24px] p-4 overflow-y-auto text-sm border border-outline-variant smooth-transition hidden">
+                                <div class="text-outline">Chọn lớp và bắt đầu xử lý để xem tình trạng...</div>
+                            </div>
+                            <div id="submission-status-placeholder"
+                                class="w-full flex-1 bg-surface text-on-surface rounded-[24px] p-4 border border-outline-variant smooth-transition flex items-center justify-center">
+                                <div class="text-outline text-center">Vui lòng đăng nhập<br>để xem tình trạng nộp bài.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Log -->
+                    <div
+                        class="flex-1 bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col transition-colors duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-medium text-on-surface-variant">Nhật ký xử lý</h2>
+                            <button id="clear_log" class="m3-button m3-button-icon" title="Xóa nhật ký">
+                                <!-- Material 3: Trash -->
+                                <svg class="icon-material" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                </svg>
+                                <!-- iOS: Trash -->
+                                <svg class="icon-apple" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="status-log"
+                            class="w-full flex-1 bg-surface text-on-surface rounded-[24px] p-4 overflow-y-auto text-sm font-mono border border-outline-variant smooth-transition">
+                            <div class="log-entry text-outline">Đang chờ khởi tạo...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings_modal" aria-hidden="true"
+        class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="m3-modal-content bg-surface-container rounded-[28px] elevation-2 flex flex-col max-h-[90vh]">
+            <header class="p-4 flex items-center justify-between border-b border-outline-variant flex-shrink-0">
+                <h2 class="text-xl font-medium text-on-surface">Cài đặt</h2>
+                <button id="close_settings_button" class="m3-button m3-button-icon" title="Đóng"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </header>
+            <div class="flex flex-1 min-h-0">
+                <nav class="w-48 p-4 border-r border-outline-variant flex-shrink-0">
+                    <ul class="space-y-1">
+                        <li><button data-target="settings-panel-appearance"
+                                class="m3-settings-nav-button m3-button w-full justify-start gap-3 px-3 py-2 rounded-full text-on-surface-variant hover:bg-surface-container-highest"
+                                data-active="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"
+                                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                                </svg>
+                                <span>Giao diện</span></button></li>
+                        <li><button data-target="settings-panel-automation"
+                                class="m3-settings-nav-button m3-button w-full justify-start gap-3 px-3 py-2 rounded-full text-on-surface-variant hover:bg-surface-container-highest"
+                                data-active="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"
+                                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M1 4v6h6"></path>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                </svg>
+                                <span>Tự động hóa</span></button></li>
+                    </ul>
+                </nav>
+                <div id="settings-modal-content" class="flex-1 p-6 overflow-y-auto">
+                    <div id="settings-panel-appearance" class="m3-settings-panel space-y-6" data-active="true">
+                        <section class="m3-setting-card rounded-2xl">
+                            <h2 class="text-lg font-medium text-on-surface mb-4">Phong cách thiết kế</h2>
+                            <div class="flex gap-2">
+                                <button id="design-material"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
+                                    data-value="material">Material 3</button>
+                                <button id="design-apple"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full flex-1"
+                                    data-value="apple">Liquid Glass</button>
+                            </div>
+                        </section>
+                        <section class="m3-setting-card rounded-2xl">
+                            <h2 class="text-lg font-medium text-on-surface mb-4">Chế độ Sáng/Tối</h2>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="theme-light" data-value="light"
+                                    class="theme-btn m3-button m3-button-tonal text-sm py-2 px-4 smooth-transition rounded-full">Sáng</button>
+                                <button id="theme-dark" data-value="dark"
+                                    class="theme-btn m3-button m3-button-tonal text-sm py-2 px-4 smooth-transition rounded-full">Tối</button>
+                                <button id="theme-system" data-value="system"
+                                    class="theme-btn m3-button m3-button-tonal text-sm py-2 px-4 smooth-transition rounded-full">Hệ
+                                    thống</button>
+                            </div>
+                        </section>
+                        <section class="m3-setting-card rounded-2xl" id="accent-color-section">
+                            <h2 class="text-lg font-medium text-on-surface mb-4">Màu chủ đề</h2>
+                            <div class="flex flex-wrap gap-3 items-center">
+                                <button data-value="blue"
+                                    class="accent-btn w-10 h-10 rounded-full bg-[#0061A4] border-2 border-transparent smooth-transition"
+                                    title="Xanh dương"></button>
+                                <button data-value="green"
+                                    class="accent-btn w-10 h-10 rounded-full bg-[#006D3B] border-2 border-transparent smooth-transition"
+                                    title="Xanh lá"></button>
+                                <button data-value="purple"
+                                    class="accent-btn w-10 h-10 rounded-full bg-[#6750A4] border-2 border-transparent smooth-transition"
+                                    title="Tím"></button>
+                                <button data-value="red"
+                                    class="accent-btn w-10 h-10 rounded-full bg-[#B3261E] border-2 border-transparent smooth-transition"
+                                    title="Đỏ"></button>
+                                <label id="custom_color_button_label" for="custom_color_input"
+                                    class="w-10 h-10 rounded-full border-2 border-outline-variant smooth-transition cursor-pointer flex items-center justify-center text-on-surface-variant hover:border-primary"
+                                    title="Chọn màu tùy chỉnh">
+                                    <svg id="custom_color_icon" xmlns="http://www.w3.org/2000/svg" width="20"
+                                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </label>
+                                <input type="color" id="custom_color_input" class="absolute w-0 h-0 opacity-0"
+                                    value="#0061A4">
+                            </div>
+                        </section>
+                    </div>
+                    <!-- [MỚI] PANEL AUTOMATION -->
+                    <div id="settings-panel-automation" class="m3-settings-panel space-y-6 hidden">
+                        <!-- 2 Cards Nằm Cạnh Nhau -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Tự động Quét Nền + Hướng dẫn -->
+                            <div class="flex flex-col gap-3">
+                                <!-- Tự động Quét Nền -->
+                                <section class="m3-setting-card rounded-[28px] overflow-hidden">
+                                    <div class="p-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+                                                    <circle cx="12" cy="12" r="9"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                <div>
+                                                    <h2 class="text-base font-medium text-on-surface">Tự động Quét Nền
+                                                    </h2>
+                                                    <p class="text-xs text-on-surface-variant">Cập nhật định kỳ</p>
+                                                </div>
+                                            </div>
+                                            <button id="auto_refresh_button" class="m3-switch" aria-checked="false"
+                                                role="switch" aria-label="Toggle auto refresh"></button>
+                                        </div>
+                                        <p class="text-xs text-on-surface-variant">Làm mới danh sách mỗi 5 phút.</p>
+                                    </div>
+                                </section>
+
+                                <!-- Ghi chú Hướng dẫn -->
+                                <div class="bg-secondary-container/10 rounded-[24px] p-3 border border-secondary/20">
+                                    <div class="flex gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg>
+                                        <div class="text-xs text-on-surface-variant space-y-1">
+                                            <p class="font-medium text-on-surface">Hướng dẫn:</p>
+                                            <ul class="list-disc list-inside space-y-0.5">
+                                                <li>Nhập Folder ID thư mục Drive chứa để tạo lớp tự động</li>
+                                                <li>Bật Quét Nền để cập nhật danh sách</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cấu hình Thư mục Gốc -->
+                            <section class="m3-setting-card rounded-[28px] overflow-hidden" id="root-config-section">
+                                <div class="p-4">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+                                            <path
+                                                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                            </path>
+                                        </svg>
+                                        <div>
+                                            <h2 class="text-base font-medium text-on-surface">Thư mục Gốc</h2>
+                                            <p class="text-xs text-on-surface-variant">Tạo lớp tự động</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-surface rounded-[24px] p-3 space-y-2">
+                                        <input type="text" id="root_folder_id"
+                                            class="m3-input rounded-[18px] text-xs font-mono py-2 px-3 w-full"
+                                            placeholder="Folder ID...">
+                                        <button id="save_system_config"
+                                            class="m3-button m3-button-filled text-xs py-2 px-3 rounded-full w-full smooth-transition flex items-center justify-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2.5">
+                                                <path
+                                                    d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
+                                                </path>
+                                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                                <polyline points="7 3 7 8 15 8"></polyline>
+                                            </svg>
+                                            Lưu
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLASS FORM MODAL (CẬP NHẬT: Thêm phần Auto Create) -->
+    <div id="class_form_modal" aria-hidden="true"
+        class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="m3-modal-content bg-surface-container rounded-[28px] elevation-2 flex flex-col max-h-[90vh]"
+            style="max-width: 640px; width: 100%;">
+            
+            <!-- HEADER -->
+            <header class="px-6 py-5 flex items-center justify-between border-b border-outline-variant flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <h2 id="class_modal_title" class="text-xl font-semibold text-on-surface">Quản lý Lớp</h2>
+                </div>
+                <button id="close_class_form_modal_button" class="m3-button m3-button-icon" title="Đóng">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </header>
+
+            <!-- CONTENT -->
+            <div class="px-6 py-6 space-y-6 overflow-y-auto flex-1">
+                <input type="hidden" id="form_class_id">
+
+                <!-- [MỚI] CHẾ ĐỘ TẠO MỚI TỰ ĐỘNG -->
+                <div id="auto_create_section"
+                    class="p-5 bg-surface-variant rounded-2xl border border-outline-variant hidden">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-sm font-bold text-on-surface mb-1.5 uppercase tracking-wide">Tạo lớp tự động</h3>
+                            <p class="text-xs text-on-surface-variant mb-4 leading-relaxed">
+                                Hệ thống sẽ tự động tạo Folder, Form và Sheet mới cho lớp này từ cấu hình gốc.
+                            </p>
+                            <label class="flex items-center gap-2.5 cursor-pointer group">
+                                <input type="checkbox" id="is_auto_create" 
+                                    class="w-5 h-5 rounded border-2 border-outline text-on-surface focus:ring-2 focus:ring-outline cursor-pointer">
+                                <span class="text-sm font-medium text-on-surface group-hover:opacity-80 transition-opacity">
+                                    Kích hoạt tạo tự động toàn bộ
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TÊN LỚP -->
+                <div class="space-y-2">
+                    <label for="form_class_name" class="text-sm font-semibold text-on-surface block">
+                        Tên Lớp <span class="text-error">*</span>
+                    </label>
+                    <input type="text" id="form_class_name" 
+                        class="m3-input text-base py-3 px-4 rounded-2xl w-full transition-all duration-200 focus:ring-2 focus:ring-outline/50"
+                        placeholder="Ví dụ: Lớp 10A1, 11B2...">
+                    <p class="text-xs text-on-surface-variant">Đặt tên ngắn gọn, dễ nhận biết</p>
+                </div>
+
+                <!-- DANH SÁCH BÀI TẬP -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-semibold text-on-surface">
+                            Các loại bài tập
+                        </label>
+                        <span class="text-xs text-on-surface-variant bg-surface-variant px-2 py-1 rounded-full">
+                            Cấu hình thủ công
+                        </span>
+                    </div>
+                    <div id="assignment_types_container" 
+                        class="space-y-2.5 max-h-72 overflow-y-auto pr-2 py-1">
+                        <!-- Chips sẽ được thêm vào đây -->
+                    </div>
+                    <button id="add_assignment_type_button" type="button"
+                        class="m3-button m3-button-tonal text-sm py-2.5 px-4 rounded-2xl w-full flex items-center justify-center gap-2 hover:shadow-md transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span class="font-medium">Thêm loại bài tập</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- FOOTER ACTIONS -->
+            <footer class="px-6 py-5 flex flex-wrap items-center gap-3 border-t border-outline-variant flex-shrink-0">
+                <button id="save_class_profile"
+                    class="m3-button m3-button-filled font-semibold py-3 px-6 rounded-2xl smooth-transition hover:shadow-lg flex-1 min-w-[140px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Lưu Lớp
+                </button>
+                <button id="clear_class_form"
+                    class="m3-button m3-button-outlined font-medium py-3 px-5 rounded-2xl smooth-transition hover:bg-surface-variant">
+                    Reset
+                </button>
+                <button id="delete_class_profile" style="display: none;"
+                    class="m3-button m3-button-text-error font-medium py-3 px-5 rounded-2xl smooth-transition hover:bg-error-container/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Xóa
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="./app.js"></script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registered:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed:', err);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>
