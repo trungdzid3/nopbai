@@ -407,10 +407,10 @@
         body.dark[data-design="apple"] .bg-surface-container-highest,
         body.dark[data-design="apple"] .m3-setting-card,
         body.dark[data-design="apple"] .m3-modal-content {
-            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            background-color: color-mix(in srgb, var(--c-glass) 45%, transparent);
             backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
             -webkit-backdrop-filter: blur(60px) saturate(var(--saturation)) url(#liquid-filter);
-            border: 1px solid color-mix(in srgb, var(--c-light) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--c-light) 25%, transparent);
             box-shadow:
                 inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
                 inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent),
@@ -2038,6 +2038,22 @@
         body.dark #settings_modal .m3-settings-nav-button[data-active="true"] span,
         body.dark #settings_modal .m3-settings-nav-button[data-active="true"] {
             color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        /* --- LIQUID GLASS DARK MODE - ADDITIONAL TEXT IMPROVEMENTS --- */
+        body[data-design="apple"].dark #settings_modal .text-on-surface,
+        body[data-design="apple"].dark #class_form_modal .text-on-surface,
+        body[data-design="apple"].dark #settings_modal h2,
+        body[data-design="apple"].dark #settings_modal h3,
+        body[data-design="apple"].dark #class_form_modal h2,
+        body[data-design="apple"].dark #class_form_modal h3,
+        body.dark[data-design="apple"] #settings_modal .text-on-surface,
+        body.dark[data-design="apple"] #class_form_modal .text-on-surface,
+        body.dark[data-design="apple"] #settings_modal h2,
+        body.dark[data-design="apple"] #settings_modal h3,
+        body.dark[data-design="apple"] #class_form_modal h2,
+        body.dark[data-design="apple"] #class_form_modal h3 {
+            color: rgba(255, 255, 255, 0.98) !important;
         }
     </style>
 </head>
