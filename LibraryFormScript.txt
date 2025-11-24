@@ -72,10 +72,53 @@ const PREFIX_KEYWORDS_TO_REMOVE = ["con", "em", "bạn", "cháu", "hs", "hoc sin
 // CONFIG MANAGER - ĐỌC CẤU HÌNH TỪ SHEET
 // ==================================================================
 
+/**
+ * Helper: Lấy Spreadsheet từ Script Properties hoặc form destination
+ */
+function getConfigSpreadsheet() {
+  // Thử 1: Lấy từ Script Properties (được quickSetup tự động lưu)
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const sheetId = scriptProperties.getProperty('SHEET_ID');
+  
+  if (sheetId) {
+    try {
+      return SpreadsheetApp.openById(sheetId);
+    } catch (e) {
+      Logger.log(`Cảnh báo: Không mở được Sheet bằng ID từ Script Properties: ${e.message}`);
+    }
+  }
+  
+  // Thử 2: Fallback sang form destination (nếu đã link)
+  try {
+    const form = FormApp.getActiveForm();
+    const destinationId = form.getDestinationId();
+    
+    if (destinationId) {
+      return SpreadsheetApp.openById(destinationId);
+    }
+  } catch (e) {
+    Logger.log(`Cảnh báo: Form chưa có destination: ${e.message}`);
+  }
+  
+  // Thử 3: Fallback sang getActiveSpreadsheet (cho các script chạy từ sheet)
+  try {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  } catch (e) {
+    Logger.log(`Lỗi: Không thể lấy spreadsheet: ${e.message}`);
+    return null;
+  }
+}
+
 class ConfigManager {
   static loadAll() {
     try {
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ss = getConfigSpreadsheet();
+      
+      if (!ss) {
+        Logger.log('LỖI: Không tìm thấy Sheet Config. Vui lòng chạy quickSetup() hoặc link form với sheet.');
+        return [];
+      }
+      
       const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
       
       if (!configSheet) {
@@ -420,7 +463,14 @@ function doGet(e) {
     lock.waitLock(10000);
     
     try {
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ss = getConfigSpreadsheet();
+      
+      if (!ss) {
+        message = 'LỖI: Không tìm thấy Sheet. Vui lòng chạy quickSetup().';
+        Logger.log(message);
+        return HtmlService.createHtmlOutput(`<h2>Lỗi</h2><p>${message}</p>`);
+      }
+      
       const sheet = getSheetByTabId(ss, sheetTabId);
       
       if (!sheet) {
@@ -614,7 +664,11 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly, sub
       return null;
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getConfigSpreadsheet();
+    if (!ss) {
+      Logger.log('Lỗi: Không tìm thấy Sheet. Không thể đánh dấu checkbox.');
+      return null;
+    }
     let sheet;
     
     if (config.sheetTabId) {
@@ -792,7 +846,13 @@ function getMinutesUntil(now, classTime) {
 
 function cleanSheet(sheetName, columnRange) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getConfigSpreadsheet();
+    
+    if (!ss) {
+      Logger.log('Cảnh báo: Không tìm thấy Sheet. Bỏ qua clean sheet.');
+      return;
+    }
+    
     const sheet = ss.getSheetByName(sheetName);
     
     if (!sheet) {
