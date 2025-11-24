@@ -1451,6 +1451,15 @@ function gisLoaded() {
         });
         gisInited = true;
         updateStatus("✓ GIS sẵn sàng.");
+        
+        // Check if returning from OAuth redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('code') || urlParams.has('state')) {
+            updateStatus("→ Xử lý OAuth redirect...");
+            // Clean URL without reloading
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
         checkInitStatus();
     } catch (error) { updateStatus(`✗ Lỗi GIS init: ${error.message}. Kiểm tra Client ID.`, true); console.error(error); }
 }
@@ -1492,7 +1501,7 @@ function checkInitStatus() {
 }
 
 function handleAuthClick() {
-    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent', ux_mode: 'redirect' });
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
     else updateStatus("✗ Lỗi: Hệ thống Đăng nhập (GIS) chưa sẵn sàng.", true);
 }
 
