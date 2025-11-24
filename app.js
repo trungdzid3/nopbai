@@ -969,20 +969,18 @@ async function createClassSystemAutomatic() {
         let scriptProjectId = null;
         try {
             updateStatus("   → Đang đổi tên Script project...");
-            // Get form's container (script project)
-            const formDetails = await gapi.client.drive.files.get({
-                fileId: form.id,
-                fields: 'parents'
-            });
             
-            // Find script.google.com file in same folder
+            // Find ALL script files in the class folder
             const searchResponse = await gapi.client.drive.files.list({
-                q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.script'`,
-                fields: 'files(id, name)'
+                q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                fields: 'files(id, name, createdTime)',
+                orderBy: 'createdTime desc'
             });
             
             const scriptFiles = searchResponse.result.files || [];
-            const formScript = scriptFiles.find(f => f.name.includes('Untitled') || f.name.includes('Biểu mẫu'));
+            
+            // Get the newest script file (just created with the form)
+            const formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
             
             if (formScript) {
                 scriptProjectId = formScript.id;
@@ -990,11 +988,13 @@ async function createClassSystemAutomatic() {
                     fileId: scriptProjectId,
                     resource: { name: `Script - ${name}` }
                 });
-                updateStatus(`   ✓ Đã đổi tên Script: "Script - ${name}"`);
+                updateStatus(`   ✓ Đã đổi tên Script: "Script - ${name}" (từ "${formScript.name}")`);
+            } else {
+                updateStatus(`   ⚠ Không tìm thấy Script project`);
             }
         } catch (err) {
             console.warn('Không thể đổi tên script project:', err);
-            updateStatus(`   ⚠ Không thể đổi tên Script project`);
+            updateStatus(`   ⚠ Không thể đổi tên Script project: ${err.message || ''}`);
         }
 
         // 3. Copy Sheet
