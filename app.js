@@ -987,40 +987,51 @@ async function createClassSystemAutomatic() {
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
         
-        // 2.1. Rename Form's script project to class name (retry logic)
+        // 2.1. Rename Form's script project to class name
         try {
             updateStatus("   → Đang đổi tên Script của Form...");
             
-            let formScript = null;
-            const maxRetries = 5;
+            // Lấy thông tin form để có script ID
+            const formInfoResponse = await gapi.client.request({
+                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
+                method: 'GET'
+            });
             
-            // Retry tìm script với delay tăng dần
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, attempt * 2000)); // 2s, 4s, 6s, 8s, 10s
-                
-                const formScriptResponse = await gapi.client.drive.files.list({
-                    q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
-                    fields: 'files(id, name)',
-                    pageSize: 1
-                });
-                
-                const formScripts = formScriptResponse.result.files || [];
-                if (formScripts.length > 0) {
-                    formScript = formScripts[0];
-                    break;
+            const linkedScriptId = formInfoResponse.result.linkedSheetId || null;
+            
+            // Nếu Forms API không trả về script ID, search trong Drive
+            let formScriptId = null;
+            
+            if (linkedScriptId) {
+                formScriptId = linkedScriptId;
+            } else {
+                // Fallback: Search trong Drive (với retry ngắn)
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    const searchResponse = await gapi.client.drive.files.list({
+                        q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                        fields: 'files(id)',
+                        pageSize: 1
+                    });
+                    
+                    if (searchResponse.result.files?.length > 0) {
+                        formScriptId = searchResponse.result.files[0].id;
+                        break;
+                    }
+                    
+                    if (attempt < 3) updateStatus(`   → Thử lại (${attempt}/3)...`);
                 }
-                
-                updateStatus(`   → Thử lại (${attempt}/${maxRetries})...`);
             }
             
-            if (formScript) {
+            if (formScriptId) {
                 await gapi.client.drive.files.update({
-                    fileId: formScript.id,
+                    fileId: formScriptId,
                     resource: { name: name }
                 });
                 updateStatus(`   ✓ Đã đổi tên Script Form: "${name}"`);
             } else {
-                updateStatus(`   ⚠ Không tìm thấy Script của Form sau ${maxRetries} lần thử`);
+                updateStatus(`   ⚠ Script chưa sẵn sàng, sẽ có tên mặc định`);
             }
         } catch (err) {
             console.warn('Không thể đổi tên script của form:', err);
@@ -1032,73 +1043,63 @@ async function createClassSystemAutomatic() {
         const sheet = await apiCopyFile(tmplSheetId, `Bảng nhận xét - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Sheet: ${sheet.id}`);
         
-        // 3.1. Rename Sheet's script project to class name (retry logic)
+        // 3.1. Rename Sheet's script project to class name
         try {
             updateStatus("   → Đang đổi tên Script của Sheet...");
             
-            let sheetScript = null;
-            const maxRetries = 5;
+            // Search script trong Drive (với retry ngắn)
+            let sheetScriptId = null;
             
-            // Retry tìm script với delay tăng dần
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, attempt * 2000)); // 2s, 4s, 6s, 8s, 10s
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                const sheetScriptResponse = await gapi.client.drive.files.list({
+                const searchResponse = await gapi.client.drive.files.list({
                     q: `'${sheet.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
-                    fields: 'files(id, name)',
+                    fields: 'files(id)',
                     pageSize: 1
                 });
                 
-                const sheetScripts = sheetScriptResponse.result.files || [];
-                if (sheetScripts.length > 0) {
-                    sheetScript = sheetScripts[0];
+                if (searchResponse.result.files?.length > 0) {
+                    sheetScriptId = searchResponse.result.files[0].id;
                     break;
                 }
                 
-                updateStatus(`   → Thử lại (${attempt}/${maxRetries})...`);
+                if (attempt < 3) updateStatus(`   → Thử lại (${attempt}/3)...`);
             }
             
-            if (sheetScript) {
+            if (sheetScriptId) {
                 await gapi.client.drive.files.update({
-                    fileId: sheetScript.id,
+                    fileId: sheetScriptId,
                     resource: { name: name }
                 });
                 updateStatus(`   ✓ Đã đổi tên Script Sheet: "${name}"`);
             } else {
-                updateStatus(`   ⚠ Không tìm thấy Script của Sheet sau ${maxRetries} lần thử`);
+                updateStatus(`   ⚠ Script chưa sẵn sàng, sẽ có tên mặc định`);
             }
         } catch (err) {
             console.warn('Không thể đổi tên script của sheet:', err);
             updateStatus(`   ⚠ Bỏ qua đổi tên Script Sheet`);
         }
 
-        // 4. Link Form với Sheet (Form responses destination)
-        updateStatus("4. Đang liên kết Form với Sheet...");
-        const linkResult = await apiLinkFormToSheet(form.id, sheet.id);
-        
-        if (linkResult) {
-            updateStatus(`✓ Đã link Form responses vào Sheet`);
-        } else {
-            updateStatus(`⚠ Cần link thủ công: Mở Form → Responses → Select response destination`);
-        }
-
-        // 5. Ghi Config vào Sheet
-        updateStatus("5. Đang cấu hình Sheet...");
+        // 4. Ghi Config vào Sheet
+        updateStatus("4. Đang cấu hình Sheet...");
+        // 4. Ghi Config vào Sheet
+        updateStatus("4. Đang cấu hình Sheet...");
         await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id);
         
-        // 5.1. Ghi email người dùng vào config
+        // 4.1. Ghi email người dùng vào config
         const userEmail = LOGIN_HINT || (gapi.client.getToken() ? await getUserEmail() : null);
         if (userEmail) {
             updateStatus(`   → Ghi email người quản lý: ${userEmail}`);
             await apiWriteUserEmailToConfig(sheet.id, userEmail);
         }
 
-        // 6. Write Assignments to Config sheet
+        // 5. Write Assignments to Config sheet
         const chips = Array.from(assignmentTypesContainer.querySelectorAll('.assignment-chip'));
         const assignments = [];
         
         if (chips.length > 0) {
-            updateStatus(`6. Đang tạo ${chips.length} thư mục bài tập...`);
+            updateStatus(`5. Đang tạo ${chips.length} thư mục bài tập...`);
             
             for (const chip of chips) {
                 const assignmentName = chip.dataset.name;
@@ -1141,11 +1142,18 @@ async function createClassSystemAutomatic() {
         // Extract the file ID and construct viewform link
         const formShortLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
         
-        updateStatus(`✓ Đã tạo link Form (cần mở form editor lần đầu để kích hoạt)`);
+        updateStatus(`✓ Đã tạo link Form`);
         
-        // Open form in new tab so user can activate it
+        // Open form in new tab
         window.open(formEditLink, '_blank');
-        updateStatus(`   → Đã mở Form editor - vui lòng đóng tab sau khi form tải xong`);
+        updateStatus(`   → Đã mở Form editor`);
+        
+        // Hướng dẫn link form-sheet thủ công
+        updateStatus(`⚠ QUAN TRỌNG: Cần liên kết Form với Sheet thủ công:`);
+        updateStatus(`   1. Trong Form editor → Tab "Responses"`);
+        updateStatus(`   2. Click icon 3 chấm → "Select response destination"`);
+        updateStatus(`   3. Chọn "Select existing spreadsheet"`);
+        updateStatus(`   4. Chọn sheet "${name}" vừa tạo`);
 
         // 11. Save Profile
         const newProfile = {
