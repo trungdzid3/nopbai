@@ -751,6 +751,9 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     label.textContent = assignment.name;
     label.className = 'flex-1';
 
+    chip.appendChild(icon);
+    chip.appendChild(label);
+
     // Nút tạo lại Sheet (chỉ hiển thị nếu bài tập đã tồn tại)
     if (assignment.folderId) {
         const recreateSheetBtn = document.createElement('button');
@@ -766,10 +769,8 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
             }
         };
         chip.appendChild(recreateSheetBtn);
-    }
 
-    // Nút tạo lại Form (chỉ hiển thị nếu bài tập đã tồn tại)
-    if (assignment.folderId) {
+        // Nút tạo lại Form (chỉ hiển thị nếu bài tập đã tồn tại)
         const recreateFormBtn = document.createElement('button');
         recreateFormBtn.type = 'button';
         recreateFormBtn.className = 'm3-button m3-button-icon p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-tertiary-container/20';
@@ -791,12 +792,8 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     removeBtn.title = 'Xóa';
     removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
     removeBtn.onclick = () => chip.remove();
-
-    chip.appendChild(icon);
-    chip.appendChild(label);
-    chip.appendChild(recreateSheetBtn);
-    chip.appendChild(recreateFormBtn);
     chip.appendChild(removeBtn);
+
     assignmentTypesContainer.appendChild(chip);
 }
 
