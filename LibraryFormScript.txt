@@ -264,16 +264,24 @@ class ConfigManager {
     const parts = scheduleStr.split(/[;,]/).map(s => s.trim()).filter(Boolean);
     
     for (const part of parts) {
-      const match = part.match(/^T(\d)-(\d{1,2}):(\d{2})$/);
+      // Hỗ trợ CN hoặc T1-T7
+      const match = part.match(/^(CN|T[1-7])-(\d{1,2}):(\d{2})$/);
       if (!match) {
         Logger.log(`CẢNH BÁO: Format thời gian không hợp lệ: "${part}". Bỏ qua.`);
         continue;
       }
       
-      const day = parseInt(match[1], 10);
+      // Chuyển đổi CN/T1-T7 thành số 0-6 (0=CN/T1, 1=T2, ..., 6=T7)
+      let dayOfWeek;
+      if (match[1] === 'CN') {
+        dayOfWeek = 0;  // Chủ Nhật
+      } else {
+        const tNum = parseInt(match[1].substring(1), 10);
+        dayOfWeek = tNum - 1;  // T1->0, T2->1, ..., T7->6
+      }
+      
       const hour = parseInt(match[2], 10);
       const minute = parseInt(match[3], 10);
-      const dayOfWeek = day === 1 ? 0 : day;
       
       schedules.push({
         day: dayOfWeek,

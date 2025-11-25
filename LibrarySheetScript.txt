@@ -209,7 +209,7 @@ class ConfigManager {
   parseTimeString(str) {
     if (!str) return null;
     
-    // Hỗ trợ cả CN và T1 cho Chủ Nhật
+    // Hỗ trợ CN (Chủ Nhật) hoặc T1-T7 (Thứ 2-Thứ 7 + Chủ Nhật)
     const regex = /^(CN|T[1-7])-(\d{1,2}):(\d{2})$/;
     const match = str.match(regex);
     
@@ -218,20 +218,20 @@ class ConfigManager {
       return null;
     }
 
-    // Chuyển đổi CN/T1-T7 thành số 0-6 (0=CN, 1=T2, ..., 6=T7)
+    // Chuyển đổi CN/T1-T7 thành số 0-6 (0=CN/T1, 1=T2, ..., 6=T7)
     let dayNum;
     if (match[1] === 'CN') {
-      dayNum = 0;
+      dayNum = 0;  // Chủ Nhật
     } else {
       const tNum = parseInt(match[1].substring(1));
-      dayNum = tNum === 1 ? 0 : tNum - 1; // T1->0, T2->1, T3->2, ..., T7->6
+      dayNum = tNum - 1;  // T1->0, T2->1, T3->2, ..., T7->6
     }
     
     const hour = parseInt(match[2]);
     const minute = parseInt(match[3]);
 
     if (dayNum < 0 || dayNum > 6) {
-      Logger.log(`⚠️ Ngày không hợp lệ: ${match[1]}. Phải là CN, T2-T7`);
+      Logger.log(`⚠️ Ngày không hợp lệ: ${match[1]}. Phải là CN/T1-T7`);
       return null;
     }
 
