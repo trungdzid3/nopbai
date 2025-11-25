@@ -1626,28 +1626,37 @@ async function deleteClassFolderFromDrive(folderId, profile) {
                 
                 const scripts = scriptSearch.result.files || [];
                 for (const script of scripts) {
-                    await gapi.client.drive.files.delete({ fileId: script.id });
+                    await gapi.client.drive.files.update({
+                        fileId: script.id,
+                        resource: { trashed: true }
+                    });
                 }
             } catch (err) {
                 console.warn('Could not delete form scripts:', err);
             }
         }
         
-        // Step 2: Delete form
+        // Step 2: Move form to trash
         if (profile && profile.formId) {
             try {
-                await gapi.client.drive.files.delete({ fileId: profile.formId });
+                await gapi.client.drive.files.update({
+                    fileId: profile.formId,
+                    resource: { trashed: true }
+                });
             } catch (err) {
-                console.warn('Could not delete form:', err);
+                console.warn('Could not trash form:', err);
             }
         }
         
-        // Step 3: Delete sheet
+        // Step 3: Move sheet to trash
         if (profile && profile.sheetId) {
             try {
-                await gapi.client.drive.files.delete({ fileId: profile.sheetId });
+                await gapi.client.drive.files.update({
+                    fileId: profile.sheetId,
+                    resource: { trashed: true }
+                });
             } catch (err) {
-                console.warn('Could not delete sheet:', err);
+                console.warn('Could not trash sheet:', err);
             }
         }
         
@@ -1663,11 +1672,14 @@ async function deleteClassFolderFromDrive(folderId, profile) {
             
             for (const file of files) {
                 try {
-                    // Delete subfolders recursively
+                    // Move subfolders and files to trash
                     if (file.mimeType === 'application/vnd.google-apps.folder') {
                         await deleteClassFolderFromDrive(file.id, null);
                     } else {
-                        await gapi.client.drive.files.delete({ fileId: file.id });
+                        await gapi.client.drive.files.update({
+                            fileId: file.id,
+                            resource: { trashed: true }
+                        });
                     }
                 } catch (err) {
                     console.warn(`Could not delete file ${file.name}:`, err);
@@ -1677,9 +1689,10 @@ async function deleteClassFolderFromDrive(folderId, profile) {
             console.warn('Could not list folder contents:', err);
         }
         
-        // Step 5: Finally delete the folder itself
-        await gapi.client.drive.files.delete({
-            fileId: folderId
+        // Step 5: Finally move the folder itself to trash
+        await gapi.client.drive.files.update({
+            fileId: folderId,
+            resource: { trashed: true }
         });
         
     } catch (error) {
@@ -2252,9 +2265,10 @@ async function deleteSelectedSubmissions() {
         const folderName = item.dataset.folderName;
         
         try {
-            // Delete folder from Google Drive
-            await gapi.client.drive.files.delete({
-                fileId: folderId
+            // Move folder to trash on Google Drive
+            await gapi.client.drive.files.update({
+                fileId: folderId,
+                resource: { trashed: true }
             });
             
             // Remove from UI
@@ -2919,7 +2933,7 @@ async function convertDocxToPdf(docxFiles) {
         } catch (error) {
             updateStatus(`✗ Lỗi DOCX "${file.name}": ${error.message}`, true); return null;
         } finally {
-            if (tempGDocId) try { await gapi.client.drive.files.delete({ fileId: tempGDocId }); } catch (e) { }
+            if (tempGDocId) try { await gapi.client.drive.files.update({ fileId: tempGDocId, resource: { trashed: true } }); } catch (e) { }
         }
     };
     let taskIndex = -1;
