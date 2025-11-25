@@ -733,45 +733,55 @@ function periodicCleanup() {
 /**
  * Đồng bộ Folder IDs từ Sheet Config sang Script Properties
  * GỌI THỦ CÔNG 1 LẦN sau khi đã tạo folders trên web
+ * HOẶC tự động gọi từ reconcileCheckboxes() nếu phát hiện thiếu folder IDs
  * 
+ * @param {string} classFolderId - Class Folder ID (bắt buộc). Lấy từ cell I3 trong Sheet Config
  * @param {string} sheetId - (Optional) Sheet ID. Nếu không truyền, sẽ lấy từ Script Properties
  */
-function syncFolderIdsFromSheet(sheetId) {
+function syncFolderIdsFromSheet(classFolderId, sheetId) {
   Logger.log("--- Bắt đầu Đồng bộ Folder IDs ---");
   
   try {
-    // Lấy Sheet ID từ parameter hoặc Script Properties
+    // Kiểm tra Class Folder ID (bắt buộc)
+    if (!classFolderId) {
+      Logger.log('❌ Thiếu Class Folder ID.');
+      Logger.log('👉 Hướng dẫn: Gọi từ wrapper script với CLASS_FOLDER_ID từ cell I3');
+      Logger.log('   Ví dụ: FormLib.syncFolderIdsFromSheet(classFolderId)');
+      return false;
+    }
+    
+    // Lấy Sheet ID từ parameter hoặc Script Properties hoặc form destination
     const props = PropertiesService.getScriptProperties();
     if (!sheetId) {
       sheetId = props.getProperty('SHEET_ID');
     }
     
     if (!sheetId) {
+      // Thử lấy từ form destination
+      try {
+        const form = FormApp.getActiveForm();
+        sheetId = form.getDestinationId();
+      } catch (e) {
+        Logger.log('⚠️ Không thể lấy Sheet ID từ form destination');
+      }
+    }
+    
+    if (!sheetId) {
       Logger.log('❌ Không tìm thấy Sheet ID.');
       Logger.log('👉 Hãy chạy "Đồng bộ & Liên kết" trên web app trước.');
-      return;
+      return false;
     }
     
     Logger.log(`📄 Sheet ID: ${sheetId}`);
+    Logger.log(`📂 Class Folder ID: ${classFolderId}`);
     
     const ss = SpreadsheetApp.openById(sheetId);
     const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
     
     if (!configSheet) {
       Logger.log(`❌ Không tìm thấy sheet "${CONFIG_SHEET_NAME}".`);
-      return;
+      return false;
     }
-    
-    // Đọc Class Folder ID từ cell I3
-    const classFolderId = configSheet.getRange('I3').getValue();
-    
-    if (!classFolderId) {
-      Logger.log('⚠️ Chưa có Class Folder ID ở I3. Không thể đồng bộ.');
-      Logger.log('👉 Hãy chạy "Đồng bộ & Liên kết" trên web app trước.');
-      return;
-    }
-    
-    Logger.log(`📂 Class Folder ID: ${classFolderId}`);
     
     // Đọc danh sách assignments từ Sheet Config (cột A)
     const lastRow = configSheet.getLastRow();
@@ -809,6 +819,9 @@ function syncFolderIdsFromSheet(sheetId) {
       const nameTrimmed = assignmentName.toString().trim();
       if (!nameTrimmed) continue;
       
+      // Bỏ qua "Điểm danh"
+      if (nameTrimmed === ATTENDANCE_SHEET_NAME) continue;
+      
       // Tìm folder khớp tên
       const folderInfo = folderMap.get(nameTrimmed.toLowerCase());
       
@@ -825,19 +838,58 @@ function syncFolderIdsFromSheet(sheetId) {
     Logger.log(`\n✨ Hoàn tất! Đã đồng bộ ${savedCount} folder IDs vào Script Properties.`);
     Logger.log(`👉 Bây giờ có thể chạy reconcileCheckboxes() để đối soát.`);
     
+    return savedCount > 0;
+    
   } catch (err) {
     Logger.log(`❌ Lỗi đồng bộ: ${err.message}`);
+    return false;
   }
 }
 
 /**
  * Đối soát checkboxes
- * GỌI TỪ FORM: FormLib.reconcileCheckboxes()
+ * GỌI TỪ FORM: FormLib.reconcileCheckboxes(classFolderId)
+ * TỰ ĐỘNG đồng bộ folder IDs nếu phát hiện thiếu
+ * 
+ * @param {string} classFolderId - Class Folder ID (bắt buộc nếu chưa có folder IDs). Lấy từ cell I3 trong Sheet Config
  */
-function reconcileCheckboxes() {
+function reconcileCheckboxes(classFolderId) {
   Logger.log("--- Bắt đầu Đối soát định kỳ ---");
   
-  const configs = ConfigManager.loadAll();
+  let configs = ConfigManager.loadAll();
+  
+  // Kiểm tra xem có config nào thiếu folderId không
+  const missingFolderIds = configs.filter(c => !c.isAttendance && !c.folderId);
+  
+  if (missingFolderIds.length > 0) {
+    Logger.log(`⚠️ Phát hiện ${missingFolderIds.length} assignments thiếu Folder ID`);
+    
+    if (!classFolderId) {
+      Logger.log(`❌ KHÔNG THỂ TỰ ĐỘNG ĐỒNG BỘ: Thiếu Class Folder ID`);
+      Logger.log(`📋 Các bước khắc phục:`);
+      Logger.log(`1. Lấy Class Folder ID từ cell I3 trong Sheet Config`);
+      Logger.log(`2. Gọi: FormLib.reconcileCheckboxes(classFolderId)`);
+      Logger.log(`   HOẶC chạy syncFolderIdsFromSheet(classFolderId) trước`);
+      return;
+    }
+    
+    Logger.log(`🔄 Đang tự động đồng bộ Folder IDs...`);
+    
+    const syncSuccess = syncFolderIdsFromSheet(classFolderId);
+    
+    if (syncSuccess) {
+      Logger.log(`✅ Đồng bộ thành công! Đang reload configs...`);
+      // Reload configs sau khi đồng bộ
+      configs = ConfigManager.loadAll();
+    } else {
+      Logger.log(`❌ Đồng bộ thất bại. Các bước khắc phục:`);
+      Logger.log(`1. Kiểm tra Class Folder ID có đúng không`);
+      Logger.log(`2. Đảm bảo đã tạo các assignment folders trên Drive`);
+      Logger.log(`3. Chạy lại với: FormLib.reconcileCheckboxes(classFolderId)`);
+      return;
+    }
+  }
+  
   let totalReconciled = 0;
   
   for (const config of configs) {

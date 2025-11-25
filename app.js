@@ -758,7 +758,7 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     chip.appendChild(icon);
     chip.appendChild(label);
 
-    // Nút tạo lại Sheet (chỉ hiển thị nếu bài tập đã tồn tại)
+    // Nút tạo lại Sheet và Form (chỉ hiển thị nếu bài tập đã tồn tại)
     if (assignment.folderId) {
         const recreateSheetBtn = document.createElement('button');
         recreateSheetBtn.type = 'button';
@@ -2584,8 +2584,154 @@ async function listAssignmentFolders(classFolderId) {
 }
 
 /**
- * Đồng bộ và liên kết lại class system
- * Quét folder, form, sheet và ghi vào Script Properties thông qua Sheet config
+ * Quét folder lớp để tìm Form và Sheet hiện có
+ * @param {string} classFolderId - ID của folder lớp
+ * @returns {object} - {formFile: {...}, sheetFile: {...}, assignmentFolders: [...]}
+ */
+async function scanClassFolder(classFolderId) {
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `'${classFolderId}' in parents and trashed=false`,
+            fields: 'files(id, name, mimeType, webViewLink)',
+            pageSize: 100
+        });
+        
+        const files = response.result.files || [];
+        let formFile = null;
+        let sheetFile = null;
+        const assignmentFolders = [];
+        
+        for (const file of files) {
+            if (file.mimeType === 'application/vnd.google-apps.form') {
+                formFile = file;
+            } else if (file.mimeType === 'application/vnd.google-apps.spreadsheet') {
+                sheetFile = file;
+            } else if (file.mimeType === 'application/vnd.google-apps.folder') {
+                // Bỏ qua folder "File responses"
+                if (!file.name.toLowerCase().includes('file responses')) {
+                    assignmentFolders.push(file);
+                }
+            }
+        }
+        
+        return { formFile, sheetFile, assignmentFolders };
+    } catch (e) {
+        console.error('Lỗi quét folder lớp:', e);
+        return { formFile: null, sheetFile: null, assignmentFolders: [] };
+    }
+}
+
+/**
+ * Kiểm tra xem Form có tồn tại không
+ */
+async function checkFormExists(formId) {
+    if (!formId) return false;
+    try {
+        const response = await gapi.client.drive.files.get({
+            fileId: formId,
+            fields: 'id, name'
+        });
+        return response && response.result;
+    } catch (e) {
+        console.log(`Form ${formId} không tồn tại hoặc không có quyền truy cập:`, e);
+        return false;
+    }
+}
+
+/**
+ * Kiểm tra xem Sheet có tồn tại không
+ */
+async function checkSheetExists(sheetId) {
+    if (!sheetId) return false;
+    try {
+        const response = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: sheetId
+        });
+        return response && response.result;
+    } catch (e) {
+        console.log(`Sheet ${sheetId} không tồn tại hoặc không có quyền truy cập:`, e);
+        return false;
+    }
+}
+
+/**
+ * Tạo lại Sheet cho class (khi Sheet bị xóa)
+ * @param {object} profile - Class profile
+ * @returns {string} - Sheet ID mới
+ */
+async function recreateClassSheet(profile) {
+    updateStatus(`🔄 Phát hiện Sheet bị xóa. Đang tạo lại Sheet cho "${profile.name}"...`);
+    
+    const rootId = inpRootFolderId.value.trim();
+    const tmplSheetId = TEMPLATE_SHEET_ID;
+    
+    if (!rootId || !profile.classFolderId) {
+        updateStatus('❌ Thiếu Root Folder ID hoặc Class Folder ID', true);
+        throw new Error('Missing Root/Class Folder ID');
+    }
+    
+    try {
+        // 1. Copy Sheet template
+        updateStatus(`📋 Đang copy Sheet template...`);
+        const newSheet = await apiCopyFile(
+            tmplSheetId,
+            `📊 ${profile.name}`,
+            profile.classFolderId
+        );
+        const newSheetId = newSheet.id;
+        updateStatus(`✅ Đã tạo Sheet mới: ${newSheetId}`);
+        
+        // 2. Ghi config vào Sheet (I1, I3, I4, I5)
+        updateStatus(`📝 Đang ghi cấu hình vào Sheet...`);
+        await apiUpdateSheetConfig(newSheetId, profile.name, profile.classFolderId, profile.formId || '');
+        
+        // 3. Tạo các sheet bài tập (duplicate từ template)
+        if (profile.assignments && profile.assignments.length > 0) {
+            updateStatus(`📑 Đang tạo ${profile.assignments.length} sheet bài tập...`);
+            await apiCreateAssignmentSheets(newSheetId, profile.assignments);
+        }
+        
+        // 4. Ghi danh sách bài tập vào tab Cấu Hình
+        if (profile.assignments && profile.assignments.length > 0) {
+            updateStatus(`✍️ Đang điền danh sách bài tập vào Sheet...`);
+            await apiWriteAssignmentsToConfig(newSheetId, profile.assignments);
+        }
+        
+        // 5. Liên kết Form với Sheet mới (nếu có Form)
+        if (profile.formId) {
+            updateStatus(`🔗 Đang liên kết Form với Sheet mới...`);
+            await apiLinkFormToSheet(profile.formId, newSheetId);
+        }
+        
+        // 6. Ghi email vào config (cell H6)
+        const userEmail = await getUserEmail();
+        if (userEmail) {
+            await apiWriteUserEmailToConfig(newSheetId, userEmail);
+        }
+        
+        // 7. Cập nhật profile với Sheet ID mới
+        profile.sheetId = newSheetId;
+        profile.sheetUrl = newSheet.webViewLink;
+        
+        // 8. Lưu vào localStorage
+        const idx = classProfiles.findIndex(p => p.id === profile.id);
+        if (idx !== -1) {
+            classProfiles[idx] = profile;
+            localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+        }
+        
+        updateStatus(`✨ Đã tạo lại Sheet thành công!`);
+        return newSheetId;
+        
+    } catch (e) {
+        updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
+        throw e;
+    }
+}
+
+/**
+ * Đồng bộ và liên kết lại class system - NÂNG CẤP
+ * Quét folder lớp, phát hiện Form/Sheet bị mất, tự động tạo lại và liên kết
  */
 async function syncAndLinkClassSystem() {
     const selectedId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
@@ -2601,46 +2747,187 @@ async function syncAndLinkClassSystem() {
         return;
     }
     
-    if (!profile.sheetId) {
-        updateStatus("✗ Lớp này chưa có Sheet ID. Cần tạo lớp qua Auto Create.", true);
+    if (!profile.classFolderId) {
+        updateStatus("✗ Lớp này chưa có Class Folder ID.", true);
         return;
     }
     
-    updateStatus(`🔄 Đang đồng bộ lớp "${profile.name}"...`);
+    updateStatus(`🔍 Đang quét folder lớp "${profile.name}"...`);
     
     try {
-        // 1. Quét lại các assignment folders trong lớp
-        const assignments = await listAssignmentFolders(profile.id);
-        updateStatus(`→ Tìm thấy ${assignments.length} loại bài tập.`);
+        // BƯỚC 1: Quét folder lớp để tìm Form và Sheet hiện có
+        const { formFile, sheetFile, assignmentFolders } = await scanClassFolder(profile.classFolderId);
         
-        // 2. Ghi vào Sheet Config (cột A-F)
-        if (assignments.length > 0) {
-            await apiWriteAssignmentsToConfig(profile.sheetId, assignments);
-            updateStatus(`✓ Đã ghi ${assignments.length} bài tập vào Sheet Config.`);
+        console.log('[SYNC] Kết quả quét:', { formFile, sheetFile, assignmentFolders: assignmentFolders.length });
+        
+        let needFormLink = false;
+        let needSheetLink = false;
+        let currentFormId = formFile ? formFile.id : null;
+        let currentSheetId = sheetFile ? sheetFile.id : null;
+        
+        // BƯỚC 2: Kiểm tra Form
+        if (!formFile) {
+            updateStatus(`⚠️ Không tìm thấy Form trong folder. Đang tạo Form mới...`);
+            
+            // Tạo Form mới từ template
+            const newForm = await apiCopyFile(
+                TEMPLATE_FORM_ID,
+                `📝 ${profile.name}`,
+                profile.classFolderId
+            );
+            currentFormId = newForm.id;
+            updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
+            needFormLink = true;
+        } else {
+            updateStatus(`✅ Tìm thấy Form: "${formFile.name}"`);
+            currentFormId = formFile.id;
+            
+            // Kiểm tra Form có còn tồn tại không (có thể bị xóa nhưng chưa vào thùng rác)
+            const formExists = await checkFormExists(currentFormId);
+            if (!formExists) {
+                updateStatus(`⚠️ Form bị lỗi. Đang tạo Form mới...`);
+                const newForm = await apiCopyFile(
+                    TEMPLATE_FORM_ID,
+                    `📝 ${profile.name}`,
+                    profile.classFolderId
+                );
+                currentFormId = newForm.id;
+                updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
+                needFormLink = true;
+            }
         }
         
-        // 3. Cập nhật Form choices
-        if (profile.formId && assignments.length > 0) {
-            await apiUpdateFormChoices(profile.formId, assignments);
-            updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn.`);
+        // BƯỚC 3: Kiểm tra Sheet
+        if (!sheetFile) {
+            updateStatus(`⚠️ Không tìm thấy Sheet trong folder. Đang tạo Sheet mới...`);
+            
+            // Tạo Sheet mới từ template
+            const newSheet = await apiCopyFile(
+                TEMPLATE_SHEET_ID,
+                `📊 ${profile.name}`,
+                profile.classFolderId
+            );
+            currentSheetId = newSheet.id;
+            updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
+            
+            // Ghi config vào Sheet mới
+            await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
+            
+            // Tạo các assignment sheets
+            if (assignmentFolders.length > 0) {
+                const assignments = assignmentFolders.map(f => ({ name: f.name, folderId: f.id }));
+                await apiCreateAssignmentSheets(currentSheetId, assignments);
+                await apiWriteAssignmentsToConfig(currentSheetId, assignments);
+            }
+            
+            needSheetLink = true;
+        } else {
+            updateStatus(`✅ Tìm thấy Sheet: "${sheetFile.name}"`);
+            currentSheetId = sheetFile.id;
+            
+            // Kiểm tra Sheet có còn tồn tại không
+            const sheetExists = await checkSheetExists(currentSheetId);
+            if (!sheetExists) {
+                updateStatus(`⚠️ Sheet bị lỗi. Đang tạo Sheet mới...`);
+                const newSheet = await apiCopyFile(
+                    TEMPLATE_SHEET_ID,
+                    `📊 ${profile.name}`,
+                    profile.classFolderId
+                );
+                currentSheetId = newSheet.id;
+                updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
+                
+                // Ghi config vào Sheet mới
+                await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
+                
+                // Tạo các assignment sheets
+                if (assignmentFolders.length > 0) {
+                    const assignments = assignmentFolders.map(f => ({ name: f.name, folderId: f.id }));
+                    await apiCreateAssignmentSheets(currentSheetId, assignments);
+                    await apiWriteAssignmentsToConfig(currentSheetId, assignments);
+                }
+                
+                needSheetLink = true;
+            }
         }
         
-        // 4. Cập nhật profile trong localStorage
-        profile.assignments = assignments;
-        const profileIndex = classProfiles.findIndex(p => p.id === profile.id);
-        if (profileIndex > -1) {
-            classProfiles[profileIndex] = profile;
+        // BƯỚC 4: Cập nhật profile với ID mới
+        profile.formId = currentFormId;
+        profile.sheetId = currentSheetId;
+        profile.formUrl = `https://docs.google.com/forms/d/${currentFormId}/edit`;
+        profile.sheetUrl = `https://docs.google.com/spreadsheets/d/${currentSheetId}/edit`;
+        
+        // Cập nhật assignments từ folder
+        if (assignmentFolders.length > 0) {
+            profile.assignments = assignmentFolders.map(f => ({
+                name: f.name,
+                folderId: f.id
+            }));
+        }
+        
+        // Lưu vào localStorage
+        const idx = classProfiles.findIndex(p => p.id === selectedId);
+        if (idx !== -1) {
+            classProfiles[idx] = profile;
             localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
         }
         
-        // 5. Reload UI
-        updateAssignmentSelectionUI();
-        updateStatus(`🎉 Đồng bộ hoàn tất! Lớp "${profile.name}" đã được cập nhật.`);
+        // BƯỚC 5: Ghi lại config vào Sheet (đảm bảo đồng bộ)
+        updateStatus(`📝 Đang cập nhật config vào Sheet...`);
+        await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
         
-    } catch (error) {
-        const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
-        updateStatus(`✗ Lỗi đồng bộ: ${errorMessage}`, true);
-        console.error('[SYNC] Error:', error);
+        // Ghi danh sách assignments
+        if (profile.assignments && profile.assignments.length > 0) {
+            await apiWriteAssignmentsToConfig(currentSheetId, profile.assignments);
+        }
+        
+        // Ghi email user
+        const userEmail = await getUserEmail();
+        if (userEmail) {
+            await apiWriteUserEmailToConfig(currentSheetId, userEmail);
+        }
+        
+        // BƯỚC 6: Cập nhật lựa chọn trong Form (danh sách bài tập)
+        updateStatus(`📋 Đang cập nhật lựa chọn bài tập trong Form...`);
+        await apiUpdateFormChoices(currentFormId, profile.assignments || []);
+        
+        // BƯỚC 7: Yêu cầu user liên kết thủ công nếu cần
+        if (needFormLink || needSheetLink) {
+            let linkInstructions = '\\n\\n🔗 CẦN LIÊN KẾT THỦ CÔNG:\\n';
+            
+            if (needFormLink && needSheetLink) {
+                linkInstructions += `\\n1️⃣ Mở Form (đã tự động mở tab mới)\\n`;
+                linkInstructions += `2️⃣ Click "Responses" → "Select response destination"\\n`;
+                linkInstructions += `3️⃣ Chọn "Select existing spreadsheet"\\n`;
+                linkInstructions += `4️⃣ Dán Sheet URL và chọn sheet đúng\\n`;
+                linkInstructions += `\\n✅ Sau khi liên kết xong, đóng tab này lại!`;
+                
+                // Mở Form để user liên kết
+                window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
+            } else if (needFormLink) {
+                linkInstructions += `\\n⚠️ Form mới cần liên kết với Sheet hiện có.\\n`;
+                linkInstructions += `Đã tự động mở Form. Hãy link với Sheet!`;
+                window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
+            } else if (needSheetLink) {
+                linkInstructions += `\\n⚠️ Sheet mới đã được tạo.\\n`;
+                linkInstructions += `Form hiện tại cần được link lại với Sheet mới.\\n`;
+                linkInstructions += `Đã tự động mở Form. Hãy link với Sheet!`;
+                window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
+            }
+            
+            updateStatus(`✅ Đồng bộ hoàn tất!${linkInstructions}`);
+            alert(`Đồng bộ thành công!${linkInstructions}`);
+        } else {
+            updateStatus(`✅ Đồng bộ hoàn tất! Tất cả thành phần đã liên kết đúng.`);
+        }
+        
+        // Reload UI
+        loadClassProfiles();
+        updateAssignmentSelectionUI();
+        
+    } catch (e) {
+        console.error('[SYNC] Lỗi:', e);
+        updateStatus(`❌ Lỗi đồng bộ: ${e.message}`, true);
     }
 }
 
@@ -2652,6 +2939,27 @@ async function scanAndSyncClasses(silent = false) {
             alert("Vui lòng vào Cài đặt -> Tự động hóa để nhập ID Thư mục cha (Root) trước.");
         }
         return;
+    }
+
+    // [NEW] Kiểm tra và tạo lại Sheet nếu thiếu
+    const selectedId = classProfileSelectValue ? classProfileSelectValue.value : classProfileSelect.value;
+    if (selectedId) {
+        const currentProfile = classProfiles.find(p => p.id === selectedId);
+        if (currentProfile && currentProfile.sheetId) {
+            const sheetExists = await checkSheetExists(currentProfile.sheetId);
+            if (!sheetExists) {
+                try {
+                    if (!silent) updateStatus(`⚠️ Phát hiện Sheet bị xóa cho lớp "${currentProfile.name}"`);
+                    await recreateClassSheet(currentProfile);
+                    if (!silent) updateStatus('✅ Đã tạo lại Sheet thành công!');
+                    // Reload để cập nhật UI
+                    loadClassProfiles();
+                } catch (e) {
+                    updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
+                    return;
+                }
+            }
+        }
     }
 
     console.log("[SCAN] Bắt đầu quét Root Folder ID:", rootId, silent ? "(silent mode)" : "");
