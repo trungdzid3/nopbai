@@ -257,17 +257,6 @@ function bindQuickActions() {
         };
     }
 
-    if (btnCheckFormPublished) {
-        btnCheckFormPublished.onclick = () => {
-            const profile = getClassProfile(classProfileSelect.value);
-            if (!profile || !profile.formId) {
-                updateStatus("⚠ Lớp này chưa có Form ID.", true);
-                return;
-            }
-            checkFormPublishedAndSaveLink(profile);
-        };
-    }
-
     if (btnSaveSystemConfig) btnSaveSystemConfig.onclick = () => {
         localStorage.setItem('root_folder_id', inpRootFolderId.value);
         updateStatus("✓ Đã lưu ID Thư mục cha.");
