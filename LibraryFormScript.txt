@@ -8,9 +8,10 @@
  * Hướng dẫn setup:
  * 1. Tạo standalone Apps Script project mới
  * 2. Copy toàn bộ code này vào
- * 3. Deploy → New deployment → Type: Library
- * 4. Copy Script ID và phiên bản
- * 5. Trong mỗi Form template/lớp:
+ * 3. Bật Service "Drive API" (Add a service → Drive API → Add)
+ * 4. Deploy → New deployment → Type: Library
+ * 5. Copy Script ID và phiên bản
+ * 6. Trong mỗi Form template/lớp:
  *    - Resources → Libraries → Add library (paste Script ID)
  *    - Chọn phiên bản mới nhất
  *    - Identifier: "FormLib"
@@ -22,6 +23,53 @@
  * 
  * ============================================================================
  */
+
+// ==================================================================
+// TIỆN ÍCH: TỰ ĐỘNG ĐỔI TÊN APPS SCRIPT PROJECT
+// ==================================================================
+
+/**
+ * Hàm tự động đổi tên Apps Script Project của Form này
+ * GỌI THỦCÔNG 1 LẦN sau khi tạo lớp mới để đặt tên project
+ * 
+ * Cách dùng:
+ * 1. Mở Apps Script editor của Form
+ * 2. Run → autoRenameScriptProject
+ * 3. Authorize lần đầu
+ * 4. F5 reload page để thấy tên mới
+ */
+function autoRenameScriptProject() {
+  try {
+    // Lấy tên form hiện tại
+    const form = FormApp.getActiveForm();
+    const formTitle = form.getTitle();
+    
+    // Tạo tên project: [FormScript] TÊN_LỚP
+    const scriptId = ScriptApp.getScriptId();
+    const projectName = `[FormScript] ${formTitle}`;
+    
+    // Gọi Drive API để đổi tên (Cần bật Service "Drive API" trước)
+    Drive.Files.update({ name: projectName }, scriptId);
+    
+    Logger.log(`✅ Đã đổi tên Project thành: "${projectName}"`);
+    Logger.log("Lưu ý: Reload page (F5) để thấy tên mới trên giao diện.");
+    
+    Browser.msgBox(
+      "Thành công!",
+      `Đã đổi tên Project thành: "${projectName}"\n\nReload page (F5) để thấy thay đổi.`,
+      Browser.Buttons.OK
+    );
+  } catch (e) {
+    Logger.log("❌ Lỗi: " + e.message);
+    Logger.log("👉 Hãy chắc chắn đã bật 'Drive API' trong Services.");
+    
+    Browser.msgBox(
+      "Lỗi",
+      "Không thể đổi tên Project.\n\nĐảm bảo đã bật 'Drive API' trong Services (góc trái).",
+      Browser.Buttons.OK
+    );
+  }
+}
 
 // ==================================================================
 // PHẦN CẤU HÌNH CƠ BẢN

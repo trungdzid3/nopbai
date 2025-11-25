@@ -946,6 +946,15 @@ async function saveClassProfileManual() {
         classProfileSelect.value = classFolderId;
         handleClassSelectChange();
         classFormModal.setAttribute('aria-hidden', 'true');
+        
+        // Scroll to status log
+        setTimeout(() => {
+            const statusLog = document.getElementById('status-log');
+            if (statusLog) {
+                statusLog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 300);
+        
         editClassButton.disabled = false;
     } catch (error) {
         const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
@@ -1020,25 +1029,27 @@ async function createClassSystemAutomatic() {
             updateStatus("   ℹ Form có thể cần publish thủ công nếu không hoạt động");
         }
         
-        // 2.1. Rename Form's script project to class name
+        // 2.1. [DISABLED] Rename Form's script project
+        // NOTE: Đổi tên Apps Script Project từ client-side rất khó và không ổn định.
+        // GIẢI PHÁP TỐT HƠN: Dùng Apps Script bound script gọi Drive.Files.update()
+        // Xem: LibraryFormScript.txt - hàm autoRenameScriptProject()
+        // 
+        // Code cũ (REST API - không ổn định):
+        /*
         try {
             updateStatus("   → Đang đổi tên Script của Form...");
             
-            // Lấy thông tin form để có script ID
             const formInfoResponse = await gapi.client.request({
                 path: `https://forms.googleapis.com/v1/forms/${form.id}`,
                 method: 'GET'
             });
             
             const linkedScriptId = formInfoResponse.result.linkedSheetId || null;
-            
-            // Nếu Forms API không trả về script ID, search trong Drive
             let formScriptId = null;
             
             if (linkedScriptId) {
                 formScriptId = linkedScriptId;
             } else {
-                // Fallback: Search trong Drive (với retry ngắn)
                 for (let attempt = 1; attempt <= 3; attempt++) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     
@@ -1070,17 +1081,24 @@ async function createClassSystemAutomatic() {
             console.warn('Không thể đổi tên script của form:', err);
             updateStatus(`   ⚠ Bỏ qua đổi tên Script Form`);
         }
+        */
+        updateStatus(`   ℹ Script Form sẽ giữ tên mặc định (đổi tên thủ công nếu cần)`);
 
         // 3. Copy Sheet
         updateStatus("3. Đang tạo Sheet...");
         const sheet = await apiCopyFile(tmplSheetId, `Bảng nhận xét - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Sheet: ${sheet.id}`);
         
-        // 3.1. Rename Sheet's script project to class name
+        // 3.1. [DISABLED] Rename Sheet's script project
+        // NOTE: Tương tự Form, đổi tên Apps Script Project từ client-side không ổn định.
+        // GIẢI PHÁP TỐT HƠN: Dùng Apps Script bound script gọi Drive.Files.update()
+        // Xem: LibrarySheetScript.txt - hàm autoRenameScriptProject()
+        // 
+        // Code cũ (REST API - không ổn định):
+        /*
         try {
             updateStatus("   → Đang đổi tên Script của Sheet...");
             
-            // Search script trong Drive (với retry ngắn)
             let sheetScriptId = null;
             
             for (let attempt = 1; attempt <= 3; attempt++) {
@@ -1113,6 +1131,8 @@ async function createClassSystemAutomatic() {
             console.warn('Không thể đổi tên script của sheet:', err);
             updateStatus(`   ⚠ Bỏ qua đổi tên Script Sheet`);
         }
+        */
+        updateStatus(`   ℹ Script Sheet sẽ giữ tên mặc định (đổi tên thủ công nếu cần)`);
 
         // 4. Ghi Config vào Sheet
         updateStatus("4. Đang cấu hình Sheet...");
@@ -1204,8 +1224,16 @@ async function createClassSystemAutomatic() {
         classProfiles.push(newProfile);
         localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
 
-        // Close modal first
+        // Close modal and scroll to status log
         classFormModal.setAttribute('aria-hidden', 'true');
+        
+        // Scroll to status log to see results
+        setTimeout(() => {
+            const statusLog = document.getElementById('status-log');
+            if (statusLog) {
+                statusLog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 300);
         
         // Then update UI
         loadClassProfiles();
