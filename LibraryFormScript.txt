@@ -759,8 +759,33 @@ function onFormSubmit(e, recipientEmail) {
     findAndMarkCheckbox(studentName, assignmentType, "onFormSubmit", isEarly, submissionStatus);
     
     // Gửi email thông báo
-    // Ưu tiên parameter, fallback sang Script Properties
-    const emailRecipient = recipientEmail || PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+    // Ưu tiên 1: Parameter từ wrapper
+    // Ưu tiên 2: Script Properties
+    // Ưu tiên 3: Sheet Config cell I6
+    let emailRecipient = recipientEmail;
+    
+    if (!emailRecipient) {
+      emailRecipient = PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+    }
+    
+    if (!emailRecipient) {
+      // Thử đọc từ Sheet Config cell I6
+      try {
+        const ss = getConfigSpreadsheet();
+        if (ss) {
+          const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+          if (configSheet) {
+            const emailFromSheet = configSheet.getRange('I6').getValue();
+            if (emailFromSheet && typeof emailFromSheet === 'string' && emailFromSheet.includes('@')) {
+              emailRecipient = emailFromSheet;
+              Logger.log(`📧 Lấy email từ Sheet Config (I6): ${emailRecipient}`);
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log(`⚠️ Không đọc được email từ Sheet: ${e.message}`);
+      }
+    }
     
     if (emailRecipient && emailRecipient !== "your_email@example.com") {
       try {
@@ -769,10 +794,11 @@ function onFormSubmit(e, recipientEmail) {
         MailApp.sendEmail(emailRecipient, subject, body);
         Logger.log(`✅ Đã gửi email thông báo đến: ${emailRecipient}`);
       } catch (mailErr) {
-        Logger.log(`Lỗi gửi email: ${mailErr.message}`);
+        Logger.log(`❌ Lỗi gửi email: ${mailErr.message}`);
       }
     } else {
-      Logger.log('ℹ️ Không gửi email: Chưa cấu hình RECIPIENT_EMAIL trong Script Properties');
+      Logger.log('ℹ️ Không gửi email: Chưa cấu hình email thông báo');
+      Logger.log('💡 Hướng dẫn: Ghi email vào Sheet "Cấu Hình" cell I6');
     }
     
   } catch (err) {

@@ -104,6 +104,67 @@ function showFirstTimeSetupGuide() {
 }
 
 /**
+ * Đối soát checkboxes - So sánh Drive và Sheet
+ * Menu: Tiện ích Lớp Học → Đối soát Checkbox
+ * 
+ * Chức năng:
+ * - Quét tất cả folders bài tập trên Drive
+ * - So sánh với danh sách học sinh trong Sheet
+ * - Tự động tick checkbox cho học sinh đã nộp nhưng chưa đánh dấu
+ */
+function reconcileCheckboxes() {
+  try {
+    // Lấy Class Folder ID từ cell I3
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = ss.getSheetByName('Cấu Hình');
+    
+    if (!configSheet) {
+      Browser.msgBox('Lỗi', 'Không tìm thấy sheet "Cấu Hình"', Browser.Buttons.OK);
+      return;
+    }
+    
+    const classFolderId = configSheet.getRange('I3').getValue();
+    
+    if (!classFolderId) {
+      Browser.msgBox(
+        'Thiếu thông tin',
+        'Chưa có Class Folder ID trong cell I3.\n\nHãy chạy "Đồng bộ & Liên kết" trên web app trước.',
+        Browser.Buttons.OK
+      );
+      return;
+    }
+    
+    // Gọi FormLib để thực hiện đối soát
+    Browser.msgBox(
+      'Bắt đầu đối soát',
+      'Đang quét Drive và cập nhật checkbox...\n\nQuá trình này có thể mất vài phút.',
+      Browser.Buttons.OK
+    );
+    
+    // Gọi FormLib.reconcileCheckboxes (Library của Form)
+    if (typeof FormLib !== 'undefined' && FormLib.reconcileCheckboxes) {
+      FormLib.reconcileCheckboxes(classFolderId);
+      
+      Browser.msgBox(
+        'Hoàn tất',
+        'Đã đối soát xong!\n\nKiểm tra Logs (Ctrl+Enter) để xem chi tiết.',
+        Browser.Buttons.OK
+      );
+    } else {
+      Browser.msgBox(
+        'Lỗi',
+        'Không tìm thấy FormLib.\n\nHãy đảm bảo đã add Library "FormLib" vào project này.',
+        Browser.Buttons.OK
+      );
+    }
+    
+  } catch (e) {
+    Logger.log('❌ Lỗi reconcileCheckboxes: ' + e.message);
+    Browser.msgBox('Lỗi', 'Lỗi khi đối soát: ' + e.message, Browser.Buttons.OK);
+  }
+}
+
+/**
  * Thực hiện cleanup với options (được gọi từ dialog)
  * Internal: Gọi từ HTML dialog
  */
