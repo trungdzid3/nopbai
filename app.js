@@ -2211,7 +2211,7 @@ function displaySubmissionStatus(statusList) {
         switch (itemData.status) {
             case 'processed': 
                 statusText = 'Đã xử lý'; 
-                classesToAdd.push('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'); 
+                classesToAdd.push('bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'); 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'overdue': 
