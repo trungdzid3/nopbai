@@ -981,9 +981,6 @@ async function createClassSystemAutomatic() {
     try {
         // 1. Tạo Folder Lớp
         const folder = await apiCreateFolder(name, rootId);
-        
-        // 1.1. Tạo subfolder "Học sinh" để chứa folder riêng của từng học sinh
-        const studentFolder = await apiCreateFolder("Học sinh", folder.id);
 
         // 2. Copy Form
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
@@ -1001,7 +998,7 @@ async function createClassSystemAutomatic() {
         // 3.1. [DISABLED] Rename Sheet's script project - use quickSetupSheet() instead
 
         // 4. Ghi Config vào Sheet
-        await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id, studentFolder.id);
+        await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id);
         
         // 4.1. Ghi email người dùng vào config
         const userEmail = LOGIN_HINT || (gapi.client.getToken() ? await getUserEmail() : null);
@@ -1059,8 +1056,7 @@ async function createClassSystemAutomatic() {
             formShortLink: formShortLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
-            formId: form.id,
-            studentFolderId: studentFolder.id  // Thêm ID folder học sinh
+            formId: form.id
         };
 
         classProfiles.push(newProfile);
@@ -1144,13 +1140,12 @@ async function apiCopyFile(fileId, name, parentId) {
     }).then(res => res.result);
 }
 
-async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId, studentFolderId) {
+async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) {
     // Ghi vào cột I:
     // I1: Tên lớp
     // I3: Folder ID
     // I4: Sheet ID
     // I5: Form ID
-    // I6: Student Folder ID (mới thêm)
     const updates = [
         {
             range: 'Cấu Hình!I1',
@@ -1167,10 +1162,6 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId, 
         {
             range: 'Cấu Hình!I5',
             values: [[formId]]
-        },
-        {
-            range: 'Cấu Hình!I6',
-            values: [[studentFolderId || '']]
         }
     ];
     
