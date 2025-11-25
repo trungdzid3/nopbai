@@ -1012,38 +1012,12 @@ async function createClassSystemAutomatic() {
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
         
-        // 2.0. Kiểm tra và publish form (nếu cần)
-        try {
-            updateStatus("   → Kiểm tra trạng thái publish...");
-            const formInfo = await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
-                method: 'GET'
-            });
-            
-            if (!formInfo.result.responderUri) {
-                updateStatus("   ⚠ Form chưa được publish, đang publish...");
-                // Forms API không hỗ trợ publish trực tiếp
-                // Workaround: Update form settings để trigger publish
-                await gapi.client.request({
-                    path: `https://forms.googleapis.com/v1/forms/${form.id}`,
-                    method: 'PATCH',
-                    body: {
-                        settings: {
-                            quizSettings: null // Trigger update
-                        }
-                    },
-                    params: {
-                        updateMask: 'settings'
-                    }
-                });
-                updateStatus("   ✓ Form đã được publish");
-            } else {
-                updateStatus("   ✓ Form đã sẵn sàng (published)");
-            }
-        } catch (err) {
-            console.warn('Không thể kiểm tra/publish form:', err);
-            updateStatus("   ℹ Form có thể cần publish thủ công nếu không hoạt động");
-        }
+        // 2.0. LƯU Ý: FORM CẦN PUBLISH THỦ CÔNG
+        // Forms API không hỗ trợ publish form từ client-side
+        // Form mới tạo luôn ở trạng thái DRAFT (chưa xuất bản)
+        updateStatus("   ⚠ LƯU Ý: Form cần PUBLISH THỦ CÔNG để nhận câu trả lời");
+        updateStatus(`   → Mở form tại: https://docs.google.com/forms/d/${form.id}/edit`);
+        updateStatus("   → Click 'Send' ở góc trên bên phải để publish form");
         
         // 2.1. [DISABLED] Rename Form's script project
         // NOTE: Đổi tên Apps Script Project từ client-side rất khó và không ổn định.
@@ -1620,13 +1594,7 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
     console.log(`[CONFIG] Hàng 2: Điểm danh`);
     console.log(`[CONFIG] Hàng 3+: ${assignmentRows.length} bài tập`);
     
-    // 5. Xóa toàn bộ range cũ (từ hàng 2)
-    await gapi.client.sheets.spreadsheets.values.clear({
-        spreadsheetId,
-        range: 'Cấu Hình!A2:F1000'
-    });
-    
-    // 6. Ghi hàng 2 (Điểm danh)
+    // 5. Ghi hàng 2 (Điểm danh)
     await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId,
         range: 'Cấu Hình!A2:F2',
@@ -1634,14 +1602,41 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
         resource: { values: [attendanceRow] }
     });
     
-    // 7. Ghi hàng 3+ (các assignments khác)
-    if (assignmentRows.length > 0) {
+    // 6. Ghi các assignments vào hàng 3-10 (giữ nguyên format checkbox)
+    // Template có sẵn 8 hàng trống (3-10) với checkbox ở cột E
+    const maxTemplateRows = 8; // Hàng 3-10
+    const rowsToWrite = assignmentRows.slice(0, maxTemplateRows);
+    
+    if (rowsToWrite.length > 0) {
         await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `Cấu Hình!A3:F${2 + assignmentRows.length}`,
+            range: `Cấu Hình!A3:F${2 + rowsToWrite.length}`,
             valueInputOption: 'USER_ENTERED',
-            resource: { values: assignmentRows }
+            resource: { values: rowsToWrite }
         });
+    }
+    
+    // 7. Xóa nội dung các hàng template còn trống (giữ format)
+    if (rowsToWrite.length < maxTemplateRows) {
+        const emptyStartRow = 3 + rowsToWrite.length;
+        const emptyEndRow = 10;
+        await gapi.client.sheets.spreadsheets.values.clear({
+            spreadsheetId,
+            range: `Cấu Hình!A${emptyStartRow}:F${emptyEndRow}`
+        });
+    }
+    
+    // 8. Nếu có nhiều hơn 8 assignments, append thêm (vượt quá template)
+    if (assignmentRows.length > maxTemplateRows) {
+        const extraRows = assignmentRows.slice(maxTemplateRows);
+        await gapi.client.sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: 'Cấu Hình!A11:F11',
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: { values: extraRows }
+        });
+        console.log(`[CONFIG] ⚠ Có ${extraRows.length} bài tập vượt quá template (hàng 11+)`);
     }
     
     console.log(`[CONFIG] ✓ Đã cập nhật bảng config: Hàng 2 (Điểm danh) + ${assignmentRows.length} hàng assignments`);
