@@ -443,7 +443,7 @@ function onFormSubmit(e, recipientEmail) {
     
     Logger.log(`Nộp bài: ${studentName} | ${assignmentType} | Status: ${submissionStatus} | Early: ${isEarly}`);
     
-    // Xử lý file trên Drive
+    // Xử lý file trên Drive - SỬA LẠI LOGIC
     if (!config.folderId) {
       Logger.log(`CẢNH BÁO: Config "${assignmentType}" chưa có Folder ID. Không thể lưu file.`);
     } else {
@@ -465,14 +465,23 @@ function onFormSubmit(e, recipientEmail) {
         }
       }
       
-      // Xử lý file upload
+      // Xử lý file upload - TÌM TỪ "File responses" FOLDER
       const fileResponses = formResponse.getItemResponses().filter(item => 
         item.getItem().getType() === FormApp.ItemType.FILE_UPLOAD
       );
       
       if (fileResponses.length > 0) {
+        Logger.log(`Tìm thấy ${fileResponses.length} file upload items`);
+        
         fileResponses.forEach(fileResponse => {
           const fileIds = fileResponse.getResponse();
+          
+          if (!fileIds || fileIds.length === 0) {
+            Logger.log('Không có file IDs trong response');
+            return;
+          }
+          
+          Logger.log(`Xử lý ${fileIds.length} files`);
           
           fileIds.forEach(fileId => {
             try {
@@ -480,6 +489,9 @@ function onFormSubmit(e, recipientEmail) {
               const fileName = file.getName();
               const fileSize = file.getSize();
               
+              Logger.log(`Xử lý file: "${fileName}" (${fileSize} bytes)`);
+              
+              // Kiểm tra file đã tồn tại trong folder học sinh
               const existingFiles = studentFolder.getFilesByName(fileName);
               if (existingFiles.hasNext()) {
                 const existingFile = existingFiles.next();
@@ -499,19 +511,23 @@ function onFormSubmit(e, recipientEmail) {
                   Logger.log(`Đổi tên file nhỏ hơn: "${fileName}" → "${newName}"`);
                 }
               } else {
+                // Move file từ "File responses" sang folder học sinh
                 file.moveTo(studentFolder);
-                Logger.log(`Di chuyển file: "${fileName}" vào "${studentFolder.getName()}"`);
+                Logger.log(`✅ Di chuyển file: "${fileName}" vào "${studentFolder.getName()}"`);
               }
               
+              // Convert DOCX sang PDF nếu cần
               if (/\.docx?$/i.test(fileName)) {
                 convertFileToPdf(file, studentFolder);
               }
               
             } catch (fileErr) {
-              Logger.log(`Lỗi xử lý file ID ${fileId}: ${fileErr.message}`);
+              Logger.log(`❌ Lỗi xử lý file ID ${fileId}: ${fileErr.message}`);
             }
           });
         });
+      } else {
+        Logger.log('Không có file upload trong form response');
       }
     }
     
@@ -717,78 +733,97 @@ function periodicCleanup() {
 /**
  * Đồng bộ Folder IDs từ Sheet Config sang Script Properties
  * GỌI THỦ CÔNG 1 LẦN sau khi đã tạo folders trên web
+ * 
+ * @param {string} sheetId - (Optional) Sheet ID. Nếu không truyền, sẽ lấy từ Script Properties
  */
-function syncFolderIdsFromSheet() {
+function syncFolderIdsFromSheet(sheetId) {
   Logger.log("--- Bắt đầu Đồng bộ Folder IDs ---");
   
   try {
-    const ss = getConfigSpreadsheet();
-    if (!ss) {
-      Logger.log('❌ Không tìm thấy Sheet.');
+    // Lấy Sheet ID từ parameter hoặc Script Properties
+    const props = PropertiesService.getScriptProperties();
+    if (!sheetId) {
+      sheetId = props.getProperty('SHEET_ID');
+    }
+    
+    if (!sheetId) {
+      Logger.log('❌ Không tìm thấy Sheet ID.');
+      Logger.log('👉 Hãy chạy "Đồng bộ & Liên kết" trên web app trước.');
       return;
     }
     
+    Logger.log(`📄 Sheet ID: ${sheetId}`);
+    
+    const ss = SpreadsheetApp.openById(sheetId);
     const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+    
     if (!configSheet) {
       Logger.log(`❌ Không tìm thấy sheet "${CONFIG_SHEET_NAME}".`);
       return;
     }
     
-    // Đọc folder IDs từ cột I (nếu có) hoặc quét Drive
-    const classFolder = configSheet.getRange('I3').getValue(); // Cell I3: Class Folder ID
+    // Đọc Class Folder ID từ cell I3
+    const classFolderId = configSheet.getRange('I3').getValue();
     
-    if (!classFolder) {
+    if (!classFolderId) {
       Logger.log('⚠️ Chưa có Class Folder ID ở I3. Không thể đồng bộ.');
       Logger.log('👉 Hãy chạy "Đồng bộ & Liên kết" trên web app trước.');
       return;
     }
     
-    Logger.log(`📂 Class Folder ID: ${classFolder}`);
+    Logger.log(`📂 Class Folder ID: ${classFolderId}`);
+    
+    // Đọc danh sách assignments từ Sheet Config (cột A)
+    const lastRow = configSheet.getLastRow();
+    const assignmentNames = configSheet.getRange(2, 1, Math.max(1, lastRow - 1), 1).getValues();
     
     // Quét các assignment folders trong class folder
-    try {
-      const folder = DriveApp.getFolderById(classFolder);
-      const subfolders = folder.getFolders();
-      const props = PropertiesService.getScriptProperties();
-      let savedCount = 0;
+    const classFolder = DriveApp.getFolderById(classFolderId);
+    const subfolders = classFolder.getFolders();
+    const folderMap = new Map();
+    
+    while (subfolders.hasNext()) {
+      const subfolder = subfolders.next();
+      const folderName = subfolder.getName();
       
-      while (subfolders.hasNext()) {
-        const subfolder = subfolders.next();
-        const folderName = subfolder.getName();
-        
-        // Bỏ qua các folder đặc biệt
-        if (folderName.toLowerCase().includes('file responses') ||
-            folderName.toLowerCase().includes('điểm danh')) {
-          continue;
-        }
-        
-        const folderId = subfolder.getId();
-        
-        // Tìm config tương ứng trong sheet
-        const configs = ConfigManager.loadAll();
-        const matchingConfig = configs.find(c => 
-          !c.isAttendance && 
-          (c.name === folderName || 
-           folderName.includes(c.name) || 
-           c.name.includes(folderName))
-        );
-        
-        if (matchingConfig) {
-          const key = `CONFIG_${matchingConfig.name}_FOLDER_ID`;
-          props.setProperty(key, folderId);
-          Logger.log(`✅ Đã lưu: ${key} = ${folderId}`);
-          savedCount++;
-        } else {
-          Logger.log(`⚠️ Không tìm thấy config cho folder: "${folderName}"`);
-        }
+      // Bỏ qua các folder đặc biệt
+      if (folderName.toLowerCase().includes('file responses') ||
+          folderName.toLowerCase().includes('điểm danh')) {
+        continue;
       }
       
-      Logger.log(`\n✨ Hoàn tất! Đã đồng bộ ${savedCount} folder IDs vào Script Properties.`);
-      Logger.log(`👉 Bây giờ có thể chạy reconcileCheckboxes() để đối soát.`);
-      
-    } catch (driveErr) {
-      Logger.log(`❌ Lỗi khi quét Drive: ${driveErr.message}`);
+      folderMap.set(folderName.toLowerCase().trim(), {
+        id: subfolder.getId(),
+        originalName: folderName
+      });
     }
+    
+    Logger.log(`📁 Tìm thấy ${folderMap.size} folders trên Drive`);
+    
+    // Match folders với Sheet Config
+    let savedCount = 0;
+    for (let i = 0; i < assignmentNames.length; i++) {
+      const assignmentName = assignmentNames[i][0];
+      if (!assignmentName || typeof assignmentName !== 'string') continue;
+      
+      const nameTrimmed = assignmentName.toString().trim();
+      if (!nameTrimmed) continue;
+      
+      // Tìm folder khớp tên
+      const folderInfo = folderMap.get(nameTrimmed.toLowerCase());
+      
+      if (folderInfo) {
+        const key = `CONFIG_${nameTrimmed}_FOLDER_ID`;
+        props.setProperty(key, folderInfo.id);
+        Logger.log(`✅ Đã lưu: ${key} = ${folderInfo.id}`);
+        savedCount++;
+      } else {
+        Logger.log(`⚠️ Không tìm thấy folder cho: "${nameTrimmed}"`);
+      }
+    }
+    
+    Logger.log(`\n✨ Hoàn tất! Đã đồng bộ ${savedCount} folder IDs vào Script Properties.`);
+    Logger.log(`👉 Bây giờ có thể chạy reconcileCheckboxes() để đối soát.`);
     
   } catch (err) {
     Logger.log(`❌ Lỗi đồng bộ: ${err.message}`);
