@@ -110,6 +110,236 @@ function quickSetupForm() {
   }
 }
 
+/**
+ * Đối soát checkboxes - So sánh danh sách nộp bài giữa Sheet và Drive
+ * GỌI ĐỊNH KỲ (khuyến nghị: mỗi 30 phút) hoặc THỦ CÔNG khi cần
+ * 
+ * Chức năng:
+ * - Quét tất cả folders bài tập trên Drive
+ * - So sánh với danh sách học sinh trong Sheet
+ * - Tự động tick checkbox cho học sinh đã nộp nhưng chưa đánh dấu
+ * - Hỗ trợ 4 phases matching: Exact → Last 2 words → Normalized → Typo detection
+ * 
+ * Cách dùng:
+ * 1. Tự động: Tạo trigger Time-driven chạy mỗi 30 phút
+ * 2. Thủ công: Run → reconcileCheckboxes
+ * 3. Từ wrapper: FormLib.reconcileCheckboxes(classFolderId)
+ * 
+ * @param {string} classFolderId - (Optional) Class Folder ID nếu cần tự động đồng bộ folder IDs
+ */
+function reconcileCheckboxes(classFolderId) {
+  Logger.log("--- Bắt đầu Đối soát định kỳ ---");
+  
+  let configs = ConfigManager.loadAll();
+  
+  // Kiểm tra xem có config nào thiếu folderId không
+  const missingFolderIds = configs.filter(c => !c.isAttendance && !c.folderId);
+  
+  if (missingFolderIds.length > 0) {
+    Logger.log(`⚠️ Phát hiện ${missingFolderIds.length} assignments thiếu Folder ID`);
+    
+    if (!classFolderId) {
+      Logger.log(`❌ KHÔNG THỂ TỰ ĐỘNG ĐỒNG BỘ: Thiếu Class Folder ID`);
+      Logger.log(`📋 Các bước khắc phục:`);
+      Logger.log(`1. Lấy Class Folder ID từ cell I3 trong Sheet Config`);
+      Logger.log(`2. Gọi: FormLib.reconcileCheckboxes(classFolderId)`);
+      Logger.log(`   HOẶC chạy syncFolderIdsFromSheet(classFolderId) trước`);
+      return;
+    }
+    
+    Logger.log(`🔄 Đang tự động đồng bộ Folder IDs...`);
+    
+    const syncSuccess = syncFolderIdsFromSheet(classFolderId);
+    
+    if (syncSuccess) {
+      Logger.log(`✅ Đồng bộ thành công! Đang reload configs...`);
+      // Reload configs sau khi đồng bộ
+      configs = ConfigManager.loadAll();
+    } else {
+      Logger.log(`❌ Đồng bộ thất bại. Các bước khắc phục:`);
+      Logger.log(`1. Kiểm tra Class Folder ID có đúng không`);
+      Logger.log(`2. Đảm bảo đã tạo các assignment folders trên Drive`);
+      Logger.log(`3. Chạy lại với: FormLib.reconcileCheckboxes(classFolderId)`);
+      return;
+    }
+  }
+  
+  let totalReconciled = 0;
+  
+  for (const config of configs) {
+    if (config.isAttendance || !config.folderId) {
+      if (config.isAttendance) {
+        Logger.log(`⏭️ Bỏ qua "${config.name}" (Điểm danh)`);
+      } else {
+        Logger.log(`⚠️ BỎ QUA "${config.name}" - CHƯA CÓ FOLDER_ID! Hãy link folder trên giao diện web trước.`);
+      }
+      continue;
+    }
+    
+    try {
+      Logger.log(`\n📋 Đối soát "${config.name}"...`);
+      
+      const ss = getConfigSpreadsheet();
+      if (!ss) {
+        Logger.log(`⚠️ Không tìm thấy Sheet.`);
+        continue;
+      }
+      
+      let sheet;
+      if (config.sheetTabId) {
+        sheet = getSheetByTabId(ss, config.sheetTabId);
+      } else {
+        sheet = ss.getSheetByName(config.sheetName);
+      }
+      
+      if (!sheet) {
+        Logger.log(`⚠️ Không tìm thấy sheet "${config.sheetName}"`);
+        continue;
+      }
+      
+      // Lấy danh sách học sinh trong sheet
+      const nameColumnValues = sheet.getRange(`B1:B${sheet.getLastRow()}`).getValues();
+      const checkboxValues = sheet.getRange(`G1:G${sheet.getLastRow()}`).getValues();
+      
+      const sheetStudents = [];
+      for (let i = 1; i < nameColumnValues.length; i++) {  // Bắt đầu từ i=1 để bỏ qua header
+        const cellValue = nameColumnValues[i][0];
+        const isChecked = checkboxValues[i][0];
+        
+        if (!cellValue || typeof cellValue !== 'string') continue;
+        if (cellValue.toLowerCase().includes('tên') || cellValue.toLowerCase().includes('name')) continue;
+        
+        sheetStudents.push({
+          name: cellValue.trim(),
+          row: i + 1,
+          isChecked: isChecked === true
+        });
+      }
+      
+      Logger.log(`  📊 Tìm thấy ${sheetStudents.length} học sinh trong sheet`);
+      
+      // Quét folder trên Drive để tìm ai đã nộp
+      const folder = DriveApp.getFolderById(config.folderId);
+      const subfolders = folder.getFolders();
+      const submittedStudents = new Set();
+      
+      while (subfolders.hasNext()) {
+        const subfolder = subfolders.next();
+        const studentName = subfolder.getName().replace(/^\[Quá hạn\]\s*/i, '').trim();
+        submittedStudents.add(studentName);
+      }
+      
+      Logger.log(`  📁 Tìm thấy ${submittedStudents.size} thư mục học sinh trên Drive`);
+      
+      // Đối soát: So sánh sheet vs Drive theo 4 bước
+      let fixed = 0;
+      for (const student of sheetStudents) {
+        let matchedName = null;
+        let matchLevel = null;
+        
+        // ========== PHASE 1: Exact match (lowercase) ==========
+        for (const submittedName of submittedStudents) {
+          if (student.name.toLowerCase().trim() === submittedName.toLowerCase().trim()) {
+            matchedName = submittedName;
+            matchLevel = "Phase 1 (Exact)";
+            break;
+          }
+        }
+        
+        // ========== PHASE 2: Last 2 words match (with diacritics) ==========
+        if (!matchedName) {
+          const studentWords = student.name.toLowerCase().split(/\s+/).filter(Boolean);
+          const studentLastTwo = studentWords.length >= 2 ? studentWords.slice(-2).join(' ') : null;
+          
+          if (studentLastTwo) {
+            for (const submittedName of submittedStudents) {
+              const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
+              const submittedLastTwo = submittedWords.length >= 2 ? submittedWords.slice(-2).join(' ') : null;
+              
+              if (submittedLastTwo && studentLastTwo === submittedLastTwo) {
+                matchedName = submittedName;
+                matchLevel = "Phase 2 (Last 2 words)";
+                break;
+              }
+            }
+          }
+        }
+        
+        // ========== PHASE 3: Normalized match (remove diacritics) ==========
+        if (!matchedName) {
+          const normalizedStudent = normalizeString(student.name);
+          const normalizedStudentWords = normalizedStudent.split(/\s+/).filter(Boolean);
+          const normalizedStudentLastTwo = normalizedStudentWords.length >= 2 ? normalizedStudentWords.slice(-2).join(' ') : normalizedStudent;
+          
+          for (const submittedName of submittedStudents) {
+            const normalizedSubmitted = normalizeString(submittedName);
+            const normalizedSubmittedWords = normalizedSubmitted.split(/\s+/).filter(Boolean);
+            const normalizedSubmittedLastTwo = normalizedSubmittedWords.length >= 2 ? normalizedSubmittedWords.slice(-2).join(' ') : normalizedSubmitted;
+            
+            // So sánh both directions
+            if (normalizedStudentLastTwo === normalizedSubmittedLastTwo ||
+                normalizedStudent === normalizedSubmitted) {
+              matchedName = submittedName;
+              matchLevel = "Phase 3 (Normalized)";
+              break;
+            }
+          }
+        }
+        
+        // ========== PHASE 4: Typo detection (Levenshtein distance) ==========
+        if (!matchedName) {
+          const normalizedStudent = normalizeString(student.name);
+          let typoCandidates = [];
+          
+          for (const submittedName of submittedStudents) {
+            const normalizedSubmitted = normalizeString(submittedName);
+            const distance = levenshteinDistance(normalizedStudent, normalizedSubmitted);
+            
+            if (distance > 0 && distance <= TYPO_THRESHOLD) {
+              typoCandidates.push({
+                name: submittedName,
+                distance: distance
+              });
+            }
+          }
+          
+          if (typoCandidates.length > 0) {
+            typoCandidates.sort((a, b) => a.distance - b.distance);
+            matchedName = typoCandidates[0].name;
+            matchLevel = `Phase 4 (Typo, distance: ${typoCandidates[0].distance})`;
+          }
+        }
+        
+        // ========== CẬP NHẬT CHECKBOX ==========
+        if (matchedName) {
+          if (!student.isChecked) {
+            // Đã nộp nhưng checkbox chưa tick -> Sửa
+            const checkboxCell = sheet.getRange(`G${student.row}`);
+            checkboxCell.setValue(true);
+            Logger.log(`  ✅ Sửa: "${student.name}" → "${matchedName}" (${matchLevel})`);
+            fixed++;
+          }
+          // Nếu checkbox đã tick đúng thì không cần sửa
+        } else {
+          // Chưa tìm thấy folder
+          if (student.isChecked) {
+            // Checkbox đã tick nhưng không có folder -> Cảnh báo
+            Logger.log(`  ⚠️ Nghi vấn: "${student.name}" checkbox đã tick nhưng không có folder`);
+          }
+        }
+      }
+      
+      Logger.log(`  ✨ Hoàn tất: ${fixed} checkbox được sửa`);
+      totalReconciled += fixed;
+      
+    } catch (err) {
+      Logger.log(`❌ Lỗi đối soát "${config.name}": ${err.message}`);
+    }
+  }
+  
+  Logger.log(`\n--- Hoàn tất Đối soát: ${totalReconciled} checkbox được sửa ---`);
+}
+
 // ==================================================================
 // PHẦN CẤU HÌNH CƠ BẢN
 // ==================================================================
@@ -844,226 +1074,6 @@ function syncFolderIdsFromSheet(classFolderId, sheetId) {
     Logger.log(`❌ Lỗi đồng bộ: ${err.message}`);
     return false;
   }
-}
-
-/**
- * Đối soát checkboxes
- * GỌI TỪ FORM: FormLib.reconcileCheckboxes(classFolderId)
- * TỰ ĐỘNG đồng bộ folder IDs nếu phát hiện thiếu
- * 
- * @param {string} classFolderId - Class Folder ID (bắt buộc nếu chưa có folder IDs). Lấy từ cell I3 trong Sheet Config
- */
-function reconcileCheckboxes(classFolderId) {
-  Logger.log("--- Bắt đầu Đối soát định kỳ ---");
-  
-  let configs = ConfigManager.loadAll();
-  
-  // Kiểm tra xem có config nào thiếu folderId không
-  const missingFolderIds = configs.filter(c => !c.isAttendance && !c.folderId);
-  
-  if (missingFolderIds.length > 0) {
-    Logger.log(`⚠️ Phát hiện ${missingFolderIds.length} assignments thiếu Folder ID`);
-    
-    if (!classFolderId) {
-      Logger.log(`❌ KHÔNG THỂ TỰ ĐỘNG ĐỒNG BỘ: Thiếu Class Folder ID`);
-      Logger.log(`📋 Các bước khắc phục:`);
-      Logger.log(`1. Lấy Class Folder ID từ cell I3 trong Sheet Config`);
-      Logger.log(`2. Gọi: FormLib.reconcileCheckboxes(classFolderId)`);
-      Logger.log(`   HOẶC chạy syncFolderIdsFromSheet(classFolderId) trước`);
-      return;
-    }
-    
-    Logger.log(`🔄 Đang tự động đồng bộ Folder IDs...`);
-    
-    const syncSuccess = syncFolderIdsFromSheet(classFolderId);
-    
-    if (syncSuccess) {
-      Logger.log(`✅ Đồng bộ thành công! Đang reload configs...`);
-      // Reload configs sau khi đồng bộ
-      configs = ConfigManager.loadAll();
-    } else {
-      Logger.log(`❌ Đồng bộ thất bại. Các bước khắc phục:`);
-      Logger.log(`1. Kiểm tra Class Folder ID có đúng không`);
-      Logger.log(`2. Đảm bảo đã tạo các assignment folders trên Drive`);
-      Logger.log(`3. Chạy lại với: FormLib.reconcileCheckboxes(classFolderId)`);
-      return;
-    }
-  }
-  
-  let totalReconciled = 0;
-  
-  for (const config of configs) {
-    if (config.isAttendance || !config.folderId) {
-      if (config.isAttendance) {
-        Logger.log(`⏭️ Bỏ qua "${config.name}" (Điểm danh)`);
-      } else {
-        Logger.log(`⚠️ BỎ QUA "${config.name}" - CHƯA CÓ FOLDER_ID! Hãy link folder trên giao diện web trước.`);
-      }
-      continue;
-    }
-    
-    try {
-      Logger.log(`\n📋 Đối soát "${config.name}"...`);
-      
-      const ss = getConfigSpreadsheet();
-      if (!ss) {
-        Logger.log(`⚠️ Không tìm thấy Sheet.`);
-        continue;
-      }
-      
-      let sheet;
-      if (config.sheetTabId) {
-        sheet = getSheetByTabId(ss, config.sheetTabId);
-      } else {
-        sheet = ss.getSheetByName(config.sheetName);
-      }
-      
-      if (!sheet) {
-        Logger.log(`⚠️ Không tìm thấy sheet "${config.sheetName}"`);
-        continue;
-      }
-      
-      // Lấy danh sách học sinh trong sheet
-      const nameColumnValues = sheet.getRange(`B1:B${sheet.getLastRow()}`).getValues();
-      const checkboxValues = sheet.getRange(`G1:G${sheet.getLastRow()}`).getValues();
-      
-      const sheetStudents = [];
-      for (let i = 1; i < nameColumnValues.length; i++) {  // Bắt đầu từ i=1 để bỏ qua header
-        const cellValue = nameColumnValues[i][0];
-        const isChecked = checkboxValues[i][0];
-        
-        if (!cellValue || typeof cellValue !== 'string') continue;
-        if (cellValue.toLowerCase().includes('tên') || cellValue.toLowerCase().includes('name')) continue;
-        
-        sheetStudents.push({
-          name: cellValue.trim(),
-          row: i + 1,
-          isChecked: isChecked === true
-        });
-      }
-      
-      Logger.log(`  📊 Tìm thấy ${sheetStudents.length} học sinh trong sheet`);
-      
-      // Quét folder trên Drive để tìm ai đã nộp
-      const folder = DriveApp.getFolderById(config.folderId);
-      const subfolders = folder.getFolders();
-      const submittedStudents = new Set();
-      
-      while (subfolders.hasNext()) {
-        const subfolder = subfolders.next();
-        const studentName = subfolder.getName().replace(/^\[Quá hạn\]\s*/i, '').trim();
-        submittedStudents.add(studentName);
-      }
-      
-      Logger.log(`  📁 Tìm thấy ${submittedStudents.size} thư mục học sinh trên Drive`);
-      
-      // Đối soát: So sánh sheet vs Drive theo 4 bước
-      let fixed = 0;
-      for (const student of sheetStudents) {
-        let matchedName = null;
-        let matchLevel = null;
-        
-        // ========== PHASE 1: Exact match (lowercase) ==========
-        for (const submittedName of submittedStudents) {
-          if (student.name.toLowerCase().trim() === submittedName.toLowerCase().trim()) {
-            matchedName = submittedName;
-            matchLevel = "Phase 1 (Exact)";
-            break;
-          }
-        }
-        
-        // ========== PHASE 2: Last 2 words match (with diacritics) ==========
-        if (!matchedName) {
-          const studentWords = student.name.toLowerCase().split(/\s+/).filter(Boolean);
-          const studentLastTwo = studentWords.length >= 2 ? studentWords.slice(-2).join(' ') : null;
-          
-          if (studentLastTwo) {
-            for (const submittedName of submittedStudents) {
-              const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
-              const submittedLastTwo = submittedWords.length >= 2 ? submittedWords.slice(-2).join(' ') : null;
-              
-              if (submittedLastTwo && studentLastTwo === submittedLastTwo) {
-                matchedName = submittedName;
-                matchLevel = "Phase 2 (Last 2 words)";
-                break;
-              }
-            }
-          }
-        }
-        
-        // ========== PHASE 3: Normalized match (remove diacritics) ==========
-        if (!matchedName) {
-          const normalizedStudent = normalizeString(student.name);
-          const normalizedStudentWords = normalizedStudent.split(/\s+/).filter(Boolean);
-          const normalizedStudentLastTwo = normalizedStudentWords.length >= 2 ? normalizedStudentWords.slice(-2).join(' ') : normalizedStudent;
-          
-          for (const submittedName of submittedStudents) {
-            const normalizedSubmitted = normalizeString(submittedName);
-            const normalizedSubmittedWords = normalizedSubmitted.split(/\s+/).filter(Boolean);
-            const normalizedSubmittedLastTwo = normalizedSubmittedWords.length >= 2 ? normalizedSubmittedWords.slice(-2).join(' ') : normalizedSubmitted;
-            
-            // So sánh both directions
-            if (normalizedStudentLastTwo === normalizedSubmittedLastTwo ||
-                normalizedStudent === normalizedSubmitted) {
-              matchedName = submittedName;
-              matchLevel = "Phase 3 (Normalized)";
-              break;
-            }
-          }
-        }
-        
-        // ========== PHASE 4: Typo detection (Levenshtein distance) ==========
-        if (!matchedName) {
-          const normalizedStudent = normalizeString(student.name);
-          let typoCandidates = [];
-          
-          for (const submittedName of submittedStudents) {
-            const normalizedSubmitted = normalizeString(submittedName);
-            const distance = levenshteinDistance(normalizedStudent, normalizedSubmitted);
-            
-            if (distance > 0 && distance <= TYPO_THRESHOLD) {
-              typoCandidates.push({
-                name: submittedName,
-                distance: distance
-              });
-            }
-          }
-          
-          if (typoCandidates.length > 0) {
-            typoCandidates.sort((a, b) => a.distance - b.distance);
-            matchedName = typoCandidates[0].name;
-            matchLevel = `Phase 4 (Typo, distance: ${typoCandidates[0].distance})`;
-          }
-        }
-        
-        // ========== CẬP NHẬT CHECKBOX ==========
-        if (matchedName) {
-          if (!student.isChecked) {
-            // Đã nộp nhưng checkbox chưa tick -> Sửa
-            const checkboxCell = sheet.getRange(`G${student.row}`);
-            checkboxCell.setValue(true);
-            Logger.log(`  ✅ Sửa: "${student.name}" → "${matchedName}" (${matchLevel})`);
-            fixed++;
-          }
-          // Nếu checkbox đã tick đúng thì không cần sửa
-        } else {
-          // Chưa tìm thấy folder
-          if (student.isChecked) {
-            // Checkbox đã tick nhưng không có folder -> Cảnh báo
-            Logger.log(`  ⚠️ Nghi vấn: "${student.name}" checkbox đã tick nhưng không có folder`);
-          }
-        }
-      }
-      
-      Logger.log(`  ✨ Hoàn tất: ${fixed} checkbox được sửa`);
-      totalReconciled += fixed;
-      
-    } catch (err) {
-      Logger.log(`❌ Lỗi đối soát "${config.name}": ${err.message}`);
-    }
-  }
-  
-  Logger.log(`\n--- Hoàn tất Đối soát: ${totalReconciled} checkbox được sửa ---`);
 }
 
 // ==================================================================
