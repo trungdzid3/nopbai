@@ -390,25 +390,31 @@ function onEdit(e) {
     }
   }
 
-  // ----- 1.4: ĐỊNH DẠNG TỰ ĐỘNG GẠCH ĐẦU DÒNG CỘT D, E (Cột 4, 5) -----
+  // ----- 1.4: ĐỊNH DẠNG TỰ ĐỘNG GẠCH ĐẦU DÒNG CỘT D, E (Cột 4, 5) - CHỈ Ở TRANG NHẬN XÉT -----
   if ((column === 4 || column === 5) && row >= 2) {
-    const originalValue = range.getValue();
+    const sheetName = sheet.getName();
+    // Chỉ áp dụng nếu tên sheet chứa từ "Nhận xét" (không phân biệt hoa thường)
+    const isReviewSheet = sheetName.toLowerCase().includes('nhận xét');
+    
+    if (isReviewSheet) {
+      const originalValue = range.getValue();
 
-    if (typeof originalValue === 'string' && originalValue.trim() !== '') {
-      const sentences = originalValue.replace(/\n/g, '.').split('.').filter(s => s.trim().length > 0);
+      if (typeof originalValue === 'string' && originalValue.trim() !== '') {
+        const sentences = originalValue.replace(/\n/g, '.').split('.').filter(s => s.trim().length > 0);
 
-      const formattedSentences = sentences.map(sentence => {
-        let cleanSentence = sentence.trim();
-        if (cleanSentence.startsWith('-')) {
-          cleanSentence = cleanSentence.substring(1).trim();
+        const formattedSentences = sentences.map(sentence => {
+          let cleanSentence = sentence.trim();
+          if (cleanSentence.startsWith('-')) {
+            cleanSentence = cleanSentence.substring(1).trim();
+          }
+          return '- ' + cleanSentence.charAt(0).toUpperCase() + cleanSentence.slice(1);
+        });
+
+        const newValue = formattedSentences.join('.\n') + '.';
+
+        if (newValue !== originalValue) {
+          range.setValue(newValue);
         }
-        return '- ' + cleanSentence.charAt(0).toUpperCase() + cleanSentence.slice(1);
-      });
-
-      const newValue = formattedSentences.join('.\n') + '.';
-
-      if (newValue !== originalValue) {
-        range.setValue(newValue);
       }
     }
   }
