@@ -722,27 +722,107 @@ function reconcileCheckboxes() {
   Logger.log("--- Bắt đầu Đối soát định kỳ ---");
   
   const configs = ConfigManager.loadAll();
+  let totalReconciled = 0;
   
   for (const config of configs) {
     if (config.isAttendance || !config.folderId) continue;
     
     try {
+      Logger.log(`\n📋 Đối soát "${config.name}"...`);
+      
+      const ss = getConfigSpreadsheet();
+      if (!ss) {
+        Logger.log(`⚠️ Không tìm thấy Sheet.`);
+        continue;
+      }
+      
+      let sheet;
+      if (config.sheetTabId) {
+        sheet = getSheetByTabId(ss, config.sheetTabId);
+      } else {
+        sheet = ss.getSheetByName(config.sheetName);
+      }
+      
+      if (!sheet) {
+        Logger.log(`⚠️ Không tìm thấy sheet "${config.sheetName}"`);
+        continue;
+      }
+      
+      // Lấy danh sách học sinh trong sheet
+      const nameColumnValues = sheet.getRange(`B1:B${sheet.getLastRow()}`).getValues();
+      const checkboxValues = sheet.getRange(`G1:G${sheet.getLastRow()}`).getValues();
+      
+      const sheetStudents = [];
+      for (let i = 1; i < nameColumnValues.length; i++) {  // Bắt đầu từ i=1 để bỏ qua header
+        const cellValue = nameColumnValues[i][0];
+        const isChecked = checkboxValues[i][0];
+        
+        if (!cellValue || typeof cellValue !== 'string') continue;
+        if (cellValue.toLowerCase().includes('tên') || cellValue.toLowerCase().includes('name')) continue;
+        
+        sheetStudents.push({
+          name: cellValue.trim(),
+          row: i + 1,
+          isChecked: isChecked === true
+        });
+      }
+      
+      Logger.log(`  📊 Tìm thấy ${sheetStudents.length} học sinh trong sheet`);
+      
+      // Quét folder trên Drive để tìm ai đã nộp
       const folder = DriveApp.getFolderById(config.folderId);
       const subfolders = folder.getFolders();
+      const submittedStudents = new Set();
       
       while (subfolders.hasNext()) {
         const subfolder = subfolders.next();
         const studentName = subfolder.getName().replace(/^\[Quá hạn\]\s*/i, '').trim();
-        
-        findAndMarkCheckbox(studentName, config.name, "reconcile", false, "OnTime");
+        submittedStudents.add(studentName);
       }
       
+      Logger.log(`  📁 Tìm thấy ${submittedStudents.size} thư mục học sinh trên Drive`);
+      
+      // Đối soát: So sánh sheet vs Drive
+      let fixed = 0;
+      for (const student of sheetStudents) {
+        // Normalize để so sánh
+        const normalizedSheetName = normalizeString(student.name);
+        let isSubmitted = false;
+        let matchedName = null;
+        
+        for (const submittedName of submittedStudents) {
+          const normalizedDriveName = normalizeString(submittedName);
+          if (normalizedSheetName === normalizedDriveName || 
+              submittedName.toLowerCase().includes(student.name.toLowerCase()) ||
+              student.name.toLowerCase().includes(submittedName.toLowerCase())) {
+            isSubmitted = true;
+            matchedName = submittedName;
+            break;
+          }
+        }
+        
+        // Kiểm tra và sửa checkbox nếu sai
+        if (isSubmitted && !student.isChecked) {
+          // Đã nộp nhưng checkbox chưa tick -> Sửa
+          const checkboxCell = sheet.getRange(`G${student.row}`);
+          checkboxCell.setValue(true);
+          Logger.log(`  ✅ Sửa: "${student.name}" (tìm thấy folder: ${matchedName})`);
+          fixed++;
+        } else if (!isSubmitted && student.isChecked) {
+          // Chưa nộp nhưng checkbox đã tick -> Cảnh báo (không sửa tự động để an toàn)
+          Logger.log(`  ⚠️ Nghi vấn: "${student.name}" checkbox đã tick nhưng không có folder`);
+        }
+      }
+      
+      Logger.log(`  ✨ Hoàn tất: ${fixed} checkbox được sửa`);
+      totalReconciled += fixed;
+      
     } catch (err) {
-      Logger.log(`Lỗi đối soát "${config.name}": ${err.message}`);
+      Logger.log(`❌ Lỗi đối soát "${config.name}": ${err.message}`);
     }
   }
   
-  Logger.log("--- Hoàn tất Đối soát ---");
+  Logger.log(`\n--- Hoàn tất Đối soát: ${totalReconciled} checkbox được sửa ---`);
 }
 
 // ==================================================================
