@@ -715,6 +715,87 @@ function periodicCleanup() {
 }
 
 /**
+ * Đồng bộ Folder IDs từ Sheet Config sang Script Properties
+ * GỌI THỦ CÔNG 1 LẦN sau khi đã tạo folders trên web
+ */
+function syncFolderIdsFromSheet() {
+  Logger.log("--- Bắt đầu Đồng bộ Folder IDs ---");
+  
+  try {
+    const ss = getConfigSpreadsheet();
+    if (!ss) {
+      Logger.log('❌ Không tìm thấy Sheet.');
+      return;
+    }
+    
+    const configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+    if (!configSheet) {
+      Logger.log(`❌ Không tìm thấy sheet "${CONFIG_SHEET_NAME}".`);
+      return;
+    }
+    
+    // Đọc folder IDs từ cột I (nếu có) hoặc quét Drive
+    const classFolder = configSheet.getRange('I3').getValue(); // Cell I3: Class Folder ID
+    
+    if (!classFolder) {
+      Logger.log('⚠️ Chưa có Class Folder ID ở I3. Không thể đồng bộ.');
+      Logger.log('👉 Hãy chạy "Đồng bộ & Liên kết" trên web app trước.');
+      return;
+    }
+    
+    Logger.log(`📂 Class Folder ID: ${classFolder}`);
+    
+    // Quét các assignment folders trong class folder
+    try {
+      const folder = DriveApp.getFolderById(classFolder);
+      const subfolders = folder.getFolders();
+      const props = PropertiesService.getScriptProperties();
+      let savedCount = 0;
+      
+      while (subfolders.hasNext()) {
+        const subfolder = subfolders.next();
+        const folderName = subfolder.getName();
+        
+        // Bỏ qua các folder đặc biệt
+        if (folderName.toLowerCase().includes('file responses') ||
+            folderName.toLowerCase().includes('điểm danh')) {
+          continue;
+        }
+        
+        const folderId = subfolder.getId();
+        
+        // Tìm config tương ứng trong sheet
+        const configs = ConfigManager.loadAll();
+        const matchingConfig = configs.find(c => 
+          !c.isAttendance && 
+          (c.name === folderName || 
+           folderName.includes(c.name) || 
+           c.name.includes(folderName))
+        );
+        
+        if (matchingConfig) {
+          const key = `CONFIG_${matchingConfig.name}_FOLDER_ID`;
+          props.setProperty(key, folderId);
+          Logger.log(`✅ Đã lưu: ${key} = ${folderId}`);
+          savedCount++;
+        } else {
+          Logger.log(`⚠️ Không tìm thấy config cho folder: "${folderName}"`);
+        }
+      }
+      
+      Logger.log(`\n✨ Hoàn tất! Đã đồng bộ ${savedCount} folder IDs vào Script Properties.`);
+      Logger.log(`👉 Bây giờ có thể chạy reconcileCheckboxes() để đối soát.`);
+      
+    } catch (driveErr) {
+      Logger.log(`❌ Lỗi khi quét Drive: ${driveErr.message}`);
+    }
+    
+  } catch (err) {
+    Logger.log(`❌ Lỗi đồng bộ: ${err.message}`);
+  }
+}
+
+/**
  * Đối soát checkboxes
  * GỌI TỪ FORM: FormLib.reconcileCheckboxes()
  */
