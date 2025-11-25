@@ -2211,12 +2211,12 @@ function displaySubmissionStatus(statusList) {
         switch (itemData.status) {
             case 'processed': 
                 statusText = 'Đã xử lý'; 
-                classesToAdd.push('bg-primary-container', 'text-on-primary-container'); 
+                classesToAdd.push('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'); 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'overdue': 
                 statusText = 'Quá hạn'; 
-                classesToAdd.push('bg-error-container', 'text-on-error-container'); 
+                classesToAdd.push('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'); 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'processing': 
@@ -2225,11 +2225,11 @@ function displaySubmissionStatus(statusList) {
                 break;
             case 'error': 
                 statusText = 'Lỗi'; 
-                classesToAdd.push('bg-error-container', 'text-on-error-container'); 
+                classesToAdd.push('bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200'); 
                 break;
             default: 
                 statusText = 'Chưa xử lý'; 
-                classesToAdd.push('bg-tertiary-container', 'text-on-tertiary-container'); 
+                classesToAdd.push('bg-surface-container', 'text-on-surface'); 
                 break;
         }
 
@@ -2340,7 +2340,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                     statusElement.dataset.status = 'error';
                     statusElement.querySelector('span:last-child').textContent = 'Lỗi';
                     statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200');
+                    statusElement.classList.add('bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200');
                 }
             }
         } catch (error) {
