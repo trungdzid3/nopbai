@@ -408,10 +408,13 @@ function getConfigSpreadsheet() {
   // Thử 2: Fallback sang form destination (nếu đã link)
   try {
     const form = FormApp.getActiveForm();
-    const destinationId = form.getDestinationId();
     
-    if (destinationId) {
-      return SpreadsheetApp.openById(destinationId);
+    if (form) {
+      const destinationId = form.getDestinationId();
+      
+      if (destinationId) {
+        return SpreadsheetApp.openById(destinationId);
+      }
     }
   } catch (e) {
     Logger.log(`Cảnh báo: Form chưa có destination: ${e.message}`);
