@@ -248,19 +248,17 @@ function reconcileCheckboxes(classFolderId) {
         
         // ========== PHASE 2: Last 2 words match (with diacritics) ==========
         if (!matchedName) {
-          const studentWords = student.name.toLowerCase().split(/\s+/).filter(Boolean);
-          const studentLastTwo = studentWords.length >= 2 ? studentWords.slice(-2).join(' ') : null;
-          
-          if (studentLastTwo) {
-            for (const submittedName of submittedStudents) {
-              const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
-              const submittedLastTwo = submittedWords.length >= 2 ? submittedWords.slice(-2).join(' ') : null;
-              
-              if (submittedLastTwo && studentLastTwo === submittedLastTwo) {
-                matchedName = submittedName;
-                matchLevel = "Phase 2 (Last 2 words)";
-                break;
-              }
+          for (const submittedName of submittedStudents) {
+            const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
+            if (submittedWords.length < 2) continue;
+            
+            const submittedLastTwo = submittedWords.slice(-2).join(' ');
+            
+            // Kiểm tra tên Sheet có CHỨA 2 từ cuối của tên Drive không
+            if (submittedLastTwo.length > 5 && student.name.toLowerCase().includes(submittedLastTwo)) {
+              matchedName = submittedName;
+              matchLevel = "Phase 2 (Last 2 words)";
+              break;
             }
           }
         }
@@ -268,17 +266,18 @@ function reconcileCheckboxes(classFolderId) {
         // ========== PHASE 3: Normalized match (remove diacritics) ==========
         if (!matchedName) {
           const normalizedStudent = normalizeString(student.name);
-          const normalizedStudentWords = normalizedStudent.split(/\s+/).filter(Boolean);
-          const normalizedStudentLastTwo = normalizedStudentWords.length >= 2 ? normalizedStudentWords.slice(-2).join(' ') : normalizedStudent;
           
           for (const submittedName of submittedStudents) {
             const normalizedSubmitted = normalizeString(submittedName);
             const normalizedSubmittedWords = normalizedSubmitted.split(/\s+/).filter(Boolean);
-            const normalizedSubmittedLastTwo = normalizedSubmittedWords.length >= 2 ? normalizedSubmittedWords.slice(-2).join(' ') : normalizedSubmitted;
             
-            // So sánh both directions
-            if (normalizedStudentLastTwo === normalizedSubmittedLastTwo ||
-                normalizedStudent === normalizedSubmitted) {
+            if (normalizedSubmittedWords.length < 2) continue;
+            
+            const normalizedSubmittedLastTwo = normalizedSubmittedWords.slice(-2).join(' ');
+            
+            // Kiểm tra tên Sheet (normalized) có CHỨA 2 từ cuối của tên Drive (normalized) không
+            if (normalizedSubmittedLastTwo.length >= 5 && 
+                normalizedStudent.includes(normalizedSubmittedLastTwo)) {
               matchedName = submittedName;
               matchLevel = "Phase 3 (Normalized)";
               break;
@@ -1185,27 +1184,27 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly, sub
     bestMatch = mapList.find(item => item.originalLC === nameFromForm);
     if (bestMatch) matchLevel = "Phase 1 - Exact";
     
-    // Phase 2: Last two words (có dấu) - So sánh với tên gốc đã lowercase
-    // "Con Minh Toàn" -> lấy 2 từ cuối từ nameFromForm: "minh toàn"
-    if (!bestMatch && nameFromForm.split(/\s+/).length >= 2) {
-      const formWordsLC = nameFromForm.split(/\s+/).filter(Boolean);
-      const formLastTwoLC = formWordsLC.slice(-2).join(' ');
-      
+    // Phase 2: Last two words (có dấu) - Dùng .includes() như V24
+    // "Con Minh Toàn" -> kiểm tra có CHỨA "minh toàn" không (2 từ cuối của Sheet)
+    if (!bestMatch) {
       bestMatch = mapList.find(item => {
         const itemWords = item.originalLC.split(/\s+/).filter(Boolean);
         if (itemWords.length < 2) return false;
         const itemLastTwo = itemWords.slice(-2).join(' ');
-        return itemLastTwo === formLastTwoLC;
+        // Kiểm tra tên Form có chứa 2 từ cuối của Sheet không
+        return itemLastTwo.length > 5 && nameFromForm.includes(itemLastTwo);
       });
       if (bestMatch) matchLevel = "Phase 2 - Last2 (dấu)";
     }
     
-    // Phase 3: Last two words (không dấu) - So sánh sau khi chuẩn hóa
-    // "Con Minh Toan" -> normalize -> "minh toan"
+    // Phase 3: Last two words (KHÔNG dấu) - Dùng .includes() như V24
     if (!bestMatch && wordsFromForm.length >= 2) {
+      const lastTwoFromForm = wordsFromForm.slice(-2).join(' ');
+      
       bestMatch = mapList.find(item => {
         if (!item.lastTwo || item.lastTwo.length < 4) return false;
-        return item.lastTwo === lastTwoFromForm;
+        // Kiểm tra tên Form (normalized) có chứa 2 từ cuối của Sheet (normalized) không
+        return normalizedNameFromForm.includes(item.lastTwo);
       });
       if (bestMatch) matchLevel = "Phase 3 - Last2 (normalized)";
     }
