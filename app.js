@@ -970,16 +970,17 @@ async function createClassSystemAutomatic() {
         try {
             updateStatus("   → Đang đổi tên Script project...");
             
-            // Find ALL script files in the class folder
+            // Script project is BOUND to form, not in folder
+            // Search by form.id as parent
             const searchResponse = await gapi.client.drive.files.list({
-                q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
                 fields: 'files(id, name, createdTime)',
                 orderBy: 'createdTime desc'
             });
             
             const scriptFiles = searchResponse.result.files || [];
             
-            // Get the newest script file (just created with the form)
+            // Get the form's bound script
             const formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
             
             if (formScript) {
@@ -990,7 +991,7 @@ async function createClassSystemAutomatic() {
                 });
                 updateStatus(`   ✓ Đã đổi tên Script: "Google Form nộp bài - ${name}" (từ "${formScript.name}")`);
             } else {
-                updateStatus(`   ⚠ Không tìm thấy Script project`);
+                updateStatus(`   ⚠ Không tìm thấy Script project (có thể chưa được tạo)`);
             }
         } catch (err) {
             console.warn('Không thể đổi tên script project:', err);
@@ -1645,23 +1646,21 @@ function deleteClassProfile() {
     const profile = classProfiles.find(p => p.id === idToDelete);
     if (!profile) return;
 
-    // Delete folder from Drive
-    deleteClassFolderFromDrive(idToDelete).catch(err => {
-        console.error('Lỗi khi xóa folder trên Drive:', err);
-        updateStatus(`⚠ Đã xóa lớp khỏi hệ thống nhưng không thể xóa folder trên Drive. Bạn có thể xóa thủ công.`);
-    });
-    
-    // Delete script project if exists
-    if (profile.scriptProjectId) {
-        deleteScriptProject(profile.scriptProjectId).catch(err => {
-            console.error('Lỗi khi xóa script project:', err);
-            updateStatus(`⚠ Không thể xóa Script project. Bạn có thể xóa thủ công.`);
-        });
+    if (!confirm(`Xác nhận xóa lớp "${profile.name}"?\n\nSẽ xóa:\n- Folder lớp\n- Form nộp bài\n- Sheet nhận xét\n- Script projects\n- Tất cả thư mục bài tập\n\nHành động này KHÔNG THỂ hoàn tác!`)) {
+        return;
     }
+
+    updateStatus(`🗑️ Đang xóa lớp "${profile.name}"...`);
+
+    // Delete ALL files in folder (including form, sheet, scripts) then folder
+    deleteClassFolderFromDrive(idToDelete, profile).catch(err => {
+        console.error('Lỗi khi xóa folder trên Drive:', err);
+        updateStatus(`⚠ Đã xóa lớp khỏi hệ thống nhưng không thể xóa hoàn toàn trên Drive. Bạn có thể xóa thủ công.`);
+    });
 
     classProfiles = classProfiles.filter(p => p.id !== idToDelete);
     localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
-    updateStatus(`✓ Đã xóa lớp "${profile.name}".`);
+    updateStatus(`✓ Đã xóa lớp "${profile.name}" khỏi hệ thống.`);
 
     const activeId = localStorage.getItem('activeClassProfileId');
     if (activeId === idToDelete) {
@@ -1676,26 +1675,88 @@ function deleteClassProfile() {
     updateQuickActionsState();
 }
 
-async function deleteClassFolderFromDrive(folderId) {
+async function deleteClassFolderFromDrive(folderId, profile) {
     try {
+        // Step 1: Delete form's bound script first (if we know form ID)
+        if (profile && profile.formId) {
+            try {
+                updateStatus(`   → Đang xóa script projects...`);
+                const scriptSearch = await gapi.client.drive.files.list({
+                    q: `'${profile.formId}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                    fields: 'files(id, name)'
+                });
+                
+                const scripts = scriptSearch.result.files || [];
+                for (const script of scripts) {
+                    await gapi.client.drive.files.delete({ fileId: script.id });
+                    updateStatus(`   ✓ Đã xóa script: ${script.name}`);
+                }
+            } catch (err) {
+                console.warn('Could not delete form scripts:', err);
+            }
+        }
+        
+        // Step 2: Delete form
+        if (profile && profile.formId) {
+            try {
+                await gapi.client.drive.files.delete({ fileId: profile.formId });
+                updateStatus(`   ✓ Đã xóa Form`);
+            } catch (err) {
+                console.warn('Could not delete form:', err);
+            }
+        }
+        
+        // Step 3: Delete sheet
+        if (profile && profile.sheetId) {
+            try {
+                await gapi.client.drive.files.delete({ fileId: profile.sheetId });
+                updateStatus(`   ✓ Đã xóa Sheet`);
+            } catch (err) {
+                console.warn('Could not delete sheet:', err);
+            }
+        }
+        
+        // Step 4: List and delete all remaining files in folder
+        try {
+            updateStatus(`   → Đang xóa các file còn lại...`);
+            const filesInFolder = await gapi.client.drive.files.list({
+                q: `'${folderId}' in parents and trashed=false`,
+                fields: 'files(id, name, mimeType)',
+                pageSize: 100
+            });
+            
+            const files = filesInFolder.result.files || [];
+            let deletedCount = 0;
+            
+            for (const file of files) {
+                try {
+                    // Delete subfolders recursively
+                    if (file.mimeType === 'application/vnd.google-apps.folder') {
+                        await deleteClassFolderFromDrive(file.id, null);
+                    } else {
+                        await gapi.client.drive.files.delete({ fileId: file.id });
+                    }
+                    deletedCount++;
+                } catch (err) {
+                    console.warn(`Could not delete file ${file.name}:`, err);
+                }
+            }
+            
+            if (deletedCount > 0) {
+                updateStatus(`   ✓ Đã xóa ${deletedCount} file/folder`);
+            }
+        } catch (err) {
+            console.warn('Could not list folder contents:', err);
+        }
+        
+        // Step 5: Finally delete the folder itself
         await gapi.client.drive.files.delete({
             fileId: folderId
         });
-        updateStatus(`✓ Đã xóa folder trên Drive.`);
+        updateStatus(`✓ Đã xóa folder lớp trên Drive`);
+        
     } catch (error) {
         console.error('Drive deletion error:', error);
-        throw error;
-    }
-}
-
-async function deleteScriptProject(scriptId) {
-    try {
-        await gapi.client.drive.files.delete({
-            fileId: scriptId
-        });
-        updateStatus(`✓ Đã xóa Script project.`);
-    } catch (error) {
-        console.error('Script deletion error:', error);
         throw error;
     }
 }
