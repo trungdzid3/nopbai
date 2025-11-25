@@ -248,17 +248,17 @@ function reconcileCheckboxes(classFolderId) {
         
         // ========== PHASE 2: Last 2 words match (with diacritics) ==========
         if (!matchedName) {
-          for (const submittedName of submittedStudents) {
-            const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
-            if (submittedWords.length < 2) continue;
+          const studentWords = student.name.toLowerCase().split(/\s+/).filter(Boolean);
+          if (studentWords.length >= 2) {
+            const studentLastTwo = studentWords.slice(-2).join(' ');
             
-            const submittedLastTwo = submittedWords.slice(-2).join(' ');
-            
-            // Kiểm tra tên Sheet có CHỨA 2 từ cuối của tên Drive không
-            if (submittedLastTwo.length > 5 && student.name.toLowerCase().includes(submittedLastTwo)) {
-              matchedName = submittedName;
-              matchLevel = "Phase 2 (Last 2 words)";
-              break;
+            // Kiểm tra tên Drive có CHỨA 2 từ cuối của tên Sheet không
+            for (const submittedName of submittedStudents) {
+              if (studentLastTwo.length > 5 && submittedName.toLowerCase().includes(studentLastTwo)) {
+                matchedName = submittedName;
+                matchLevel = "Phase 2 (Last 2 words)";
+                break;
+              }
             }
           }
         }
@@ -266,21 +266,21 @@ function reconcileCheckboxes(classFolderId) {
         // ========== PHASE 3: Normalized match (remove diacritics) ==========
         if (!matchedName) {
           const normalizedStudent = normalizeString(student.name);
+          const normalizedStudentWords = normalizedStudent.split(/\s+/).filter(Boolean);
           
-          for (const submittedName of submittedStudents) {
-            const normalizedSubmitted = normalizeString(submittedName);
-            const normalizedSubmittedWords = normalizedSubmitted.split(/\s+/).filter(Boolean);
+          if (normalizedStudentWords.length >= 2) {
+            const normalizedStudentLastTwo = normalizedStudentWords.slice(-2).join(' ');
             
-            if (normalizedSubmittedWords.length < 2) continue;
-            
-            const normalizedSubmittedLastTwo = normalizedSubmittedWords.slice(-2).join(' ');
-            
-            // Kiểm tra tên Sheet (normalized) có CHỨA 2 từ cuối của tên Drive (normalized) không
-            if (normalizedSubmittedLastTwo.length >= 5 && 
-                normalizedStudent.includes(normalizedSubmittedLastTwo)) {
-              matchedName = submittedName;
-              matchLevel = "Phase 3 (Normalized)";
-              break;
+            // Kiểm tra tên Drive (normalized) có CHỨA 2 từ cuối của tên Sheet (normalized) không
+            for (const submittedName of submittedStudents) {
+              const normalizedSubmitted = normalizeString(submittedName);
+              
+              if (normalizedStudentLastTwo.length >= 5 && 
+                  normalizedSubmitted.includes(normalizedStudentLastTwo)) {
+                matchedName = submittedName;
+                matchLevel = "Phase 3 (Normalized)";
+                break;
+              }
             }
           }
         }
