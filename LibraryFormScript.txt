@@ -242,7 +242,6 @@ class ConfigManager {
         configs.push(config);
         Logger.log(`Loaded config: ${config.name} (Sheet: ${config.sheetName}, Folder: ${config.folderId}, Attendance: ${config.isAttendance})`);
       }
-      }
       
       return configs;
       
