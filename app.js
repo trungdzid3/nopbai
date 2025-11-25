@@ -1453,9 +1453,10 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
                 '',                                  // C: Thời gian mở (bỏ trống)
                 '',                                  // D: Deadline (bỏ trống)
                 false,                               // E: Tự động dọn (FALSE - user tự bật nếu cần)
-                `Bảng nhận xét (${assignmentName})` // F: Tên sheet
+                `Bảng nhận xét (${assignmentName})`, // F: Tên sheet
+                a.folderId || ''                     // G: Folder ID (MỚI - để Library đọc)
             ]);
-            console.log(`[CONFIG] Thêm assignment mới: ${assignmentName}`);
+            console.log(`[CONFIG] Thêm assignment mới: ${assignmentName} (Folder: ${a.folderId})`);
         }
     });
     
@@ -1465,7 +1466,7 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
     // 5. Ghi hàng 2 (Điểm danh)
     await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Cấu Hình!A2:F2',
+        range: 'Cấu Hình!A2:G2',
         valueInputOption: 'USER_ENTERED',
         resource: { values: [attendanceRow] }
     });
@@ -1478,7 +1479,7 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
     if (rowsToWrite.length > 0) {
         await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `Cấu Hình!A3:F${2 + rowsToWrite.length}`,
+            range: `Cấu Hình!A3:G${2 + rowsToWrite.length}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: rowsToWrite }
         });
@@ -1490,7 +1491,7 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
         const emptyEndRow = 10;
         await gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId,
-            range: `Cấu Hình!A${emptyStartRow}:F${emptyEndRow}`
+            range: `Cấu Hình!A${emptyStartRow}:G${emptyEndRow}`
         });
     }
     
@@ -1499,7 +1500,7 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
         const extraRows = assignmentRows.slice(maxTemplateRows);
         await gapi.client.sheets.spreadsheets.values.append({
             spreadsheetId,
-            range: 'Cấu Hình!A11:F11',
+            range: 'Cấu Hình!A11:G11',
             valueInputOption: 'USER_ENTERED',
             insertDataOption: 'INSERT_ROWS',
             resource: { values: extraRows }

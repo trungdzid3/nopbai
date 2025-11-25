@@ -219,7 +219,7 @@ class ConfigManager {
         return [];
       }
       
-      const dataRange = configSheet.getRange(2, 1, lastRow - 1, 6);
+      const dataRange = configSheet.getRange(2, 1, lastRow - 1, 7); // Đọc 7 cột (A-G)
       const values = dataRange.getValues();
       const configs = [];
       
@@ -235,18 +235,13 @@ class ConfigManager {
           deadline: row[CONFIG_COL.DEADLINE] ? this.parseMultiSchedule(row[CONFIG_COL.DEADLINE]) : [],
           autoCleanup: row[CONFIG_COL.AUTO_CLEAN] === true,
           sheetName: row[CONFIG_COL.SHEET_NAME] ? row[CONFIG_COL.SHEET_NAME].toString().trim() : null,
+          folderId: row[6] ? row[6].toString().trim() : null, // MỚI: Đọc từ cột G (index 6)
           isAttendance: row[CONFIG_COL.NAME].toString().trim() === ATTENDANCE_SHEET_NAME
         };
         
-        if (!config.isAttendance) {
-          const props = PropertiesService.getScriptProperties();
-          config.formId = props.getProperty(`CONFIG_${config.name}_FORM_ID`);
-          config.folderId = props.getProperty(`CONFIG_${config.name}_FOLDER_ID`);
-          config.sheetTabId = props.getProperty(`CONFIG_${config.name}_SHEET_TAB_ID`);
-        }
-        
         configs.push(config);
-        Logger.log(`Loaded config: ${config.name} (Sheet: ${config.sheetName}, Attendance: ${config.isAttendance})`);
+        Logger.log(`Loaded config: ${config.name} (Sheet: ${config.sheetName}, Folder: ${config.folderId}, Attendance: ${config.isAttendance})`);
+      }
       }
       
       return configs;
