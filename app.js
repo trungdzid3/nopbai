@@ -78,7 +78,6 @@ const assignmentButtonsContainer = document.getElementById('assignment-buttons-c
 const btnOpenDrive = document.getElementById('btn_open_drive');
 const btnOpenSheet = document.getElementById('btn_open_sheet');
 const btnOpenForm = document.getElementById('btn_open_form');
-const btnCheckFormPublished = document.getElementById('btn_check_form_published');
 const inpRootFolderId = document.getElementById('root_folder_id');
 const btnSaveSystemConfig = document.getElementById('save_system_config');
 const divAutoCreateSection = document.getElementById('auto_create_section');
@@ -250,17 +249,11 @@ function bindQuickActions() {
         btnOpenForm.oncontextmenu = (e) => {
             e.preventDefault();
             const profile = getClassProfile(classProfileSelect.value);
-            if (profile && (profile.formShortLink || profile.formLink)) {
-                const linkToCopy = profile.formShortLink || profile.formLink;
-                navigator.clipboard.writeText(linkToCopy).then(() => {
-                    updateStatus(`✓ Đã copy link Form: ${linkToCopy}`);
-                }).catch(err => {
-                    console.error('Lỗi copy:', err);
-                    updateStatus("⚠ Không thể copy link.", true);
-                });
-            } else {
-                updateStatus("⚠ Lớp này chưa có link Form.", true);
+            if (!profile || !profile.formId) {
+                updateStatus("⚠ Lớp này chưa có Form.", true);
+                return;
             }
+            handleFormContextMenu(profile);
         };
     }
 
@@ -1713,6 +1706,70 @@ function updateStatus(message, isError = false) {
     logEntry.innerHTML = `<span class="${isError ? 'text-error' : 'text-on-surface'}">${message}</span>`;
     statusLog.appendChild(logEntry);
     statusLog.scrollTop = statusLog.scrollHeight;
+}
+
+/**
+ * Xử lý chuột phải vào nút Form
+ * Kiểm tra form đã xuất bản chưa
+ * - Nếu đã xuất bản → copy link rút gọn
+ * - Nếu chưa xuất bản → mở form editor
+ */
+async function handleFormContextMenu(profile) {
+    if (!profile || !profile.formId) {
+        updateStatus("⚠ Không tìm thấy Form ID.", true);
+        return;
+    }
+    
+    try {
+        updateStatus("→ Đang kiểm tra trạng thái Form...");
+        
+        // Gọi Forms API để lấy thông tin form
+        const formResponse = await gapi.client.request({
+            path: `https://forms.googleapis.com/v1/forms/${profile.formId}`,
+            method: 'GET'
+        });
+        
+        const form = formResponse.result;
+        
+        // Kiểm tra responderUri - nếu có thì form đã published
+        if (form.responderUri) {
+            // Form đã published - lấy link viewform
+            const formShortLink = `https://docs.google.com/forms/d/${profile.formId}/viewform`;
+            
+            // Cập nhật profile
+            profile.formShortLink = formShortLink;
+            profile.formLink = formShortLink;
+            
+            // Lưu vào localStorage
+            const profileIndex = classProfiles.findIndex(p => p.id === profile.id);
+            if (profileIndex > -1) {
+                classProfiles[profileIndex] = profile;
+                localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+            }
+            
+            // Copy link vào clipboard
+            navigator.clipboard.writeText(formShortLink).then(() => {
+                updateStatus(`✓ Đã copy link Form rút gọn: ${formShortLink}`);
+            }).catch(err => {
+                console.error('Lỗi copy:', err);
+                updateStatus("⚠ Không thể copy link.", true);
+            });
+            
+        } else {
+            // Form chưa published - mở editor
+            updateStatus("⚠ Form chưa xuất bản, đang mở editor...");
+            const formEditLink = `https://docs.google.com/forms/d/${profile.formId}/edit`;
+            window.open(formEditLink, '_blank');
+            updateStatus("📋 Vui lòng publish form rồi chuột phải lại để copy link");
+        }
+        
+    } catch (err) {
+        console.error('Lỗi kiểm tra form:', err);
+        updateStatus(`✗ Lỗi: ${err.message || 'Không thể kiểm tra form'}`, true);
+        // Fallback: mở editor
+        const formEditLink = `https://docs.google.com/forms/d/${profile.formId}/edit`;
+        window.open(formEditLink, '_blank');
+    }
 }
 
 /**
