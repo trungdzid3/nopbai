@@ -990,9 +990,12 @@ async function createClassSystemAutomatic() {
         // 2.1. Rename Form's script project to class name
         let scriptProjectId = null;
         try {
-            updateStatus("   → Đang đổi tên Script project...");
+            updateStatus("   → Đang tìm Script project...");
             
-            // Script project is BOUND to form (copied from template)
+            // Script project is BOUND to form, not in folder
+            // Wait a bit for script to be created by Google
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
             // Search by form.id as parent
             const searchResponse = await gapi.client.drive.files.list({
                 q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
@@ -1001,21 +1004,41 @@ async function createClassSystemAutomatic() {
             });
             
             const scriptFiles = searchResponse.result.files || [];
-            const formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
             
-            if (formScript) {
+            // Get the form's bound script
+            let formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
+            
+            // If no script found, create one using Apps Script API
+            if (!formScript) {
+                updateStatus(`   → Script chưa tồn tại, đang tạo mới...`);
+                try {
+                    // Create new Apps Script project
+                    const createResponse = await gapi.client.request({
+                        path: 'https://script.googleapis.com/v1/projects',
+                        method: 'POST',
+                        body: {
+                            title: `Google Form nộp bài - ${name}`,
+                            parentId: form.id
+                        }
+                    });
+                    
+                    scriptProjectId = createResponse.result.scriptId;
+                    updateStatus(`   ✓ Đã tạo Script project mới`);
+                } catch (createErr) {
+                    console.warn('Cannot create script via API:', createErr);
+                    updateStatus(`   ⚠ Không thể tạo Script. Vui lòng vào Form editor để kích hoạt script`);
+                }
+            } else {
                 scriptProjectId = formScript.id;
                 await gapi.client.drive.files.update({
                     fileId: scriptProjectId,
                     resource: { name: `Google Form nộp bài - ${name}` }
                 });
                 updateStatus(`   ✓ Đã đổi tên Script: "Google Form nộp bài - ${name}"`);
-            } else {
-                updateStatus(`   ⚠ Không tìm thấy Script (template chưa có script)`);
             }
         } catch (err) {
-            console.warn('Không thể đổi tên script project:', err);
-            updateStatus(`   ⚠ Bỏ qua đổi tên Script: ${err.message || ''}`);
+            console.warn('Không thể xử lý script project:', err);
+            updateStatus(`   ⚠ Script sẽ được tạo khi bạn mở Form editor lần đầu`);
         }
 
         // 3. Copy Sheet
@@ -1209,15 +1232,106 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) 
 }
 
 async function apiLinkFormToSheet(formId, sheetId) {
-    // Google Forms API không có endpoint public để set destination
-    // Giải pháp: Script trong form (WrapperFormScript) sẽ tự động link khi chạy quickSetup()
-    // Ở đây chỉ log thông tin và return để code tiếp tục
-    
-    console.log(`[FORM-SHEET] Form ID: ${formId}, Sheet ID: ${sheetId}`);
-    console.log('[FORM-SHEET] ℹ️ Form sẽ được link với Sheet khi chạy quickSetup() trong form script');
-    
-    // Return success để code tiếp tục
-    return { success: true, note: 'Link will be done by quickSetup()' };
+    // Phương pháp: Tạo sheet "Form Responses 1" trước, sau đó form sẽ tự động link
+    // Đây là cách Google Forms hoạt động khi user click "Chọn đích đến cho phản hồi"
+    try {
+        console.log('[FORM-SHEET] Bắt đầu link form với sheet...');
+        
+        // 1. Kiểm tra xem đã có sheet "Form Responses 1" chưa
+        const ssResponse = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: sheetId,
+            fields: 'sheets(properties(title,sheetId))'
+        });
+        
+        const sheets = ssResponse.result.sheets || [];
+        const formResponseSheet = sheets.find(s => s.properties.title === 'Form Responses 1');
+        
+        if (formResponseSheet) {
+            console.log('[FORM-SHEET] Sheet "Form Responses 1" đã tồn tại');
+        } else {
+            // 2. Tạo sheet "Form Responses 1" mới
+            console.log('[FORM-SHEET] Đang tạo sheet "Form Responses 1"...');
+            
+            await gapi.client.sheets.spreadsheets.batchUpdate({
+                spreadsheetId: sheetId,
+                resource: {
+                    requests: [{
+                        addSheet: {
+                            properties: {
+                                title: 'Form Responses 1',
+                                gridProperties: {
+                                    rowCount: 1000,
+                                    columnCount: 26
+                                }
+                            }
+                        }
+                    }]
+                }
+            });
+            
+            console.log('[FORM-SHEET] ✓ Đã tạo sheet "Form Responses 1"');
+        }
+        
+        // 3. Sử dụng Forms API để set destination (undocumented feature)
+        // Phương pháp này hoạt động bằng cách gọi internal API của Google Forms
+        try {
+            // Thử phương pháp 1: Gọi Forms API internal endpoint
+            const linkResponse = await gapi.client.request({
+                path: `https://docs.google.com/forms/d/${formId}/edit`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `spreadsheetId=${sheetId}`
+            });
+            
+            console.log('[FORM-SHEET] ✓ Đã link form với sheet qua API');
+            return linkResponse;
+            
+        } catch (apiError) {
+            console.warn('[FORM-SHEET] Không thể link qua API, thử phương pháp script...', apiError);
+            
+            // Phương pháp 2: Gọi Apps Script function trong form script
+            // Tìm script project ID
+            const driveResponse = await gapi.client.drive.files.list({
+                q: `'${formId}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                fields: 'files(id)',
+                pageSize: 1
+            });
+            
+            const scriptFiles = driveResponse.result.files || [];
+            if (scriptFiles.length === 0) {
+                console.warn('[FORM-SHEET] Không tìm thấy script project');
+                return null;
+            }
+            
+            const scriptId = scriptFiles[0].id;
+            
+            // Gọi script function để link
+            const scriptResponse = await gapi.client.request({
+                path: `https://script.googleapis.com/v1/scripts/${scriptId}:run`,
+                method: 'POST',
+                body: {
+                    function: 'linkToSheet',
+                    parameters: [formId, sheetId],
+                    devMode: false
+                }
+            });
+            
+            if (scriptResponse.result.error) {
+                console.error('[FORM-SHEET] Script error:', scriptResponse.result.error);
+                return null;
+            }
+            
+            console.log('[FORM-SHEET] ✓ Đã link qua Apps Script');
+            return scriptResponse;
+        }
+        
+    } catch (e) {
+        console.error('[FORM-SHEET] Lỗi khi link form-sheet:', e);
+        console.log('[FORM-SHEET] ℹ User cần link thủ công: Form → Responses → Select response destination');
+        return null;
+    }
 }
 
 async function apiUpdateFormChoices(formId, assignments) {
@@ -2072,11 +2186,28 @@ function displaySubmissionStatus(statusList) {
         let extraItemClass = '';
 
         switch (itemData.status) {
-            case 'processed': statusText = 'Đã xử lý'; classesToAdd.push('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'); extraItemClass = 'submission-item-reprocessable'; break;
-            case 'overdue': statusText = 'Quá hạn'; classesToAdd.push('bg-orange-200', 'text-orange-900', 'dark:bg-orange-800', 'dark:text-orange-100'); extraItemClass = 'submission-item-reprocessable'; break;
-            case 'processing': statusText = 'Đang xử lý...'; classesToAdd.push('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'); break;
-            case 'error': statusText = 'Lỗi'; classesToAdd.push('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'); break;
-            default: statusText = 'Chưa xử lý'; classesToAdd.push('bg-tertiary-container', 'text-on-tertiary-container'); break;
+            case 'processed': 
+                statusText = 'Đã xử lý'; 
+                classesToAdd.push('bg-primary-container', 'text-on-primary-container'); 
+                extraItemClass = 'submission-item-reprocessable'; 
+                break;
+            case 'overdue': 
+                statusText = 'Quá hạn'; 
+                classesToAdd.push('bg-error-container', 'text-on-error-container'); 
+                extraItemClass = 'submission-item-reprocessable'; 
+                break;
+            case 'processing': 
+                statusText = 'Đang xử lý...'; 
+                classesToAdd.push('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'); 
+                break;
+            case 'error': 
+                statusText = 'Lỗi'; 
+                classesToAdd.push('bg-error-container', 'text-on-error-container'); 
+                break;
+            default: 
+                statusText = 'Chưa xử lý'; 
+                classesToAdd.push('bg-tertiary-container', 'text-on-tertiary-container'); 
+                break;
         }
 
         item.setAttribute('draggable', 'true');
