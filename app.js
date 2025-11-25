@@ -822,7 +822,6 @@ async function saveClassProfileManual() {
     }
 
     saveClassProfileButton.disabled = true;
-    updateStatus(`🚀 Đang lưu lớp "${name}"...`);
 
     try {
         const originalClassId = formClassId.value; // Can be UUID, folderId, or empty
@@ -840,11 +839,9 @@ async function saveClassProfileManual() {
                 alert("Vui lòng vào Cài đặt -> Tự động hóa để nhập ID Thư mục cha (Root) trước.");
                 throw new Error("Missing Root Folder ID");
             }
-            updateStatus(`→ Đang tạo thư mục cho lớp "${name}"...`);
             const folder = await apiCreateFolder(name, rootId);
             classFolderId = folder.id;
             folderLink = folder.webViewLink;
-            updateStatus(`✓ Đã tạo thư mục lớp: ${classFolderId}`);
         } else if (existingProfile) {
             folderLink = existingProfile.folderLink;
         }
@@ -864,10 +861,8 @@ async function saveClassProfileManual() {
                         folderId: folderId
                     });
                 } else {
-                    updateStatus(`→ Đang tạo thư mục bài tập "${assignmentName}"...`);
                     const assignmentFolder = await apiCreateFolder(assignmentName, classFolderId);
                     folderId = assignmentFolder.id;
-                    updateStatus(`✓ Đã tạo thư mục: ${assignmentName}`);
                     assignments.push({
                         name: assignmentName,
                         folderId: folderId
@@ -895,49 +890,36 @@ async function saveClassProfileManual() {
                 const profileIndex = classProfiles.findIndex(p => p.id === originalClassId);
                 if (profileIndex > -1) {
                     classProfiles[profileIndex] = newProfile;
-                    updateStatus(`✓ Đã cập nhật lớp và tạo thư mục: ${name}`);
                 }
             } else { // it was a completely new class
                 classProfiles.push(newProfile);
-                updateStatus(`✓ Đã tạo lớp mới: ${name}`);
             }
         } else { // Just a normal update
             const profileIndex = classProfiles.findIndex(p => p.id === originalClassId);
             if (profileIndex > -1) classProfiles[profileIndex] = newProfile;
-            updateStatus(`✓ Đã cập nhật lớp: ${name}`);
         }
 
         // [NEW] Nếu có sheetId và có assignments, ghi vào config và tạo sheets
         if (newProfile.sheetId && assignments.length > 0) {
             try {
-                updateStatus(`→ Đang xử lý bài tập...`);
-                
                 // 1. Tạo folder cho assignments mới (nếu chưa có)
                 for (const assignment of assignments) {
                     if (!assignment.folderId) {
-                        updateStatus(`   → Tạo folder "${assignment.name}"...`);
                         const assignmentFolder = await apiCreateFolder(assignment.name, newProfile.id);
                         assignment.folderId = assignmentFolder.id;
-                        updateStatus(`   ✓ Đã tạo folder`);
                     }
                 }
                 
                 // 2. Ghi vào Config sheet
-                updateStatus(`   → Ghi cấu hình vào Sheet...`);
                 await apiWriteAssignmentsToConfig(newProfile.sheetId, assignments);
-                updateStatus(`   ✓ Đã ghi ${assignments.length} bài tập vào Config`);
                 
                 // 3. Update Form choices
                 if (newProfile.formId) {
-                    updateStatus(`   → Cập nhật lựa chọn Form...`);
                     await apiUpdateFormChoices(newProfile.formId, assignments);
-                    updateStatus(`   ✓ Đã cập nhật Form`);
                 }
-                
-                updateStatus(`✓ Hoàn tất xử lý ${assignments.length} bài tập`);
             } catch (error) {
                 console.error('Lỗi khi ghi config:', error);
-                updateStatus(`⚠ Đã lưu lớp nhưng không thể xử lý bài tập hoàn toàn: ${error.message}`, true);
+                updateStatus(`✗ Lỗi khi lưu lớp: ${error.message}`, true);
             }
         }
 
@@ -998,142 +980,32 @@ async function createClassSystemAutomatic() {
 
     try {
         // 1. Tạo Folder Lớp
-        updateStatus("1. Đang tạo Folder...");
         const folder = await apiCreateFolder(name, rootId);
-        updateStatus(`✓ Đã tạo Folder: ${folder.id}`);
         
         // 1.1. Tạo subfolder "Học sinh" để chứa folder riêng của từng học sinh
-        updateStatus("   → Tạo thư mục 'Học sinh'...");
         const studentFolder = await apiCreateFolder("Học sinh", folder.id);
-        updateStatus(`   ✓ Đã tạo thư mục Học sinh: ${studentFolder.id}`);
 
         // 2. Copy Form
-        updateStatus("2. Đang tạo Form...");
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
-        updateStatus(`✓ Đã tạo Form: ${form.id}`);
         
         // 2.0. LƯU Ý: FORM CẦN PUBLISH THỦ CÔNG
         // Forms API không hỗ trợ publish form từ client-side
         // Form mới tạo luôn ở trạng thái DRAFT (chưa xuất bản)
-        updateStatus("   ⚠ LƯU Ý: Form cần PUBLISH THỦ CÔNG để nhận câu trả lời");
-        updateStatus(`   → Mở form tại: https://docs.google.com/forms/d/${form.id}/edit`);
-        updateStatus("   → Click 'Send' ở góc trên bên phải để publish form");
+        updateStatus("⚠ Form cần PUBLISH THỦ CÔNG: https://docs.google.com/forms/d/" + form.id + "/edit");
         
-        // 2.1. [DISABLED] Rename Form's script project
-        // NOTE: Đổi tên Apps Script Project từ client-side rất khó và không ổn định.
-        // GIẢI PHÁP TỐT HƠN: Dùng Apps Script bound script gọi Drive.Files.update()
-        // Xem: LibraryFormScript.txt - hàm autoRenameScriptProject()
-        // 
-        // Code cũ (REST API - không ổn định):
-        /*
-        try {
-            updateStatus("   → Đang đổi tên Script của Form...");
-            
-            const formInfoResponse = await gapi.client.request({
-                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
-                method: 'GET'
-            });
-            
-            const linkedScriptId = formInfoResponse.result.linkedSheetId || null;
-            let formScriptId = null;
-            
-            if (linkedScriptId) {
-                formScriptId = linkedScriptId;
-            } else {
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    const searchResponse = await gapi.client.drive.files.list({
-                        q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
-                        fields: 'files(id)',
-                        pageSize: 1
-                    });
-                    
-                    if (searchResponse.result.files?.length > 0) {
-                        formScriptId = searchResponse.result.files[0].id;
-                        break;
-                    }
-                    
-                    if (attempt < 3) updateStatus(`   → Thử lại (${attempt}/3)...`);
-                }
-            }
-            
-            if (formScriptId) {
-                await gapi.client.drive.files.update({
-                    fileId: formScriptId,
-                    resource: { name: name }
-                });
-                updateStatus(`   ✓ Đã đổi tên Script Form: "${name}"`);
-            } else {
-                updateStatus(`   ⚠ Script chưa sẵn sàng, sẽ có tên mặc định`);
-            }
-        } catch (err) {
-            console.warn('Không thể đổi tên script của form:', err);
-            updateStatus(`   ⚠ Bỏ qua đổi tên Script Form`);
-        }
-        */
-        updateStatus(`   ℹ Script Form sẽ giữ tên mặc định (đổi tên thủ công nếu cần)`);
+        // 2.1. [DISABLED] Rename Form's script project - use quickSetupForm() instead
 
         // 3. Copy Sheet
-        updateStatus("3. Đang tạo Sheet...");
         const sheet = await apiCopyFile(tmplSheetId, `Bảng nhận xét - ${name}`, folder.id);
-        updateStatus(`✓ Đã tạo Sheet: ${sheet.id}`);
         
-        // 3.1. [DISABLED] Rename Sheet's script project
-        // NOTE: Tương tự Form, đổi tên Apps Script Project từ client-side không ổn định.
-        // GIẢI PHÁP TỐT HƠN: Dùng Apps Script bound script gọi Drive.Files.update()
-        // Xem: LibrarySheetScript.txt - hàm autoRenameScriptProject()
-        // 
-        // Code cũ (REST API - không ổn định):
-        /*
-        try {
-            updateStatus("   → Đang đổi tên Script của Sheet...");
-            
-            let sheetScriptId = null;
-            
-            for (let attempt = 1; attempt <= 3; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                const searchResponse = await gapi.client.drive.files.list({
-                    q: `'${sheet.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
-                    fields: 'files(id)',
-                    pageSize: 1
-                });
-                
-                if (searchResponse.result.files?.length > 0) {
-                    sheetScriptId = searchResponse.result.files[0].id;
-                    break;
-                }
-                
-                if (attempt < 3) updateStatus(`   → Thử lại (${attempt}/3)...`);
-            }
-            
-            if (sheetScriptId) {
-                await gapi.client.drive.files.update({
-                    fileId: sheetScriptId,
-                    resource: { name: name }
-                });
-                updateStatus(`   ✓ Đã đổi tên Script Sheet: "${name}"`);
-            } else {
-                updateStatus(`   ⚠ Script chưa sẵn sàng, sẽ có tên mặc định`);
-            }
-        } catch (err) {
-            console.warn('Không thể đổi tên script của sheet:', err);
-            updateStatus(`   ⚠ Bỏ qua đổi tên Script Sheet`);
-        }
-        */
-        updateStatus(`   ℹ Script Sheet sẽ giữ tên mặc định (đổi tên thủ công nếu cần)`);
+        // 3.1. [DISABLED] Rename Sheet's script project - use quickSetupSheet() instead
 
         // 4. Ghi Config vào Sheet
-        updateStatus("4. Đang cấu hình Sheet...");
-        // 4. Ghi Config vào Sheet
-        updateStatus("4. Đang cấu hình Sheet...");
         await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id, studentFolder.id);
         
         // 4.1. Ghi email người dùng vào config
         const userEmail = LOGIN_HINT || (gapi.client.getToken() ? await getUserEmail() : null);
         if (userEmail) {
-            updateStatus(`   → Ghi email người quản lý: ${userEmail}`);
             await apiWriteUserEmailToConfig(sheet.id, userEmail);
         }
 
@@ -1142,66 +1014,40 @@ async function createClassSystemAutomatic() {
         const assignments = [];
         
         if (chips.length > 0) {
-            updateStatus(`5. Đang tạo ${chips.length} thư mục bài tập...`);
-            
             for (const chip of chips) {
                 const assignmentName = chip.dataset.name;
                 if (assignmentName) {
-                    updateStatus(`   → Tạo thư mục "${assignmentName}"...`);
                     const assignmentFolder = await apiCreateFolder(assignmentName, folder.id);
                     assignments.push({
                         name: assignmentName,
                         folderId: assignmentFolder.id
                     });
-                    updateStatus(`   ✓ Đã tạo: ${assignmentName}`);
                 }
             }
             
             // Ghi vào sheet Cấu Hình
             if (assignments.length > 0) {
-                updateStatus("7. Đang ghi cấu hình bài tập vào Sheet...");
                 await apiWriteAssignmentsToConfig(sheet.id, assignments);
-                updateStatus(`✓ Đã ghi ${assignments.length} loại bài tập vào sheet Cấu Hình`);
                 
-                // 7.1. Update Form choices
-                updateStatus("8. Đang cập nhật Form với danh sách bài tập...");
+                // Update Form choices
                 await apiUpdateFormChoices(form.id, assignments);
-                updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn`);
             }
             
-            // 8.1. Create assignment sheets automatically
+            // Create assignment sheets automatically
             if (assignments.length > 0) {
-                updateStatus("9. Đang tạo sheet cho từng loại bài tập...");
                 await apiCreateAssignmentSheets(sheet.id, assignments);
-                updateStatus(`✓ Đã tạo ${assignments.length} sheet nhận xét`);
             }
         }
 
-        // 10. Build form links (responder link from form ID)
-        updateStatus("10. Đang tạo link Form...");
+        // Build form links (responder link from form ID)
         const formEditLink = `https://docs.google.com/forms/d/${form.id}/edit`;
-        
-        // Build responder link manually - this works even if form not opened yet
-        // Extract the file ID and construct viewform link
         const formShortLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
         
-        updateStatus(`✓ Đã tạo link Form`);
-        
-        // Open form in new tab
+        // Open form and sheet in new tabs
         window.open(formEditLink, '_blank');
-        updateStatus(`   → Đã mở Form editor`);
-        
-        // Hướng dẫn link form-sheet thủ công
-        updateStatus(`📌 STEP 3: Liên kết Form với Sheet`);
-        updateStatus(`   → Đang mở Sheet...`);
         window.open(sheet.webViewLink, '_blank');
         
-        updateStatus(`⚠ QUAN TRỌNG: Cần liên kết Form với Sheet thủ công:`);
-        updateStatus(`   1. Quay lại Form editor (tab mở trước)`);
-        updateStatus(`   2. Tab "Responses" → icon 3 chấm`);
-        updateStatus(`   3. "Select response destination"`);
-        updateStatus(`   4. Chọn sheet "${name}" vừa mở`);
-        updateStatus(`   5. Xong! Form sẽ tự động ghi responses`);
+        updateStatus(`📌 Liên kết Form với Sheet thủ công: Form → Responses → Select response destination → Chọn sheet`);
 
         // 11. Save Profile
         const newProfile = {
@@ -1760,17 +1606,15 @@ function deleteClassProfile() {
         return;
     }
 
-    updateStatus(`🗑️ Đang xóa lớp "${profile.name}"...`);
-
     // Delete ALL files in folder (including form, sheet, scripts) then folder
     deleteClassFolderFromDrive(idToDelete, profile).catch(err => {
         console.error('Lỗi khi xóa folder trên Drive:', err);
-        updateStatus(`⚠ Đã xóa lớp khỏi hệ thống nhưng không thể xóa hoàn toàn trên Drive. Bạn có thể xóa thủ công.`);
+        updateStatus(`✗ Xóa lớp trên Drive thất bại. Bạn có thể xóa thủ công.`, true);
     });
 
     classProfiles = classProfiles.filter(p => p.id !== idToDelete);
     localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
-    updateStatus(`✓ Đã xóa lớp "${profile.name}" khỏi hệ thống.`);
+    updateStatus(`✓ Đã xóa lớp "${profile.name}"`);
 
     const activeId = localStorage.getItem('activeClassProfileId');
     if (activeId === idToDelete) {
@@ -1790,7 +1634,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
         // Step 1: Delete form's bound script first (if we know form ID)
         if (profile && profile.formId) {
             try {
-                updateStatus(`   → Đang xóa script projects...`);
                 const scriptSearch = await gapi.client.drive.files.list({
                     q: `'${profile.formId}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
                     fields: 'files(id, name)'
@@ -1799,7 +1642,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
                 const scripts = scriptSearch.result.files || [];
                 for (const script of scripts) {
                     await gapi.client.drive.files.delete({ fileId: script.id });
-                    updateStatus(`   ✓ Đã xóa script: ${script.name}`);
                 }
             } catch (err) {
                 console.warn('Could not delete form scripts:', err);
@@ -1810,7 +1652,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
         if (profile && profile.formId) {
             try {
                 await gapi.client.drive.files.delete({ fileId: profile.formId });
-                updateStatus(`   ✓ Đã xóa Form`);
             } catch (err) {
                 console.warn('Could not delete form:', err);
             }
@@ -1820,7 +1661,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
         if (profile && profile.sheetId) {
             try {
                 await gapi.client.drive.files.delete({ fileId: profile.sheetId });
-                updateStatus(`   ✓ Đã xóa Sheet`);
             } catch (err) {
                 console.warn('Could not delete sheet:', err);
             }
@@ -1828,7 +1668,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
         
         // Step 4: List and delete all remaining files in folder
         try {
-            updateStatus(`   → Đang xóa các file còn lại...`);
             const filesInFolder = await gapi.client.drive.files.list({
                 q: `'${folderId}' in parents and trashed=false`,
                 fields: 'files(id, name, mimeType)',
@@ -1836,7 +1675,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
             });
             
             const files = filesInFolder.result.files || [];
-            let deletedCount = 0;
             
             for (const file of files) {
                 try {
@@ -1846,14 +1684,9 @@ async function deleteClassFolderFromDrive(folderId, profile) {
                     } else {
                         await gapi.client.drive.files.delete({ fileId: file.id });
                     }
-                    deletedCount++;
                 } catch (err) {
                     console.warn(`Could not delete file ${file.name}:`, err);
                 }
-            }
-            
-            if (deletedCount > 0) {
-                updateStatus(`   ✓ Đã xóa ${deletedCount} file/folder`);
             }
         } catch (err) {
             console.warn('Could not list folder contents:', err);
@@ -1863,7 +1696,6 @@ async function deleteClassFolderFromDrive(folderId, profile) {
         await gapi.client.drive.files.delete({
             fileId: folderId
         });
-        updateStatus(`✓ Đã xóa folder lớp trên Drive`);
         
     } catch (error) {
         console.error('Drive deletion error:', error);
