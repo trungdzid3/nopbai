@@ -68,6 +68,46 @@ function autoRenameScriptProject() {
   }
 }
 
+/**
+ * Hàm setup nhanh - Gọi tự động lần đầu để cấp quyền và đổi tên project
+ * GỌI THỦCÔNG 1 LẦN hoặc được gọi từ quickSetup tổng hợp
+ * 
+ * Cách dùng:
+ * 1. Run → quickSetupSheet
+ * 2. Authorize tất cả quyền cần thiết
+ * 3. Xong!
+ */
+function quickSetupSheet() {
+  try {
+    Logger.log("🚀 Đang chạy Quick Setup cho Sheet...");
+    
+    // 1. Đổi tên project
+    Logger.log("1. Đổi tên Apps Script Project...");
+    autoRenameScriptProject();
+    
+    // 2. Load configs
+    Logger.log("2. Tải cấu hình...");
+    const configMgr = new ConfigManager();
+    configMgr.loadAll();
+    const configs = configMgr.getAll();
+    Logger.log(`✅ Tải được ${configs.length} cấu hình`);
+    
+    // 3. Gợi ý setup triggers
+    Logger.log("3. Gợi ý cài đặt triggers...");
+    Logger.log("💡 Tiếp theo: Nhấn menu 'Tiện ích Lớp Học' → '⚙️ Cài đặt Toàn bộ Lịch trình'");
+    
+    Logger.log("✅ Quick Setup hoàn tất!");
+    
+    SpreadsheetApp.getUi().alert(
+      `✅ Quick Setup hoàn tất!\n\nTiếp theo: Nhấn menu "Tiện ích Lớp Học" → "⚙️ Cài đặt Toàn bộ Lịch trình" để kích hoạt tự động hóa.`
+    );
+    
+  } catch (e) {
+    Logger.log("❌ Lỗi: " + e.message);
+    SpreadsheetApp.getUi().alert("❌ Lỗi: " + e.message);
+  }
+}
+
 // ==================================================================
 // CONFIG MANAGER - ĐỌC CẤU HÌNH TỪ SHEET
 // ==================================================================

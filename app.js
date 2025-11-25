@@ -1202,11 +1202,16 @@ async function createClassSystemAutomatic() {
         updateStatus(`   → Đã mở Form editor`);
         
         // Hướng dẫn link form-sheet thủ công
+        updateStatus(`📌 STEP 3: Liên kết Form với Sheet`);
+        updateStatus(`   → Đang mở Sheet...`);
+        window.open(sheet.webViewLink, '_blank');
+        
         updateStatus(`⚠ QUAN TRỌNG: Cần liên kết Form với Sheet thủ công:`);
-        updateStatus(`   1. Trong Form editor → Tab "Responses"`);
-        updateStatus(`   2. Click icon 3 chấm → "Select response destination"`);
-        updateStatus(`   3. Chọn "Select existing spreadsheet"`);
-        updateStatus(`   4. Chọn sheet "${name}" vừa tạo`);
+        updateStatus(`   1. Quay lại Form editor (tab mở trước)`);
+        updateStatus(`   2. Tab "Responses" → icon 3 chấm`);
+        updateStatus(`   3. "Select response destination"`);
+        updateStatus(`   4. Chọn sheet "${name}" vừa mở`);
+        updateStatus(`   5. Xong! Form sẽ tự động ghi responses`);
 
         // 11. Save Profile
         const newProfile = {
@@ -1247,7 +1252,8 @@ async function createClassSystemAutomatic() {
         handleClassSelectChange();
 
         updateStatus(`🎉 Hoàn tất! Đã tạo lớp "${name}" với ${assignments.length} loại bài tập.`);
-        updateStatus(`📋 Bước tiếp theo: Thiết lập triggers cho Form...`);
+        updateStatus(`\n📌 SETUP QUY TRÌNH (3 bước dưới đây):`);
+        updateStatus(`\n📌 STEP 1: Setup Form Script`);
         
         // Auto-open Form Apps Script editor with instructions
         const formScriptUrl = `https://script.google.com/home/projects/${form.id}/edit`;
@@ -1257,18 +1263,23 @@ async function createClassSystemAutomatic() {
         setTimeout(() => {
             const shouldOpen = confirm(
                 `✅ Lớp "${name}" đã được tạo!\n\n` +
-                `📝 BẮT BUỘC: Cần setup triggers cho Form (1 phút)\n\n` +
-                `Bước 1: Click OK để mở Apps Script editor\n` +
-                `Bước 2: Chọn Run → quickSetup\n` +
-                `Bước 3: Click Run ▶️ và authorize\n\n` +
-                `Sau đó Form sẽ tự động xử lý bài nộp!`
+                `📌 STEP 1: Setup Form Script (tự động - 1 phút)\n\n` +
+                `Bước 1: Click OK để mở Form Apps Script editor\n` +
+                `Bước 2: Chọn Run → quickSetupForm\n` +
+                `Bước 3: Click Run ▶️ và authorize\n` +
+                `Bước 4: Chờ xong, close tab này\n\n` +
+                `Form sẽ tự động:\n` +
+                `✓ Đổi tên Project\n` +
+                `✓ Kích hoạt triggers\n` +
+                `✓ Sẵn sàng nhận bài nộp!`
             );
             
             if (shouldOpen) {
                 window.open(formScriptUrl, '_blank');
-                updateStatus(`📖 Đã mở Apps Script. Nhớ chạy: Run → quickSetup → Run ▶️`);
+                updateStatus(`📖 Đã mở Form Apps Script. Run → quickSetupForm → ▶️ Authorize`);
+                updateStatus(`💡 Sau khi xong: Quay lại tab này để làm STEP 2`);
             } else {
-                updateStatus(`⚠️ Nhớ setup triggers sau: ${formScriptUrl}`);
+                updateStatus(`⚠️ Nhớ setup Form script sau: ${formScriptUrl}`);
             }
         }, 500);
         

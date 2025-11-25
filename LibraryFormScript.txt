@@ -71,6 +71,45 @@ function autoRenameScriptProject() {
   }
 }
 
+/**
+ * Hàm setup nhanh - Gọi tự động lần đầu để cấp quyền và đổi tên project
+ * GỌI THỦCÔNG 1 LẦN hoặc được gọi từ quickSetup tổng hợp
+ * 
+ * Cách dùng:
+ * 1. Run → quickSetupForm
+ * 2. Authorize tất cả quyền cần thiết
+ * 3. Xong!
+ */
+function quickSetupForm() {
+  try {
+    Logger.log("🚀 Đang chạy Quick Setup cho Form...");
+    
+    // 1. Đổi tên project
+    Logger.log("1. Đổi tên Apps Script Project...");
+    autoRenameScriptProject();
+    
+    // 2. Kiểm tra config sheet
+    Logger.log("2. Kiểm tra kết nối Sheet...");
+    const ss = getConfigSpreadsheet();
+    if (!ss) {
+      Logger.log("⚠️ Chưa link được Sheet. Hãy link thủ công.");
+    } else {
+      Logger.log(`✅ Đã kết nối Sheet: ${ss.getName()}`);
+    }
+    
+    // 3. Load configs
+    Logger.log("3. Tải cấu hình...");
+    const configs = ConfigManager.loadAll();
+    Logger.log(`✅ Tải được ${configs.length} cấu hình`);
+    
+    Logger.log("✅ Quick Setup hoàn tất!");
+    
+  } catch (e) {
+    Logger.log("❌ Lỗi: " + e.message);
+    Browser.msgBox("❌ Lỗi", "Lỗi trong quá trình setup: " + e.message, Browser.Buttons.OK);
+  }
+}
+
 // ==================================================================
 // PHẦN CẤU HÌNH CƠ BẢN
 // ==================================================================
