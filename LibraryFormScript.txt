@@ -725,7 +725,14 @@ function reconcileCheckboxes() {
   let totalReconciled = 0;
   
   for (const config of configs) {
-    if (config.isAttendance || !config.folderId) continue;
+    if (config.isAttendance || !config.folderId) {
+      if (config.isAttendance) {
+        Logger.log(`⏭️ Bỏ qua "${config.name}" (Điểm danh)`);
+      } else {
+        Logger.log(`⚠️ BỎ QUA "${config.name}" - CHƯA CÓ FOLDER_ID! Hãy link folder trên giao diện web trước.`);
+      }
+      continue;
+    }
     
     try {
       Logger.log(`\n📋 Đối soát "${config.name}"...`);
