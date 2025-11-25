@@ -987,6 +987,39 @@ async function createClassSystemAutomatic() {
         const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
         updateStatus(`✓ Đã tạo Form: ${form.id}`);
         
+        // 2.0. Kiểm tra và publish form (nếu cần)
+        try {
+            updateStatus("   → Kiểm tra trạng thái publish...");
+            const formInfo = await gapi.client.request({
+                path: `https://forms.googleapis.com/v1/forms/${form.id}`,
+                method: 'GET'
+            });
+            
+            if (!formInfo.result.responderUri) {
+                updateStatus("   ⚠ Form chưa được publish, đang publish...");
+                // Forms API không hỗ trợ publish trực tiếp
+                // Workaround: Update form settings để trigger publish
+                await gapi.client.request({
+                    path: `https://forms.googleapis.com/v1/forms/${form.id}`,
+                    method: 'PATCH',
+                    body: {
+                        settings: {
+                            quizSettings: null // Trigger update
+                        }
+                    },
+                    params: {
+                        updateMask: 'settings'
+                    }
+                });
+                updateStatus("   ✓ Form đã được publish");
+            } else {
+                updateStatus("   ✓ Form đã sẵn sàng (published)");
+            }
+        } catch (err) {
+            console.warn('Không thể kiểm tra/publish form:', err);
+            updateStatus("   ℹ Form có thể cần publish thủ công nếu không hoạt động");
+        }
+        
         // 2.1. Rename Form's script project to class name
         try {
             updateStatus("   → Đang đổi tên Script của Form...");
@@ -1165,8 +1198,7 @@ async function createClassSystemAutomatic() {
             formShortLink: formShortLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
-            formId: form.id,
-            scriptProjectId: scriptProjectId
+            formId: form.id
         };
 
         classProfiles.push(newProfile);
@@ -1268,41 +1300,6 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) 
             data: updates
         }
     });
-    
-    // Điền tên lớp vào cột A, bắt đầu từ hàng 3 trở lên
-    try {
-        // Đọc cột A từ hàng 3 để tìm hàng trống đầu tiên
-        const rangeResponse = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: 'Cấu Hình!A3:A1000'
-        });
-        
-        const existingValues = rangeResponse.result.values || [];
-        
-        // Tìm hàng trống đầu tiên (bắt đầu từ hàng 3)
-        let targetRow = 3;
-        for (let i = 0; i < existingValues.length; i++) {
-            if (!existingValues[i] || !existingValues[i][0] || existingValues[i][0].toString().trim() === '') {
-                targetRow = 3 + i;
-                break;
-            }
-            targetRow = 3 + i + 1; // Nếu không có hàng trống, thêm vào cuối
-        }
-        
-        // Ghi tên lớp vào hàng tìm được
-        await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `Cấu Hình!A${targetRow}`,
-            valueInputOption: 'RAW',
-            resource: {
-                values: [[className]]
-            }
-        });
-        
-        console.log(`✓ Đã điền tên lớp "${className}" vào Cấu Hình!A${targetRow}`);
-    } catch (err) {
-        console.warn('Không thể điền tên lớp vào cột A:', err);
-    }
 }
 
 async function apiLinkFormToSheet(formId, sheetId) {
@@ -1508,46 +1505,46 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
         return;
     }
     
-    // 1. Đọc dữ liệu hiện có từ bảng config
-    let existingData = [];
+    // 1. Đọc dữ liệu hiện có từ hàng 3 trở đi (hàng 2 dành riêng cho Điểm danh)
+    let existingAssignments = [];
     try {
         const response = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Cấu Hình!A2:F1000'
+            range: 'Cấu Hình!A3:F1000'
         });
-        existingData = response.result.values || [];
+        existingAssignments = response.result.values || [];
     } catch (e) {
         console.log('[CONFIG] Chưa có dữ liệu cũ, tạo mới.');
     }
     
     // 2. Tạo map tên bài tập hiện có để check trùng
-    const existingNames = new Set(existingData.map(row => row[0])); // Cột A
+    const existingNames = new Set(existingAssignments.map(row => row[0])); // Cột A
     
-    // 3. Nếu chưa có "Điểm danh", thêm vào đầu
-    const values = [];
-    if (!existingNames.has('Điểm danh')) {
-        values.push([
-            'Điểm danh',                     // A: Tên bài tập
-            '',                              // B: Lịch học (bỏ trống - user tự điền)
-            '',                              // C: Thời gian mở (không có cho Điểm danh)
-            '',                              // D: Deadline (không có cho Điểm danh)
-            true,                            // E: Tự động dọn (TRUE - dọn sheet điểm danh trước giờ học)
-            'Điểm danh'                      // F: Tên sheet
-        ]);
-    }
+    // 3. HÀNG 2: Luôn là "Điểm danh"
+    const attendanceRow = [
+        'Điểm danh',                     // A: Tên bài tập
+        '',                              // B: Lịch học (bỏ trống - user tự điền)
+        '',                              // C: Thời gian mở (không có cho Điểm danh)
+        '',                              // D: Deadline (không có cho Điểm danh)
+        true,                            // E: Tự động dọn (TRUE - dọn sheet điểm danh trước giờ học)
+        'Điểm danh'                      // F: Tên sheet
+    ];
     
-    // 4. Giữ lại dữ liệu cũ
-    existingData.forEach(row => {
+    // 4. HÀNG 3+: Giữ lại dữ liệu cũ + thêm assignments mới
+    const assignmentRows = [];
+    
+    // 4.1. Giữ lại dữ liệu cũ
+    existingAssignments.forEach(row => {
         // Đảm bảo có đủ 6 cột
         while (row.length < 6) row.push('');
-        values.push(row);
+        assignmentRows.push(row);
     });
     
-    // 5. Thêm assignments mới (chưa tồn tại)
+    // 4.2. Thêm assignments mới (chưa tồn tại)
     assignments.forEach(a => {
         const assignmentName = a.name;
         if (!existingNames.has(assignmentName) && assignmentName !== 'Điểm danh') {
-            values.push([
+            assignmentRows.push([
                 assignmentName,                      // A: Tên bài tập
                 '',                                  // B: Lịch học (bỏ trống - user tự điền)
                 '',                                  // C: Thời gian mở (bỏ trống)
@@ -1559,23 +1556,34 @@ async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
         }
     });
     
-    console.log(`[CONFIG] Tổng số dòng: ${values.length} (giữ nguyên dữ liệu cũ + thêm mới)`);
+    console.log(`[CONFIG] Hàng 2: Điểm danh`);
+    console.log(`[CONFIG] Hàng 3+: ${assignmentRows.length} bài tập`);
     
-    // 6. Xóa toàn bộ range cũ
+    // 5. Xóa toàn bộ range cũ (từ hàng 2)
     await gapi.client.sheets.spreadsheets.values.clear({
         spreadsheetId,
         range: 'Cấu Hình!A2:F1000'
     });
     
-    // 7. Ghi lại toàn bộ (bảng table sẽ tự động mở rộng đúng kích thước)
+    // 6. Ghi hàng 2 (Điểm danh)
     await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `Cấu Hình!A2:F${values.length + 1}`,
+        range: 'Cấu Hình!A2:F2',
         valueInputOption: 'USER_ENTERED',
-        resource: { values }
+        resource: { values: [attendanceRow] }
     });
     
-    console.log(`[CONFIG] ✓ Đã cập nhật bảng config với ${values.length} dòng`);
+    // 7. Ghi hàng 3+ (các assignments khác)
+    if (assignmentRows.length > 0) {
+        await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: `Cấu Hình!A3:F${2 + assignmentRows.length}`,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: assignmentRows }
+        });
+    }
+    
+    console.log(`[CONFIG] ✓ Đã cập nhật bảng config: Hàng 2 (Điểm danh) + ${assignmentRows.length} hàng assignments`);
     
     // Tạo các sheet bài tập từ template "(Mẫu) Bảng nhận xét"
     console.log('[SHEETS] Bắt đầu tạo sheets bài tập từ template...');

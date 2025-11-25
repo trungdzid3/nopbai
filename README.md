@@ -108,6 +108,22 @@ https://trungdzid3.github.io/nopbai/drive_folder_to_pdf.html
 
 **Hướng dẫn setup:** Xem `LIBRARY_SETUP_GUIDE.md`
 
+### ⚠️ Quan Trọng: Template Form/Sheet
+
+**Trước khi sử dụng tính năng tạo lớp tự động:**
+
+1. **Form Template** phải đã được **Published**:
+   - Mở Form template trong Google Forms editor
+   - Click **Send** (góc trên bên phải)
+   - Form sẽ tự động published
+   - Hoặc check Settings → đảm bảo "Collect email addresses" đã bật
+
+2. **Sheet Template** phải có:
+   - Sheet "Cấu Hình" với header đúng format
+   - Sheet "(Mẫu) Bảng nhận xét" để duplicate
+
+**Lý do:** Form được copy từ template chưa published sẽ không hoạt động (Google yêu cầu publish form mới từ Dec 2024).
+
 ## 🔄 Update Workflow
 
 1. Sửa code local
