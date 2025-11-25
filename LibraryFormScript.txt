@@ -1182,20 +1182,28 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly, sub
     bestMatch = mapList.find(item => item.originalLC === nameFromForm);
     if (bestMatch) matchLevel = "Phase 1 - Exact";
     
-    // Phase 2: Last two words (có dấu)
-    if (!bestMatch && wordsFromForm.length >= 2) {
+    // Phase 2: Last two words (có dấu) - So sánh với tên gốc đã lowercase
+    // "Con Minh Toàn" -> lấy 2 từ cuối từ nameFromForm: "minh toàn"
+    if (!bestMatch && nameFromForm.split(/\s+/).length >= 2) {
+      const formWordsLC = nameFromForm.split(/\s+/).filter(Boolean);
+      const formLastTwoLC = formWordsLC.slice(-2).join(' ');
+      
       bestMatch = mapList.find(item => {
-        if (item.normalized.split(/\s+/).length < 2) return false;
         const itemWords = item.originalLC.split(/\s+/).filter(Boolean);
+        if (itemWords.length < 2) return false;
         const itemLastTwo = itemWords.slice(-2).join(' ');
-        return itemLastTwo === wordsFromForm.slice(-2).join(' ');
+        return itemLastTwo === formLastTwoLC;
       });
       if (bestMatch) matchLevel = "Phase 2 - Last2 (dấu)";
     }
     
-    // Phase 3: Last two words (không dấu)
+    // Phase 3: Last two words (không dấu) - So sánh sau khi chuẩn hóa
+    // "Con Minh Toan" -> normalize -> "minh toan"
     if (!bestMatch && wordsFromForm.length >= 2) {
-      bestMatch = mapList.find(item => item.lastTwo === lastTwoFromForm);
+      bestMatch = mapList.find(item => {
+        if (!item.lastTwo || item.lastTwo.length < 4) return false;
+        return item.lastTwo === lastTwoFromForm;
+      });
       if (bestMatch) matchLevel = "Phase 3 - Last2 (normalized)";
     }
     
