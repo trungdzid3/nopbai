@@ -214,7 +214,7 @@ class ConfigManager {
     const match = str.match(regex);
     
     if (!match) {
-      Logger.log(`⚠️ Format thời gian không hợp lệ: "${str}". Mong đợi: CN-18:00 hoặc T2-18:00`);
+      Logger.log(`⚠️ Format thời gian không hợp lệ: "${str}". Mong đợi: CN-18:00, T1-18:00, T2-18:00, ..., T7-18:00 (ngăn cách bởi ; hoặc ,)`);
       return null;
     }
 

@@ -267,7 +267,7 @@ class ConfigManager {
       // Hỗ trợ CN hoặc T1-T7
       const match = part.match(/^(CN|T[1-7])-(\d{1,2}):(\d{2})$/);
       if (!match) {
-        Logger.log(`CẢNH BÁO: Format thời gian không hợp lệ: "${part}". Bỏ qua.`);
+        Logger.log(`CẢNH BÁO: Format thời gian không hợp lệ: "${part}". Hỗ trợ: CN-18:00, T1-18:00, ..., T7-18:00 (ngăn cách bởi ; hoặc ,)`);
         continue;
       }
       
