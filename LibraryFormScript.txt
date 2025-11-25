@@ -782,35 +782,101 @@ function reconcileCheckboxes() {
       
       Logger.log(`  📁 Tìm thấy ${submittedStudents.size} thư mục học sinh trên Drive`);
       
-      // Đối soát: So sánh sheet vs Drive
+      // Đối soát: So sánh sheet vs Drive theo 4 bước
       let fixed = 0;
       for (const student of sheetStudents) {
-        // Normalize để so sánh
-        const normalizedSheetName = normalizeString(student.name);
-        let isSubmitted = false;
         let matchedName = null;
+        let matchLevel = null;
         
+        // ========== PHASE 1: Exact match (lowercase) ==========
         for (const submittedName of submittedStudents) {
-          const normalizedDriveName = normalizeString(submittedName);
-          if (normalizedSheetName === normalizedDriveName || 
-              submittedName.toLowerCase().includes(student.name.toLowerCase()) ||
-              student.name.toLowerCase().includes(submittedName.toLowerCase())) {
-            isSubmitted = true;
+          if (student.name.toLowerCase().trim() === submittedName.toLowerCase().trim()) {
             matchedName = submittedName;
+            matchLevel = "Phase 1 (Exact)";
             break;
           }
         }
         
-        // Kiểm tra và sửa checkbox nếu sai
-        if (isSubmitted && !student.isChecked) {
-          // Đã nộp nhưng checkbox chưa tick -> Sửa
-          const checkboxCell = sheet.getRange(`G${student.row}`);
-          checkboxCell.setValue(true);
-          Logger.log(`  ✅ Sửa: "${student.name}" (tìm thấy folder: ${matchedName})`);
-          fixed++;
-        } else if (!isSubmitted && student.isChecked) {
-          // Chưa nộp nhưng checkbox đã tick -> Cảnh báo (không sửa tự động để an toàn)
-          Logger.log(`  ⚠️ Nghi vấn: "${student.name}" checkbox đã tick nhưng không có folder`);
+        // ========== PHASE 2: Last 2 words match (with diacritics) ==========
+        if (!matchedName) {
+          const studentWords = student.name.toLowerCase().split(/\s+/).filter(Boolean);
+          const studentLastTwo = studentWords.length >= 2 ? studentWords.slice(-2).join(' ') : null;
+          
+          if (studentLastTwo) {
+            for (const submittedName of submittedStudents) {
+              const submittedWords = submittedName.toLowerCase().split(/\s+/).filter(Boolean);
+              const submittedLastTwo = submittedWords.length >= 2 ? submittedWords.slice(-2).join(' ') : null;
+              
+              if (submittedLastTwo && studentLastTwo === submittedLastTwo) {
+                matchedName = submittedName;
+                matchLevel = "Phase 2 (Last 2 words)";
+                break;
+              }
+            }
+          }
+        }
+        
+        // ========== PHASE 3: Normalized match (remove diacritics) ==========
+        if (!matchedName) {
+          const normalizedStudent = normalizeString(student.name);
+          const normalizedStudentWords = normalizedStudent.split(/\s+/).filter(Boolean);
+          const normalizedStudentLastTwo = normalizedStudentWords.length >= 2 ? normalizedStudentWords.slice(-2).join(' ') : normalizedStudent;
+          
+          for (const submittedName of submittedStudents) {
+            const normalizedSubmitted = normalizeString(submittedName);
+            const normalizedSubmittedWords = normalizedSubmitted.split(/\s+/).filter(Boolean);
+            const normalizedSubmittedLastTwo = normalizedSubmittedWords.length >= 2 ? normalizedSubmittedWords.slice(-2).join(' ') : normalizedSubmitted;
+            
+            // So sánh both directions
+            if (normalizedStudentLastTwo === normalizedSubmittedLastTwo ||
+                normalizedStudent === normalizedSubmitted) {
+              matchedName = submittedName;
+              matchLevel = "Phase 3 (Normalized)";
+              break;
+            }
+          }
+        }
+        
+        // ========== PHASE 4: Typo detection (Levenshtein distance) ==========
+        if (!matchedName) {
+          const normalizedStudent = normalizeString(student.name);
+          let typoCandidates = [];
+          
+          for (const submittedName of submittedStudents) {
+            const normalizedSubmitted = normalizeString(submittedName);
+            const distance = levenshteinDistance(normalizedStudent, normalizedSubmitted);
+            
+            if (distance > 0 && distance <= TYPO_THRESHOLD) {
+              typoCandidates.push({
+                name: submittedName,
+                distance: distance
+              });
+            }
+          }
+          
+          if (typoCandidates.length > 0) {
+            typoCandidates.sort((a, b) => a.distance - b.distance);
+            matchedName = typoCandidates[0].name;
+            matchLevel = `Phase 4 (Typo, distance: ${typoCandidates[0].distance})`;
+          }
+        }
+        
+        // ========== CẬP NHẬT CHECKBOX ==========
+        if (matchedName) {
+          if (!student.isChecked) {
+            // Đã nộp nhưng checkbox chưa tick -> Sửa
+            const checkboxCell = sheet.getRange(`G${student.row}`);
+            checkboxCell.setValue(true);
+            Logger.log(`  ✅ Sửa: "${student.name}" → "${matchedName}" (${matchLevel})`);
+            fixed++;
+          }
+          // Nếu checkbox đã tick đúng thì không cần sửa
+        } else {
+          // Chưa tìm thấy folder
+          if (student.isChecked) {
+            // Checkbox đã tick nhưng không có folder -> Cảnh báo
+            Logger.log(`  ⚠️ Nghi vấn: "${student.name}" checkbox đã tick nhưng không có folder`);
+          }
         }
       }
       
