@@ -984,12 +984,28 @@ async function createClassSystemAutomatic() {
 
     updateStatus(`🚀 Đang tạo hệ thống cho "${name}"... Vui lòng chờ.`);
     saveClassProfileButton.disabled = true;
+    
+    // Đóng modal ngay khi bắt đầu tạo
+    classFormModal.setAttribute('aria-hidden', 'true');
+    
+    // Scroll to status log để user theo dõi tiến trình
+    setTimeout(() => {
+        const statusLog = document.getElementById('status-log');
+        if (statusLog) {
+            statusLog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
 
     try {
         // 1. Tạo Folder Lớp
         updateStatus("1. Đang tạo Folder...");
         const folder = await apiCreateFolder(name, rootId);
         updateStatus(`✓ Đã tạo Folder: ${folder.id}`);
+        
+        // 1.1. Tạo subfolder "Học sinh" để chứa folder riêng của từng học sinh
+        updateStatus("   → Tạo thư mục 'Học sinh'...");
+        const studentFolder = await apiCreateFolder("Học sinh", folder.id);
+        updateStatus(`   ✓ Đã tạo thư mục Học sinh: ${studentFolder.id}`);
 
         // 2. Copy Form
         updateStatus("2. Đang tạo Form...");
@@ -1138,7 +1154,7 @@ async function createClassSystemAutomatic() {
         updateStatus("4. Đang cấu hình Sheet...");
         // 4. Ghi Config vào Sheet
         updateStatus("4. Đang cấu hình Sheet...");
-        await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id);
+        await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id, studentFolder.id);
         
         // 4.1. Ghi email người dùng vào config
         const userEmail = LOGIN_HINT || (gapi.client.getToken() ? await getUserEmail() : null);
@@ -1223,7 +1239,8 @@ async function createClassSystemAutomatic() {
             formShortLink: formShortLink,
             folderLink: folder.webViewLink,
             sheetId: sheet.id,
-            formId: form.id
+            formId: form.id,
+            studentFolderId: studentFolder.id  // Thêm ID folder học sinh
         };
 
         classProfiles.push(newProfile);
@@ -1307,12 +1324,13 @@ async function apiCopyFile(fileId, name, parentId) {
     }).then(res => res.result);
 }
 
-async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) {
+async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId, studentFolderId) {
     // Ghi vào cột I:
     // I1: Tên lớp
     // I3: Folder ID
     // I4: Sheet ID
     // I5: Form ID
+    // I6: Student Folder ID (mới thêm)
     const updates = [
         {
             range: 'Cấu Hình!I1',
@@ -1329,6 +1347,10 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) 
         {
             range: 'Cấu Hình!I5',
             values: [[formId]]
+        },
+        {
+            range: 'Cấu Hình!I6',
+            values: [[studentFolderId || '']]
         }
     ];
     
