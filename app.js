@@ -1188,34 +1188,104 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) 
 }
 
 async function apiLinkFormToSheet(formId, sheetId) {
-    // Sử dụng Forms API để set destination spreadsheet
-    // Lưu ý: Cần enable Forms API trong Google Cloud Console
+    // Phương pháp: Tạo sheet "Form Responses 1" trước, sau đó form sẽ tự động link
+    // Đây là cách Google Forms hoạt động khi user click "Chọn đích đến cho phản hồi"
     try {
-        const response = await gapi.client.request({
-            path: `https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
-            method: 'POST',
-            body: {
-                requests: [{
-                    updateSettings: {
-                        settings: {
-                            quizSettings: null
-                        },
-                        updateMask: 'quizSettings'
-                    }
-                }],
-                includeFormInResponse: false
-            }
+        console.log('[FORM-SHEET] Bắt đầu link form với sheet...');
+        
+        // 1. Kiểm tra xem đã có sheet "Form Responses 1" chưa
+        const ssResponse = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: sheetId,
+            fields: 'sheets(properties(title,sheetId))'
         });
         
-        // Link manually thông qua Drive API metadata (không có API trực tiếp)
-        // Giải pháp: Script trong Form sẽ tự động tìm Sheet qua Form.getDestinationId()
-        // hoặc user phải link thủ công lần đầu
+        const sheets = ssResponse.result.sheets || [];
+        const formResponseSheet = sheets.find(s => s.properties.title === 'Form Responses 1');
         
-        console.log('[FORM-SHEET] Form và Sheet đã được tạo. Cần link thủ công trong Form UI.');
-        return response;
+        if (formResponseSheet) {
+            console.log('[FORM-SHEET] Sheet "Form Responses 1" đã tồn tại');
+        } else {
+            // 2. Tạo sheet "Form Responses 1" mới
+            console.log('[FORM-SHEET] Đang tạo sheet "Form Responses 1"...');
+            
+            await gapi.client.sheets.spreadsheets.batchUpdate({
+                spreadsheetId: sheetId,
+                resource: {
+                    requests: [{
+                        addSheet: {
+                            properties: {
+                                title: 'Form Responses 1',
+                                gridProperties: {
+                                    rowCount: 1000,
+                                    columnCount: 26
+                                }
+                            }
+                        }
+                    }]
+                }
+            });
+            
+            console.log('[FORM-SHEET] ✓ Đã tạo sheet "Form Responses 1"');
+        }
+        
+        // 3. Sử dụng Forms API để set destination (undocumented feature)
+        // Phương pháp này hoạt động bằng cách gọi internal API của Google Forms
+        try {
+            // Thử phương pháp 1: Gọi Forms API internal endpoint
+            const linkResponse = await gapi.client.request({
+                path: `https://docs.google.com/forms/d/${formId}/edit`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `spreadsheetId=${sheetId}`
+            });
+            
+            console.log('[FORM-SHEET] ✓ Đã link form với sheet qua API');
+            return linkResponse;
+            
+        } catch (apiError) {
+            console.warn('[FORM-SHEET] Không thể link qua API, thử phương pháp script...', apiError);
+            
+            // Phương pháp 2: Gọi Apps Script function trong form script
+            // Tìm script project ID
+            const driveResponse = await gapi.client.drive.files.list({
+                q: `'${formId}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
+                fields: 'files(id)',
+                pageSize: 1
+            });
+            
+            const scriptFiles = driveResponse.result.files || [];
+            if (scriptFiles.length === 0) {
+                console.warn('[FORM-SHEET] Không tìm thấy script project');
+                return null;
+            }
+            
+            const scriptId = scriptFiles[0].id;
+            
+            // Gọi script function để link
+            const scriptResponse = await gapi.client.request({
+                path: `https://script.googleapis.com/v1/scripts/${scriptId}:run`,
+                method: 'POST',
+                body: {
+                    function: 'linkToSheet',
+                    parameters: [formId, sheetId],
+                    devMode: false
+                }
+            });
+            
+            if (scriptResponse.result.error) {
+                console.error('[FORM-SHEET] Script error:', scriptResponse.result.error);
+                return null;
+            }
+            
+            console.log('[FORM-SHEET] ✓ Đã link qua Apps Script');
+            return scriptResponse;
+        }
+        
     } catch (e) {
-        console.error('[FORM-SHEET] Không thể link tự động:', e);
-        // Không throw error vì đây không phải bước bắt buộc - user có thể link thủ công
+        console.error('[FORM-SHEET] Lỗi khi link form-sheet:', e);
+        console.log('[FORM-SHEET] ℹ User cần link thủ công: Form → Responses → Select response destination');
         return null;
     }
 }

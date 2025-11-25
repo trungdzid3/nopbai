@@ -150,6 +150,7 @@ function quickSetup() {
     
     // 0. Tự động detect và lưu Sheet ID
     const scriptProperties = PropertiesService.getScriptProperties();
+    const form = FormApp.getActiveForm();
     let sheetId = scriptProperties.getProperty('SHEET_ID');
     
     if (!sheetId) {
@@ -157,7 +158,6 @@ function quickSetup() {
       
       // Thử 1: Lấy từ form destination (nếu đã link)
       try {
-        const form = FormApp.getActiveForm();
         sheetId = form.getDestinationId();
         
         if (sheetId) {
@@ -171,7 +171,7 @@ function quickSetup() {
       // Thử 2: Tìm trong cùng folder với Form
       if (!sheetId) {
         try {
-          const formFile = DriveApp.getFileById(FormApp.getActiveForm().getId());
+          const formFile = DriveApp.getFileById(form.getId());
           const formParents = formFile.getParents();
           
           if (formParents.hasNext()) {
@@ -203,6 +203,24 @@ function quickSetup() {
       Logger.log(`✅ Sheet ID đã có: ${sheetId}`);
     }
     
+    // 0.1. Tự động link form với sheet (nếu chưa link)
+    if (sheetId) {
+      try {
+        const currentDestination = form.getDestinationId();
+        
+        if (!currentDestination || currentDestination !== sheetId) {
+          Logger.log('🔗 Đang liên kết Form với Sheet...');
+          form.setDestination(FormApp.DestinationType.SPREADSHEET, sheetId);
+          Logger.log('✅ Đã tự động liên kết Form với Sheet!');
+        } else {
+          Logger.log('✅ Form đã được liên kết với Sheet');
+        }
+      } catch (e) {
+        Logger.log(`⚠️ Không thể tự động link form-sheet: ${e.message}`);
+        Logger.log('💡 Giải pháp: Vào Form → Responses → Select response destination → Chọn Sheet');
+      }
+    }
+    
     // 1. Xóa tất cả triggers cũ
     const oldTriggers = ScriptApp.getProjectTriggers();
     oldTriggers.forEach(trigger => {
@@ -212,7 +230,7 @@ function quickSetup() {
     
     // 2. Tạo Form Submit Trigger
     ScriptApp.newTrigger('onFormSubmit')
-      .forForm(FormApp.getActiveForm())
+      .forForm(form)
       .onFormSubmit()
       .create();
     Logger.log('✅ Đã tạo trigger: onFormSubmit (On form submit)');
