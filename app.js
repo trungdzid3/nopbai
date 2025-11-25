@@ -261,6 +261,10 @@ function bindQuickActions() {
         localStorage.setItem('root_folder_id', inpRootFolderId.value);
         updateStatus("✓ Đã lưu ID Thư mục cha.");
     }
+    
+    // [NEW] Sync & Link button
+    const btnSyncLink = document.getElementById('btn_sync_link');
+    if (btnSyncLink) btnSyncLink.onclick = syncAndLinkClassSystem;
 }
 
 function updateQuickActionsState() {
@@ -2576,6 +2580,67 @@ async function listAssignmentFolders(classFolderId) {
     } catch (err) {
         console.error(`[METADATA] Lỗi list assignment folders:`, err);
         return [];
+    }
+}
+
+/**
+ * Đồng bộ và liên kết lại class system
+ * Quét folder, form, sheet và ghi vào Script Properties thông qua Sheet config
+ */
+async function syncAndLinkClassSystem() {
+    const selectedId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
+    
+    if (!selectedId) {
+        updateStatus("⚠ Vui lòng chọn lớp cần đồng bộ.", true);
+        return;
+    }
+    
+    const profile = getClassProfile(selectedId);
+    if (!profile) {
+        updateStatus("✗ Không tìm thấy thông tin lớp.", true);
+        return;
+    }
+    
+    if (!profile.sheetId) {
+        updateStatus("✗ Lớp này chưa có Sheet ID. Cần tạo lớp qua Auto Create.", true);
+        return;
+    }
+    
+    updateStatus(`🔄 Đang đồng bộ lớp "${profile.name}"...`);
+    
+    try {
+        // 1. Quét lại các assignment folders trong lớp
+        const assignments = await listAssignmentFolders(profile.id);
+        updateStatus(`→ Tìm thấy ${assignments.length} loại bài tập.`);
+        
+        // 2. Ghi vào Sheet Config (cột A-F)
+        if (assignments.length > 0) {
+            await apiWriteAssignmentsToConfig(profile.sheetId, assignments);
+            updateStatus(`✓ Đã ghi ${assignments.length} bài tập vào Sheet Config.`);
+        }
+        
+        // 3. Cập nhật Form choices
+        if (profile.formId && assignments.length > 0) {
+            await apiUpdateFormChoices(profile.formId, assignments);
+            updateStatus(`✓ Đã cập nhật Form với ${assignments.length} lựa chọn.`);
+        }
+        
+        // 4. Cập nhật profile trong localStorage
+        profile.assignments = assignments;
+        const profileIndex = classProfiles.findIndex(p => p.id === profile.id);
+        if (profileIndex > -1) {
+            classProfiles[profileIndex] = profile;
+            localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+        }
+        
+        // 5. Reload UI
+        updateAssignmentSelectionUI();
+        updateStatus(`🎉 Đồng bộ hoàn tất! Lớp "${profile.name}" đã được cập nhật.`);
+        
+    } catch (error) {
+        const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
+        updateStatus(`✗ Lỗi đồng bộ: ${errorMessage}`, true);
+        console.error('[SYNC] Error:', error);
     }
 }
 
