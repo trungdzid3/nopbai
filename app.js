@@ -2747,8 +2747,10 @@ async function syncAndLinkClassSystem() {
         return;
     }
     
-    if (!profile.classFolderId) {
-        updateStatus("✗ Lớp này chưa có Class Folder ID.", true);
+    // Tự động nhận diện Class Folder ID (chính là profile.id)
+    const classFolderId = profile.classFolderId || profile.id;
+    if (!classFolderId) {
+        updateStatus("✗ Lỗi: Không xác định được Class Folder ID.", true);
         return;
     }
     
@@ -2756,7 +2758,7 @@ async function syncAndLinkClassSystem() {
     
     try {
         // BƯỚC 1: Quét folder lớp để tìm Form và Sheet hiện có
-        const { formFile, sheetFile, assignmentFolders } = await scanClassFolder(profile.classFolderId);
+        const { formFile, sheetFile, assignmentFolders } = await scanClassFolder(classFolderId);
         
         console.log('[SYNC] Kết quả quét:', { formFile, sheetFile, assignmentFolders: assignmentFolders.length });
         
@@ -2773,7 +2775,7 @@ async function syncAndLinkClassSystem() {
             const newForm = await apiCopyFile(
                 TEMPLATE_FORM_ID,
                 `📝 ${profile.name}`,
-                profile.classFolderId
+                classFolderId
             );
             currentFormId = newForm.id;
             updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
@@ -2789,7 +2791,7 @@ async function syncAndLinkClassSystem() {
                 const newForm = await apiCopyFile(
                     TEMPLATE_FORM_ID,
                     `📝 ${profile.name}`,
-                    profile.classFolderId
+                    classFolderId
                 );
                 currentFormId = newForm.id;
                 updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
@@ -2805,13 +2807,13 @@ async function syncAndLinkClassSystem() {
             const newSheet = await apiCopyFile(
                 TEMPLATE_SHEET_ID,
                 `📊 ${profile.name}`,
-                profile.classFolderId
+                classFolderId
             );
             currentSheetId = newSheet.id;
             updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
             
             // Ghi config vào Sheet mới
-            await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
+            await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
             
             // Tạo các assignment sheets
             if (assignmentFolders.length > 0) {
@@ -2832,13 +2834,13 @@ async function syncAndLinkClassSystem() {
                 const newSheet = await apiCopyFile(
                     TEMPLATE_SHEET_ID,
                     `📊 ${profile.name}`,
-                    profile.classFolderId
+                    classFolderId
                 );
                 currentSheetId = newSheet.id;
                 updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
                 
                 // Ghi config vào Sheet mới
-                await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
+                await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
                 
                 // Tạo các assignment sheets
                 if (assignmentFolders.length > 0) {
@@ -2874,7 +2876,7 @@ async function syncAndLinkClassSystem() {
         
         // BƯỚC 5: Ghi lại config vào Sheet (đảm bảo đồng bộ)
         updateStatus(`📝 Đang cập nhật config vào Sheet...`);
-        await apiUpdateSheetConfig(currentSheetId, profile.name, profile.classFolderId, currentFormId);
+        await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
         
         // Ghi danh sách assignments
         if (profile.assignments && profile.assignments.length > 0) {
