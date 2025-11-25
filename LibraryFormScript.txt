@@ -529,14 +529,20 @@ function onFormSubmit(e, recipientEmail) {
     findAndMarkCheckbox(studentName, assignmentType, "onFormSubmit", isEarly, submissionStatus);
     
     // Gửi email thông báo
-    if (recipientEmail && recipientEmail !== "your_email@example.com") {
+    // Ưu tiên parameter, fallback sang Script Properties
+    const emailRecipient = recipientEmail || PropertiesService.getScriptProperties().getProperty('RECIPIENT_EMAIL');
+    
+    if (emailRecipient && emailRecipient !== "your_email@example.com") {
       try {
         const subject = `Biểu mẫu: ${assignmentType}`;
         const body = `Học sinh "${studentName}" đã nộp bài "${assignmentType}".\nTrạng thái: ${submissionStatus}\nThời gian: ${now.toLocaleString('vi-VN')}`;
-        MailApp.sendEmail(recipientEmail, subject, body);
+        MailApp.sendEmail(emailRecipient, subject, body);
+        Logger.log(`✅ Đã gửi email thông báo đến: ${emailRecipient}`);
       } catch (mailErr) {
         Logger.log(`Lỗi gửi email: ${mailErr.message}`);
       }
+    } else {
+      Logger.log('ℹ️ Không gửi email: Chưa cấu hình RECIPIENT_EMAIL trong Script Properties');
     }
     
   } catch (err) {
