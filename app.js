@@ -751,6 +751,40 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     label.textContent = assignment.name;
     label.className = 'flex-1';
 
+    // Nút tạo lại Sheet (chỉ hiển thị nếu bài tập đã tồn tại)
+    if (assignment.folderId) {
+        const recreateSheetBtn = document.createElement('button');
+        recreateSheetBtn.type = 'button';
+        recreateSheetBtn.className = 'm3-button m3-button-icon p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-secondary-container/20';
+        recreateSheetBtn.title = 'Tạo lại Sheet';
+        recreateSheetBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
+        recreateSheetBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const confirmMsg = `Bạn có chắc muốn tạo lại Sheet cho bài tập "${assignment.name}" không?\n\nSheet cũ sẽ bị xóa.`;
+            if (confirm(confirmMsg)) {
+                await recreateAssignmentSheet(assignment.folderId, assignment.name);
+            }
+        };
+        chip.appendChild(recreateSheetBtn);
+    }
+
+    // Nút tạo lại Form (chỉ hiển thị nếu bài tập đã tồn tại)
+    if (assignment.folderId) {
+        const recreateFormBtn = document.createElement('button');
+        recreateFormBtn.type = 'button';
+        recreateFormBtn.className = 'm3-button m3-button-icon p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-tertiary-container/20';
+        recreateFormBtn.title = 'Tạo lại Form';
+        recreateFormBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
+        recreateFormBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const confirmMsg = `Bạn có chắc muốn tạo lại Form cho bài tập "${assignment.name}" không?\n\nForm cũ sẽ bị xóa.`;
+            if (confirm(confirmMsg)) {
+                await recreateAssignmentForm(assignment.folderId, assignment.name);
+            }
+        };
+        chip.appendChild(recreateFormBtn);
+    }
+
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'm3-button m3-button-icon remove-chip-btn p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error/10';
@@ -760,6 +794,8 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
 
     chip.appendChild(icon);
     chip.appendChild(label);
+    chip.appendChild(recreateSheetBtn);
+    chip.appendChild(recreateFormBtn);
     chip.appendChild(removeBtn);
     assignmentTypesContainer.appendChild(chip);
 }
@@ -2192,6 +2228,11 @@ function displaySubmissionStatus(statusList) {
         return;
     }
 
+    // Lấy danh sách học sinh từ class profile hiện tại
+    const classId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
+    const profile = classProfiles.find(p => p.id === classId);
+    const totalStudents = profile && profile.students ? profile.students.length : 0;
+
     const list = document.createElement('ul');
     list.className = 'space-y-2';
 
@@ -2239,7 +2280,14 @@ function displaySubmissionStatus(statusList) {
         item.addEventListener('dragend', handleDragEnd);
         item.classList.add(...classesToAdd);
         if (extraItemClass) item.classList.add(extraItemClass);
-        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><span class="text-sm font-medium flex-shrink-0">${statusText}</span>`;
+        
+        // Thêm số lượng nộp bài nếu có dữ liệu tổng học sinh
+        let submissionCount = '';
+        if (totalStudents > 0) {
+            submissionCount = `<span class="text-xs text-on-surface-variant ml-2">📊 ${totalStudents}</span>`;
+        }
+        
+        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-1"><span class="text-sm font-medium flex-shrink-0">${statusText}</span>${submissionCount}</div>`;
         list.appendChild(item);
     });
     submissionStatusList.appendChild(list);
@@ -3281,6 +3329,186 @@ function compareVersions(v1, v2) {
     }
     
     return 0;
+}
+
+
+/**
+ * Tạo lại Sheet cho bài tập (xóa cái cũ, tạo cái mới)
+ */
+async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
+    try {
+        updateStatus(`→ Đang tạo lại Sheet cho bài tập "${assignmentName}"...`);
+        
+        // Lấy danh sách files trong folder bài tập
+        const files = await gapi.client.drive.files.list({
+            q: `'${assignmentFolderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+            spaces: 'drive',
+            fields: 'files(id, name)',
+            pageSize: 10
+        });
+        
+        // Xóa Sheet cũ
+        if (files.result.files && files.result.files.length > 0) {
+            for (const file of files.result.files) {
+                await gapi.client.drive.files.update({
+                    fileId: file.id,
+                    resource: { trashed: true }
+                });
+            }
+            updateStatus(`✓ Đã xóa Sheet cũ`);
+        }
+        
+        // Tạo Sheet mới
+        const classId = formClassId.value;
+        const profile = classProfiles.find(p => p.id === classId);
+        const studentCount = profile && profile.students ? profile.students.length : 0;
+        
+        const sheetMetadata = {
+            name: `${assignmentName} - Điểm`,
+            mimeType: 'application/vnd.google-apps.spreadsheet',
+            parents: [assignmentFolderId]
+        };
+        
+        const sheet = await gapi.client.drive.files.create({
+            resource: sheetMetadata,
+            fields: 'id, webViewLink'
+        });
+        
+        const sheetId = sheet.result.id;
+        
+        // Ghi dữ liệu vào sheet
+        await gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheetId,
+            resource: {
+                requests: [
+                    {
+                        updateSheetProperties: {
+                            fields: 'gridProperties',
+                            properties: {
+                                sheetId: 0,
+                                gridProperties: {
+                                    rowCount: Math.max(studentCount + 10, 50),
+                                    columnCount: 5
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+        
+        // Ghi header
+        const headers = [['STT', 'Tên Học Sinh', 'Điểm', 'Nhận xét', 'Ngày nộp']];
+        const studentNames = profile && profile.students ? profile.students.map((s, idx) => [idx + 1, s, '', '', '']) : [];
+        
+        await gapi.client.sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId: sheetId,
+            resource: {
+                data: [
+                    {
+                        range: 'Sheet1!A1:E1',
+                        values: headers
+                    },
+                    {
+                        range: `Sheet1!A2:E${studentCount + 1}`,
+                        values: studentNames
+                    }
+                ],
+                valueInputOption: 'USER_ENTERED'
+            }
+        });
+        
+        updateStatus(`✅ Tạo lại Sheet thành công cho "${assignmentName}"`);
+    } catch (error) {
+        updateStatus(`✗ Lỗi tạo Sheet: ${error.message}`, true);
+    }
+}
+
+/**
+ * Tạo lại Form cho bài tập (xóa cái cũ, tạo cái mới)
+ */
+async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
+    try {
+        updateStatus(`→ Đang tạo lại Form cho bài tập "${assignmentName}"...`);
+        
+        // Lấy danh sách Forms trong folder
+        const files = await gapi.client.drive.files.list({
+            q: `'${assignmentFolderId}' in parents and mimeType='application/vnd.google-apps.form' and trashed=false`,
+            spaces: 'drive',
+            fields: 'files(id, name)',
+            pageSize: 10
+        });
+        
+        // Xóa Form cũ
+        if (files.result.files && files.result.files.length > 0) {
+            for (const file of files.result.files) {
+                await gapi.client.drive.files.update({
+                    fileId: file.id,
+                    resource: { trashed: true }
+                });
+            }
+            updateStatus(`✓ Đã xóa Form cũ`);
+        }
+        
+        // Tạo Form mới
+        const formMetadata = {
+            name: assignmentName,
+            mimeType: 'application/vnd.google-apps.form',
+            parents: [assignmentFolderId]
+        };
+        
+        const form = await gapi.client.drive.files.create({
+            resource: formMetadata,
+            fields: 'id, webViewLink'
+        });
+        
+        const formId = form.result.id;
+        
+        // Tạo câu hỏi trong Form (Họ tên, Lớp, File nộp bài)
+        await gapi.client.forms.forms.batchUpdate({
+            formId: formId,
+            resource: {
+                requests: [
+                    {
+                        createItem: {
+                            item: {
+                                title: 'Họ tên học sinh',
+                                questionItem: {
+                                    question: {
+                                        required: true,
+                                        textQuestion: {
+                                            paragraph: false
+                                        }
+                                    }
+                                }
+                            },
+                            location: { index: 0 }
+                        }
+                    },
+                    {
+                        createItem: {
+                            item: {
+                                title: 'Nộp bài tập',
+                                questionItem: {
+                                    question: {
+                                        required: true,
+                                        fileUploadQuestion: {
+                                            folderId: assignmentFolderId
+                                        }
+                                    }
+                                }
+                            },
+                            location: { index: 1 }
+                        }
+                    }
+                ]
+            }
+        });
+        
+        updateStatus(`✅ Tạo lại Form thành công cho "${assignmentName}"`);
+    } catch (error) {
+        updateStatus(`✗ Lỗi tạo Form: ${error.message}`, true);
+    }
 }
 
 /**
