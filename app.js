@@ -907,15 +907,37 @@ async function saveClassProfileManual() {
             updateStatus(`✓ Đã cập nhật lớp: ${name}`);
         }
 
-        // [NEW] Nếu có sheetId, ghi assignments vào config và tạo sheets
+        // [NEW] Nếu có sheetId và có assignments, ghi vào config và tạo sheets
         if (newProfile.sheetId && assignments.length > 0) {
             try {
-                updateStatus(`→ Đang ghi cấu hình bài tập vào Sheet...`);
+                updateStatus(`→ Đang xử lý bài tập...`);
+                
+                // 1. Tạo folder cho assignments mới (nếu chưa có)
+                for (const assignment of assignments) {
+                    if (!assignment.folderId) {
+                        updateStatus(`   → Tạo folder "${assignment.name}"...`);
+                        const assignmentFolder = await apiCreateFolder(assignment.name, newProfile.id);
+                        assignment.folderId = assignmentFolder.id;
+                        updateStatus(`   ✓ Đã tạo folder`);
+                    }
+                }
+                
+                // 2. Ghi vào Config sheet
+                updateStatus(`   → Ghi cấu hình vào Sheet...`);
                 await apiWriteAssignmentsToConfig(newProfile.sheetId, assignments);
-                updateStatus(`✓ Đã ghi cấu hình và tạo sheets bài tập`);
+                updateStatus(`   ✓ Đã ghi ${assignments.length} bài tập vào Config`);
+                
+                // 3. Update Form choices
+                if (newProfile.formId) {
+                    updateStatus(`   → Cập nhật lựa chọn Form...`);
+                    await apiUpdateFormChoices(newProfile.formId, assignments);
+                    updateStatus(`   ✓ Đã cập nhật Form`);
+                }
+                
+                updateStatus(`✓ Hoàn tất xử lý ${assignments.length} bài tập`);
             } catch (error) {
                 console.error('Lỗi khi ghi config:', error);
-                updateStatus(`⚠ Đã lưu lớp nhưng không thể ghi config vào Sheet. Vui lòng kiểm tra quyền truy cập.`, true);
+                updateStatus(`⚠ Đã lưu lớp nhưng không thể xử lý bài tập hoàn toàn: ${error.message}`, true);
             }
         }
 
@@ -968,9 +990,12 @@ async function createClassSystemAutomatic() {
         // 2.1. Rename Form's script project to class name
         let scriptProjectId = null;
         try {
-            updateStatus("   → Đang đổi tên Script project...");
+            updateStatus("   → Đang tìm Script project...");
             
             // Script project is BOUND to form, not in folder
+            // Wait a bit for script to be created by Google
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
             // Search by form.id as parent
             const searchResponse = await gapi.client.drive.files.list({
                 q: `'${form.id}' in parents and mimeType='application/vnd.google-apps.script' and trashed=false`,
@@ -981,21 +1006,39 @@ async function createClassSystemAutomatic() {
             const scriptFiles = searchResponse.result.files || [];
             
             // Get the form's bound script
-            const formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
+            let formScript = scriptFiles.length > 0 ? scriptFiles[0] : null;
             
-            if (formScript) {
+            // If no script found, create one using Apps Script API
+            if (!formScript) {
+                updateStatus(`   → Script chưa tồn tại, đang tạo mới...`);
+                try {
+                    // Create new Apps Script project
+                    const createResponse = await gapi.client.request({
+                        path: 'https://script.googleapis.com/v1/projects',
+                        method: 'POST',
+                        body: {
+                            title: `Google Form nộp bài - ${name}`,
+                            parentId: form.id
+                        }
+                    });
+                    
+                    scriptProjectId = createResponse.result.scriptId;
+                    updateStatus(`   ✓ Đã tạo Script project mới`);
+                } catch (createErr) {
+                    console.warn('Cannot create script via API:', createErr);
+                    updateStatus(`   ⚠ Không thể tạo Script. Vui lòng vào Form editor để kích hoạt script`);
+                }
+            } else {
                 scriptProjectId = formScript.id;
                 await gapi.client.drive.files.update({
                     fileId: scriptProjectId,
                     resource: { name: `Google Form nộp bài - ${name}` }
                 });
-                updateStatus(`   ✓ Đã đổi tên Script: "Google Form nộp bài - ${name}" (từ "${formScript.name}")`);
-            } else {
-                updateStatus(`   ⚠ Không tìm thấy Script project (có thể chưa được tạo)`);
+                updateStatus(`   ✓ Đã đổi tên Script: "Google Form nộp bài - ${name}"`);
             }
         } catch (err) {
-            console.warn('Không thể đổi tên script project:', err);
-            updateStatus(`   ⚠ Không thể đổi tên Script project: ${err.message || ''}`);
+            console.warn('Không thể xử lý script project:', err);
+            updateStatus(`   ⚠ Script sẽ được tạo khi bạn mở Form editor lần đầu`);
         }
 
         // 3. Copy Sheet
