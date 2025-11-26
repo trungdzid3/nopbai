@@ -2191,17 +2191,6 @@
                             </svg>
                             Form Nộp
                         </button>
-                        <div class="w-px h-8 bg-outline-variant opacity-30"></div>
-                        <button id="btn_sync_link"
-                            class="m3-button m3-button-filled font-semibold py-2 px-6 rounded-full text-sm smooth-transition flex items-center gap-2"
-                            title="Đồng bộ lại folder, form, sheet và ghi vào config">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 4 23 10 17 10"></polyline>
-                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                            </svg>
-                            Đồng bộ
-                        </button>
                     </div>
                     <div class="text-xs text-on-surface-variant px-2">
                         <span id="system_status_text" class="opacity-70">Chờ chọn lớp...</span>
@@ -2216,7 +2205,19 @@
                         <div
                             class="bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col transition-colors duration-300">
                             <section>
-                                <h2 class="text-lg font-medium text-on-surface-variant mb-2 px-2">Chọn Loại Bài Tập</h2>
+                                <div class="flex items-center justify-between mb-3 px-2">
+                                    <h2 class="text-lg font-medium text-on-surface-variant">Chọn Loại Bài Tập</h2>
+                                    <button id="btn_sync_link"
+                                        class="m3-button m3-button-filled font-semibold py-2 px-5 rounded-full text-sm smooth-transition flex items-center gap-2"
+                                        title="Đồng bộ lại folder, form, sheet và ghi vào config">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2.5">
+                                            <polyline points="23 4 23 10 17 10"></polyline>
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                        </svg>
+                                        Đồng bộ
+                                    </button>
+                                </div>
                                 <div id="assignment-buttons-container" class="flex flex-wrap gap-2">
                                     <p class="text-sm text-outline px-2">Vui lòng chọn một lớp để xem các loại bài tập.
                                     </p>
