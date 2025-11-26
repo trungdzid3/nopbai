@@ -602,7 +602,20 @@ function setupSystemTriggersQuick() {
 
     let createdCount = 0;
 
-    // 1. Tạo triggers cleanup
+    // 1. TẠO TRIGGER ĐỐI SOÁT CHECKBOX TRƯỚC TIÊN (nếu có FormLib)
+    if (typeof FormLib !== 'undefined') {
+      ScriptApp.newTrigger('runScheduledReconcile')
+        .timeBased()
+        .everyHours(1)
+        .create();
+      
+      Logger.log(`🔄 Đối soát checkbox: Mỗi 1 giờ`);
+      createdCount++;
+    } else {
+      Logger.log(`⚠️ Bỏ qua trigger đối soát - Chưa có FormLib`);
+    }
+
+    // 2. Tạo triggers cleanup
     const cleanupSchedules = new Map();
     
     for (const config of configs) {
@@ -636,7 +649,7 @@ function setupSystemTriggersQuick() {
       }
     }
 
-    // 2. Tạo triggers deadline
+    // 3. Tạo triggers deadline
     const deadlineSchedules = new Map();
     
     for (const config of configs) {
@@ -668,19 +681,6 @@ function setupSystemTriggersQuick() {
         Logger.log(`📝 Deadline: ${dayLabel} ${hour}:00`);
         createdCount++;
       }
-    }
-
-    // 3. Tạo trigger đối soát checkbox (mỗi 1 giờ) nếu có FormLib
-    if (typeof FormLib !== 'undefined') {
-      ScriptApp.newTrigger('runScheduledReconcile')
-        .timeBased()
-        .everyHours(1)
-        .create();
-      
-      Logger.log(`🔄 Đối soát checkbox: Mỗi 1 giờ`);
-      createdCount++;
-    } else {
-      Logger.log(`⚠️ Bỏ qua trigger đối soát - Chưa có FormLib`);
     }
 
     Logger.log(`\n✅ Tổng cộng: ${createdCount} triggers đã được tạo`);
