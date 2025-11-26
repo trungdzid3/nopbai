@@ -2342,6 +2342,11 @@ function displaySubmissionStatus(statusList) {
         list.appendChild(item);
     });
     submissionStatusList.appendChild(list);
+    
+    // Cập nhật thống kê sau khi render bảng tình trạng
+    if (typeof updateSubmissionStats === 'function') {
+        updateSubmissionStats();
+    }
 }
 
 async function deleteSelectedSubmissions() {
@@ -4028,38 +4033,6 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
 }
 
 /**
- * Đếm số học sinh đã nộp bài (có checkbox = TRUE ở cột G)
- * @param {string} spreadsheetId - ID của spreadsheet
- * @param {string} sheetName - Tên sheet assignment
- * @returns {Promise<number>} - Số lượng đã nộp
- */
-async function countSubmittedStudents(spreadsheetId, sheetName) {
-    try {
-        // Đọc cột G từ dòng 2 trở đi (bỏ header)
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: spreadsheetId,
-            range: `${sheetName}!G2:G1000`
-        });
-        
-        const values = response.result.values;
-        if (!values || values.length === 0) return 0;
-        
-        // Đếm số ô có giá trị TRUE
-        let count = 0;
-        for (const row of values) {
-            if (row && row[0] === true) {
-                count++;
-            }
-        }
-        
-        return count;
-    } catch (err) {
-        console.error(`Lỗi đếm học sinh đã nộp trong sheet ${sheetName}:`, err);
-        return 0;
-    }
-}
-
-/**
  * Cập nhật thống kê số lượng nộp bài
  */
 async function updateSubmissionStats() {
@@ -4081,9 +4054,18 @@ async function updateSubmissionStats() {
     }
     
     try {
-        // Đếm tổng số học sinh và số đã nộp
+        // Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
+        let submittedCount = 0;
+        submissionItems.forEach(item => {
+            const status = item.dataset.status;
+            if (status && status !== 'overdue') {
+                submittedCount++;
+            }
+        });
+        
+        // Đếm tổng số học sinh từ sheet nhận xét
         const totalStudents = await countStudentsInSheet(profile.sheetId, activeAssignment.sheetName);
-        const submittedCount = await countSubmittedStudents(profile.sheetId, activeAssignment.sheetName);
         
         // Cập nhật UI
         if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;

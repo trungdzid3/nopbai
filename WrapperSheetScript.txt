@@ -59,6 +59,14 @@ function runScheduledDeadline() {
   SheetLib.runScheduledDeadline();
 }
 
+/**
+ * Đối soát checkbox định kỳ
+ * Trigger: Time-based (mỗi 1 giờ, được tạo bởi setupSystemTriggers)
+ */
+function runScheduledReconcile() {
+  SheetLib.runScheduledReconcile();
+}
+
 // ==================================================================
 // MENU FUNCTIONS - GỌI TỪ MENU
 // ==================================================================

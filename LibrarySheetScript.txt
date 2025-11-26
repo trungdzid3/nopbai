@@ -92,15 +92,31 @@ function quickSetupSheet() {
     const configs = configMgr.getAll();
     Logger.log(`✅ Tải được ${configs.length} cấu hình`);
     
-    // 3. Gợi ý setup triggers
-    Logger.log("3. Gợi ý cài đặt triggers...");
-    Logger.log("💡 Tiếp theo: Nhấn menu 'Tiện ích Lớp Học' → '⚙️ Cài đặt Toàn bộ Lịch trình'");
+    // 3. Kiểm tra xem có FormLib không
+    const hasFormLib = typeof FormLib !== 'undefined';
+    Logger.log(`3. Kiểm tra FormLib: ${hasFormLib ? '✅ Có' : '⚠️ Chưa có'}`);
+    
+    // 4. Cài đặt triggers tự động
+    Logger.log("4. Cài đặt triggers tự động...");
+    setupSystemTriggersQuick();
     
     Logger.log("✅ Quick Setup hoàn tất!");
     
-    SpreadsheetApp.getUi().alert(
-      `✅ Quick Setup hoàn tất!\n\nTiếp theo: Nhấn menu "Tiện ích Lớp Học" → "⚙️ Cài đặt Toàn bộ Lịch trình" để kích hoạt tự động hóa.`
-    );
+    const message = hasFormLib 
+      ? `✅ Quick Setup hoàn tất!\n\n` +
+        `📋 Đã cài đặt:\n` +
+        `• Cleanup tự động theo lịch\n` +
+        `• Điền "Chưa nộp" sau deadline\n` +
+        `• Đối soát checkbox (mỗi 1 giờ)\n\n` +
+        `💡 Xem lại triggers: Menu → Tiện ích Lớp Học → Xem cấu hình hiện tại`
+      : `✅ Quick Setup hoàn tất!\n\n` +
+        `📋 Đã cài đặt:\n` +
+        `• Cleanup tự động theo lịch\n` +
+        `• Điền "Chưa nộp" sau deadline\n\n` +
+        `⚠️ Chưa có FormLib - Đối soát checkbox chưa được kích hoạt\n` +
+        `Thêm Library "FormLib" để bật tính năng này.`;
+    
+    SpreadsheetApp.getUi().alert(message);
     
   } catch (e) {
     Logger.log("❌ Lỗi: " + e.message);
@@ -561,6 +577,123 @@ function showFirstTimeSetupGuide() {
  * Cài đặt triggers tự động
  * GỌI TỪ MENU: SheetLib.setupSystemTriggers()
  */
+/**
+ * Setup triggers nhanh (gọi từ quickSetupSheet)
+ * Tự động cài đặt tất cả triggers cần thiết mà không cần confirm
+ */
+function setupSystemTriggersQuick() {
+  const configMgr = new ConfigManager();
+  
+  try {
+    configMgr.loadAll();
+    const configs = configMgr.getAll();
+    
+    if (configs.length === 0) {
+      Logger.log('⚠️ Sheet "Cấu Hình" trống - Chỉ tạo trigger đối soát');
+    }
+
+    // Xóa tất cả triggers cũ
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+    Logger.log(`🗑️ Đã xóa ${triggers.length} triggers cũ`);
+
+    let createdCount = 0;
+
+    // 1. Tạo triggers cleanup
+    const cleanupSchedules = new Map();
+    
+    for (const config of configs) {
+      if (!config.autoClean || config.classSchedules.length === 0) continue;
+      
+      for (const schedule of config.classSchedules) {
+        const day = schedule.dayOfWeek;
+        const cleanupHour = schedule.hour > 0 ? schedule.hour - 1 : 23;
+        
+        if (!cleanupSchedules.has(day)) {
+          cleanupSchedules.set(day, new Set());
+        }
+        cleanupSchedules.get(day).add(cleanupHour);
+      }
+    }
+
+    for (const [dayOfWeek, hours] of cleanupSchedules) {
+      for (const hour of hours) {
+        const weekday = convertDayOfWeekToScriptAppWeekDay(dayOfWeek);
+        
+        ScriptApp.newTrigger('runScheduledCleanup')
+          .timeBased()
+          .onWeekDay(weekday)
+          .atHour(hour)
+          .nearMinute(45)
+          .create();
+        
+        const dayLabel = dayOfWeek === 0 ? 'CN' : `T${dayOfWeek + 1}`;
+        Logger.log(`🧹 Cleanup: ${dayLabel} ${hour}:45`);
+        createdCount++;
+      }
+    }
+
+    // 2. Tạo triggers deadline
+    const deadlineSchedules = new Map();
+    
+    for (const config of configs) {
+      if (!config.deadline) continue;
+      
+      const day = config.deadline.dayOfWeek;
+      const deadlineHour = config.deadline.hour;
+      const adjustedMinute = config.deadline.minute + 30;
+      const finalHour = adjustedMinute >= 60 ? (deadlineHour + 1) % 24 : deadlineHour;
+      
+      if (!deadlineSchedules.has(day)) {
+        deadlineSchedules.set(day, new Set());
+      }
+      deadlineSchedules.get(day).add(finalHour);
+    }
+
+    for (const [dayOfWeek, hours] of deadlineSchedules) {
+      for (const hour of hours) {
+        const weekday = convertDayOfWeekToScriptAppWeekDay(dayOfWeek);
+        
+        ScriptApp.newTrigger('runScheduledDeadline')
+          .timeBased()
+          .onWeekDay(weekday)
+          .atHour(hour)
+          .nearMinute(0)
+          .create();
+        
+        const dayLabel = dayOfWeek === 0 ? 'CN' : `T${dayOfWeek + 1}`;
+        Logger.log(`📝 Deadline: ${dayLabel} ${hour}:00`);
+        createdCount++;
+      }
+    }
+
+    // 3. Tạo trigger đối soát checkbox (mỗi 1 giờ) nếu có FormLib
+    if (typeof FormLib !== 'undefined') {
+      ScriptApp.newTrigger('runScheduledReconcile')
+        .timeBased()
+        .everyHours(1)
+        .create();
+      
+      Logger.log(`🔄 Đối soát checkbox: Mỗi 1 giờ`);
+      createdCount++;
+    } else {
+      Logger.log(`⚠️ Bỏ qua trigger đối soát - Chưa có FormLib`);
+    }
+
+    Logger.log(`\n✅ Tổng cộng: ${createdCount} triggers đã được tạo`);
+    
+  } catch (e) {
+    Logger.log('❌ Lỗi setupSystemTriggersQuick: ' + e.toString());
+    throw e;
+  }
+}
+
+/**
+ * Setup triggers với confirm dialog
+ * GỌI TỪ MENU: Tiện ích Lớp Học → Cài đặt Toàn bộ Lịch trình
+ */
 function setupSystemTriggers() {
   const ui = SpreadsheetApp.getUi();
   const configMgr = new ConfigManager();
@@ -648,6 +781,17 @@ function setupSystemTriggers() {
       }
     }
 
+    // Tạo trigger đối soát checkbox (mỗi 1 giờ) nếu có FormLib
+    if (typeof FormLib !== 'undefined') {
+      ScriptApp.newTrigger('SheetLib.runScheduledReconcile')
+        .timeBased()
+        .everyHours(1)
+        .create();
+      
+      message += `🔄 Đối soát checkbox: Mỗi 1 giờ\n`;
+      createdCount++;
+    }
+
     message += `\n━━━━━━━━━━━━━━━━━\n`;
     message += `Tổng cộng: ${createdCount} triggers\n`;
     message += `(Dựa trên ${configs.length} cấu hình)`;
@@ -700,6 +844,63 @@ function runScheduledDeadline() {
     const sheetNames = sheetsForDeadline.map(s => s.sheetName);
     fillMissingMarks(sheetNames);
     Logger.log(`Filled "Chưa nộp" for ${sheetNames.length} sheets on day ${currentDay}`);
+  }
+}
+
+/**
+ * Đối soát checkbox định kỳ (mỗi 1 giờ)
+ * GỌI TỪ TRIGGER: SheetLib.runScheduledReconcile()
+ * 
+ * Chức năng:
+ * - Quét tất cả folders bài tập trên Drive
+ * - So sánh với danh sách học sinh trong Sheet
+ * - Tự động tick checkbox cho học sinh đã nộp nhưng chưa đánh dấu
+ */
+function runScheduledReconcile() {
+  try {
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    Logger.log(`🔄 BẮT ĐẦU ĐỐI SOÁT ĐỊNH KỲ`);
+    Logger.log(`⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}`);
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    
+    // Kiểm tra FormLib có tồn tại không
+    if (typeof FormLib === 'undefined') {
+      Logger.log('⚠️ KHÔNG TÌM THẤY FormLib - Bỏ qua đối soát');
+      Logger.log('💡 Thêm Library "FormLib" vào project để kích hoạt tính năng này');
+      return;
+    }
+    
+    // Lấy Class Folder ID từ cell I3
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = ss.getSheetByName('Cấu Hình');
+    
+    if (!configSheet) {
+      Logger.log('❌ Không tìm thấy sheet "Cấu Hình"');
+      return;
+    }
+    
+    const classFolderId = configSheet.getRange('I3').getValue();
+    
+    if (!classFolderId) {
+      Logger.log('⚠️ Chưa có Class Folder ID trong cell I3');
+      Logger.log('💡 Chạy "Đồng bộ & Liên kết" trên web app để thiết lập');
+      return;
+    }
+    
+    Logger.log(`📁 Class Folder ID: ${classFolderId}`);
+    
+    // Gọi FormLib để thực hiện đối soát
+    FormLib.reconcileCheckboxes(classFolderId);
+    
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    Logger.log(`✅ ĐỐI SOÁT HOÀN TẤT`);
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    
+  } catch (e) {
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    Logger.log(`❌ LỖI ĐỐI SOÁT: ${e.message}`);
+    Logger.log(`Stack: ${e.stack}`);
+    Logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
   }
 }
 
