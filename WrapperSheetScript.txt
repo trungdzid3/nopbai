@@ -122,11 +122,17 @@ function showFirstTimeSetupGuide() {
  */
 function reconcileCheckboxes() {
   try {
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔄 BẮT ĐẦU ĐỐI SOÁT THỦ CÔNG');
+    Logger.log('⏰ Thời gian: ' + new Date().toLocaleString('vi-VN'));
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     // Lấy Class Folder ID từ cell I3
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const configSheet = ss.getSheetByName('Cấu Hình');
     
     if (!configSheet) {
+      Logger.log('❌ Không tìm thấy sheet "Cấu Hình"');
       Browser.msgBox('Lỗi', 'Không tìm thấy sheet "Cấu Hình"', Browser.Buttons.OK);
       return;
     }
@@ -134,6 +140,7 @@ function reconcileCheckboxes() {
     const classFolderId = configSheet.getRange('I3').getValue();
     
     if (!classFolderId) {
+      Logger.log('⚠️ Chưa có Class Folder ID trong cell I3');
       Browser.msgBox(
         'Thiếu thông tin',
         'Chưa có Class Folder ID trong cell I3.\n\nHãy chạy "Đồng bộ & Liên kết" trên web app trước.',
@@ -142,23 +149,25 @@ function reconcileCheckboxes() {
       return;
     }
     
-    // Gọi FormLib để thực hiện đối soát
-    Browser.msgBox(
-      'Bắt đầu đối soát',
-      'Đang quét Drive và cập nhật checkbox...\n\nQuá trình này có thể mất vài phút.',
-      Browser.Buttons.OK
-    );
+    Logger.log('📁 Class Folder ID: ' + classFolderId);
     
-    // Gọi FormLib.reconcileCheckboxes (Library của Form)
+    // Gọi FormLib để thực hiện đối soát
     if (typeof FormLib !== 'undefined' && FormLib.reconcileCheckboxes) {
       FormLib.reconcileCheckboxes(classFolderId);
       
-      Browser.msgBox(
-        'Hoàn tất',
-        'Đã đối soát xong!\n\nKiểm tra Logs (Ctrl+Enter) để xem chi tiết.',
-        Browser.Buttons.OK
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      Logger.log('✅ ĐỐI SOÁT HOÀN TẤT');
+      Logger.log('💡 Xem Logs (Ctrl+Enter) để xem chi tiết');
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      // Chỉ thông báo ngắn gọn
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        'Đã đối soát xong! Xem Logs để biết chi tiết.',
+        '✅ Đối soát hoàn tất',
+        5
       );
     } else {
+      Logger.log('❌ Không tìm thấy FormLib');
       Browser.msgBox(
         'Lỗi',
         'Không tìm thấy FormLib.\n\nHãy đảm bảo đã add Library "FormLib" vào project này.',
@@ -167,7 +176,11 @@ function reconcileCheckboxes() {
     }
     
   } catch (e) {
-    Logger.log('❌ Lỗi reconcileCheckboxes: ' + e.message);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('❌ LỖI ĐỐI SOÁT: ' + e.message);
+    Logger.log('Stack: ' + e.stack);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
     Browser.msgBox('Lỗi', 'Lỗi khi đối soát: ' + e.message, Browser.Buttons.OK);
   }
 }

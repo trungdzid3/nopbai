@@ -460,6 +460,7 @@ function onOpen() {
     .addSeparator()
     .addItem('📝 Chạy thủ công: Điền "Chưa nộp"', 'SheetLib.manualFillNotAchieved')
     .addItem('🧹 Chạy thủ công: Dọn dẹp (Tùy chọn)', 'SheetLib.showCleanupDialog')
+    .addItem('🔄 Chạy thủ công: Đối soát Checkbox', 'reconcileCheckboxes')
     .addSeparator()
     .addItem('📊 Xem cấu hình hiện tại', 'SheetLib.showCurrentConfig')
     .addItem('ℹ️ Hướng dẫn Setup lần đầu', 'SheetLib.showFirstTimeSetupGuide')
