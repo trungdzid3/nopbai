@@ -240,15 +240,10 @@ function bindQuickActions() {
             return;
         }
         
-        // Nếu đã có sheetLink, mở ngay
-        if (profile.sheetLink) {
-            window.open(profile.sheetLink, '_blank');
-            return;
-        }
-        
-        // Nếu không, tìm kiếm trong folder
+        // Luôn tìm kiếm động trong folder (không dùng link cũ)
         updateStatus("🔍 Đang tìm kiếm Sheet...");
-        const sheet = await findSheetInFolder(profile.id);
+        const classFolderId = profile.classFolderId || profile.id;
+        const sheet = await findSheetInFolder(classFolderId);
         if (sheet && sheet.webViewLink) {
             window.open(sheet.webViewLink, '_blank');
             updateStatus("✓ Mở Sheet thành công.");
@@ -265,15 +260,10 @@ function bindQuickActions() {
                 return;
             }
             
-            // Nếu đã có formLink, mở ngay
-            if (profile.formLink) {
-                window.open(profile.formLink, '_blank');
-                return;
-            }
-            
-            // Nếu không, tìm kiếm trong folder
+            // Luôn tìm kiếm động trong folder (không dùng link cũ)
             updateStatus("🔍 Đang tìm kiếm Form...");
-            const form = await findFormInFolder(profile.id);
+            const classFolderId = profile.classFolderId || profile.id;
+            const form = await findFormInFolder(classFolderId);
             if (form && form.webViewLink) {
                 window.open(form.webViewLink, '_blank');
                 updateStatus("✓ Mở Form thành công.");
@@ -290,20 +280,16 @@ function bindQuickActions() {
                 return;
             }
             
-            let formId = profile.formId;
-            
-            // Nếu không có formId, tìm kiếm
-            if (!formId) {
-                updateStatus("🔍 Đang tìm kiếm Form...");
-                const form = await findFormInFolder(profile.id);
-                if (!form) {
-                    updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
-                    return;
-                }
-                formId = form.id;
+            // Luôn tìm kiếm động trong folder
+            updateStatus("🔍 Đang tìm kiếm Form...");
+            const classFolderId = profile.classFolderId || profile.id;
+            const form = await findFormInFolder(classFolderId);
+            if (!form) {
+                updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
+                return;
             }
             
-            handleFormContextMenu({ ...profile, formId });
+            handleFormContextMenu({ ...profile, formId: form.id });
         };
     }
 
@@ -320,16 +306,27 @@ function bindQuickActions() {
 function updateQuickActionsState() {
     const profile = getClassProfile(classProfileSelect.value);
     const statusText = document.getElementById('system_status_text');
+    const btnSyncLink = document.getElementById('btn_sync_link');
+    
     if (profile) {
         btnOpenDrive.disabled = !(profile.id || profile.folderLink);
-        btnOpenSheet.disabled = !profile.sheetLink;
-        btnOpenForm.disabled = !profile.formLink;
-        if (statusText) statusText.textContent = "Sẵn sàng";
+        btnOpenSheet.disabled = false; // Luôn enable vì có tìm kiếm động
+        btnOpenForm.disabled = false; // Luôn enable vì có tìm kiếm động
+        
+        // Ẩn text "Sẵn sàng", hiện nút "Đồng bộ"
+        if (statusText) statusText.classList.add('hidden');
+        if (btnSyncLink) btnSyncLink.classList.remove('hidden');
     } else {
         btnOpenDrive.disabled = true;
         btnOpenSheet.disabled = true;
         btnOpenForm.disabled = true;
-        if (statusText) statusText.textContent = "Chưa chọn lớp";
+        
+        // Hiện text "Chưa chọn lớp", ẩn nút "Đồng bộ"
+        if (statusText) {
+            statusText.textContent = "Chờ chọn lớp...";
+            statusText.classList.remove('hidden');
+        }
+        if (btnSyncLink) btnSyncLink.classList.add('hidden');
     }
 }
 
@@ -2944,27 +2941,46 @@ async function syncAndLinkClassSystem() {
         updateStatus(`📋 Đang cập nhật lựa chọn bài tập trong Form...`);
         await apiUpdateFormChoices(currentFormId, profile.assignments || []);
         
+        // BƯỚC 6.5: Cảnh báo về email notification
+        if (needFormLink || needSheetLink) {
+            updateStatus(`⚠️ LƯU Ý: Sau khi liên kết Form-Sheet xong, cần setup email trong Apps Script:`);
+            updateStatus(`   1. Mở Form → Apps Script (3 chấm → Script editor)`);
+            updateStatus(`   2. Chạy function: FormLib.quickSetupForm()`);
+            updateStatus(`   3. Authorize các quyền cần thiết`);
+            updateStatus(`   → Email notification sẽ hoạt động sau khi setup!`);
+        }
+        
         // BƯỚC 7: Yêu cầu user liên kết thủ công nếu cần
         if (needFormLink || needSheetLink) {
-            let linkInstructions = '\\n\\n🔗 CẦN LIÊN KẾT THỦ CÔNG:\\n';
+            let linkInstructions = '\n\n🔗 CẦN LIÊN KẾT THỦ CÔNG:\n';
             
             if (needFormLink && needSheetLink) {
-                linkInstructions += `\\n1️⃣ Mở Form (đã tự động mở tab mới)\\n`;
-                linkInstructions += `2️⃣ Click "Responses" → "Select response destination"\\n`;
-                linkInstructions += `3️⃣ Chọn "Select existing spreadsheet"\\n`;
-                linkInstructions += `4️⃣ Dán Sheet URL và chọn sheet đúng\\n`;
-                linkInstructions += `\\n✅ Sau khi liên kết xong, đóng tab này lại!`;
+                linkInstructions += `\n1️⃣ Mở Form (đã tự động mở tab mới)\n`;
+                linkInstructions += `2️⃣ Click "Responses" → "Select response destination"\n`;
+                linkInstructions += `3️⃣ Chọn "Select existing spreadsheet"\n`;
+                linkInstructions += `4️⃣ Dán Sheet URL và chọn sheet đúng\n`;
+                linkInstructions += `\n📧 SETUP EMAIL NOTIFICATION:\n`;
+                linkInstructions += `5️⃣ Trong Form, click dấu 3 chấm → "Script editor"\n`;
+                linkInstructions += `6️⃣ Chạy function: FormLib.quickSetupForm()\n`;
+                linkInstructions += `7️⃣ Authorize các quyền cần thiết\n`;
+                linkInstructions += `\n✅ Sau khi hoàn tất, email sẽ báo khi có người nộp bài!`;
                 
                 // Mở Form để user liên kết
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             } else if (needFormLink) {
-                linkInstructions += `\\n⚠️ Form mới cần liên kết với Sheet hiện có.\\n`;
-                linkInstructions += `Đã tự động mở Form. Hãy link với Sheet!`;
+                linkInstructions += `\n⚠️ Form mới cần liên kết với Sheet hiện có.\n`;
+                linkInstructions += `\n📧 Và cần setup email notification:\n`;
+                linkInstructions += `1️⃣ Mở Form → Script editor (3 chấm)\n`;
+                linkInstructions += `2️⃣ Chạy: FormLib.quickSetupForm()\n`;
+                linkInstructions += `\nĐã tự động mở Form. Hãy làm theo hướng dẫn!`;
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             } else if (needSheetLink) {
-                linkInstructions += `\\n⚠️ Sheet mới đã được tạo.\\n`;
-                linkInstructions += `Form hiện tại cần được link lại với Sheet mới.\\n`;
-                linkInstructions += `Đã tự động mở Form. Hãy link với Sheet!`;
+                linkInstructions += `\n⚠️ Sheet mới đã được tạo.\n`;
+                linkInstructions += `Form hiện tại cần được link lại với Sheet mới.\n`;
+                linkInstructions += `\n📧 Và cần setup lại email notification:\n`;
+                linkInstructions += `1️⃣ Mở Form → Script editor (3 chấm)\n`;
+                linkInstructions += `2️⃣ Chạy: FormLib.quickSetupForm()\n`;
+                linkInstructions += `\nĐã tự động mở Form. Hãy link với Sheet mới!`;
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             }
             
