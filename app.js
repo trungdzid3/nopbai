@@ -233,27 +233,77 @@ function bindQuickActions() {
         }
     };
 
-    if (btnOpenSheet) btnOpenSheet.onclick = () => {
+    if (btnOpenSheet) btnOpenSheet.onclick = async () => {
         const profile = getClassProfile(classProfileSelect.value);
-        if (profile && profile.sheetLink) window.open(profile.sheetLink, '_blank');
-        else updateStatus("⚠ Lớp này chưa liên kết Sheet.", true);
+        if (!profile) {
+            updateStatus("⚠ Vui lòng chọn một lớp.", true);
+            return;
+        }
+        
+        // Nếu đã có sheetLink, mở ngay
+        if (profile.sheetLink) {
+            window.open(profile.sheetLink, '_blank');
+            return;
+        }
+        
+        // Nếu không, tìm kiếm trong folder
+        updateStatus("🔍 Đang tìm kiếm Sheet...");
+        const sheet = await findSheetInFolder(profile.id);
+        if (sheet && sheet.webViewLink) {
+            window.open(sheet.webViewLink, '_blank');
+            updateStatus("✓ Mở Sheet thành công.");
+        } else {
+            updateStatus("⚠ Không tìm thấy Sheet trong folder lớp. Vui lòng kiểm tra lại.", true);
+        }
     };
 
     if (btnOpenForm) {
-        btnOpenForm.onclick = () => {
+        btnOpenForm.onclick = async () => {
             const profile = getClassProfile(classProfileSelect.value);
-            if (profile && profile.formLink) window.open(profile.formLink, '_blank');
-            else updateStatus("⚠ Lớp này chưa liên kết Form.", true);
-        };
-        
-        btnOpenForm.oncontextmenu = (e) => {
-            e.preventDefault();
-            const profile = getClassProfile(classProfileSelect.value);
-            if (!profile || !profile.formId) {
-                updateStatus("⚠ Lớp này chưa có Form.", true);
+            if (!profile) {
+                updateStatus("⚠ Vui lòng chọn một lớp.", true);
                 return;
             }
-            handleFormContextMenu(profile);
+            
+            // Nếu đã có formLink, mở ngay
+            if (profile.formLink) {
+                window.open(profile.formLink, '_blank');
+                return;
+            }
+            
+            // Nếu không, tìm kiếm trong folder
+            updateStatus("🔍 Đang tìm kiếm Form...");
+            const form = await findFormInFolder(profile.id);
+            if (form && form.webViewLink) {
+                window.open(form.webViewLink, '_blank');
+                updateStatus("✓ Mở Form thành công.");
+            } else {
+                updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
+            }
+        };
+        
+        btnOpenForm.oncontextmenu = async (e) => {
+            e.preventDefault();
+            const profile = getClassProfile(classProfileSelect.value);
+            if (!profile) {
+                updateStatus("⚠ Vui lòng chọn một lớp.", true);
+                return;
+            }
+            
+            let formId = profile.formId;
+            
+            // Nếu không có formId, tìm kiếm
+            if (!formId) {
+                updateStatus("🔍 Đang tìm kiếm Form...");
+                const form = await findFormInFolder(profile.id);
+                if (!form) {
+                    updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
+                    return;
+                }
+                formId = form.id;
+            }
+            
+            handleFormContextMenu({ ...profile, formId });
         };
     }
 
@@ -3881,6 +3931,46 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
         updateStatus(`✅ Tạo lại Form thành công cho "${assignmentName}"`);
     } catch (error) {
         updateStatus(`✗ Lỗi tạo Form: ${error.message}`, true);
+    }
+}
+
+/**
+ * Tìm kiếm Form trong folder lớp
+ * @param {string} classFolderId - ID của folder lớp
+ * @returns {Promise<Object|null>} - File object của Form hoặc null
+ */
+async function findFormInFolder(classFolderId) {
+    if (!classFolderId) return null;
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `'${classFolderId}' in parents and mimeType='application/vnd.google-apps.form' and trashed=false`,
+            fields: 'files(id, name, webViewLink)',
+            pageSize: 1
+        });
+        return response.result.files && response.result.files.length > 0 ? response.result.files[0] : null;
+    } catch (err) {
+        console.error(`Lỗi tìm Form trong folder ${classFolderId}:`, err);
+        return null;
+    }
+}
+
+/**
+ * Tìm kiếm Sheet trong folder lớp
+ * @param {string} classFolderId - ID của folder lớp
+ * @returns {Promise<Object|null>} - File object của Sheet hoặc null
+ */
+async function findSheetInFolder(classFolderId) {
+    if (!classFolderId) return null;
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `'${classFolderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+            fields: 'files(id, name, webViewLink)',
+            pageSize: 1
+        });
+        return response.result.files && response.result.files.length > 0 ? response.result.files[0] : null;
+    } catch (err) {
+        console.error(`Lỗi tìm Sheet trong folder ${classFolderId}:`, err);
+        return null;
     }
 }
 
