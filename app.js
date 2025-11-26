@@ -264,8 +264,8 @@ function bindQuickActions() {
             updateStatus("🔍 Đang tìm kiếm Form...");
             const classFolderId = profile.classFolderId || profile.id;
             const form = await findFormInFolder(classFolderId);
-            if (form && form.webViewLink) {
-                window.open(form.webViewLink, '_blank');
+            if (form && form.shortLink) {
+                window.open(form.shortLink, '_blank');
                 updateStatus("✓ Mở Form thành công.");
             } else {
                 updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
@@ -3970,7 +3970,15 @@ async function findFormInFolder(classFolderId) {
             fields: 'files(id, name, webViewLink)',
             pageSize: 1
         });
-        return response.result.files && response.result.files.length > 0 ? response.result.files[0] : null;
+        
+        if (response.result.files && response.result.files.length > 0) {
+            const form = response.result.files[0];
+            // Tạo link rút gọn: https://docs.google.com/forms/d/{formId}/viewform
+            form.shortLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
+            return form;
+        }
+        
+        return null;
     } catch (err) {
         console.error(`Lỗi tìm Form trong folder ${classFolderId}:`, err);
         return null;
