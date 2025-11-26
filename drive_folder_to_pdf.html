@@ -2225,7 +2225,12 @@
                         <!-- Submission Status -->
                         <div
                             class="flex-1 bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col min-h-0 transition-colors duration-300">
-                            <h2 class="text-lg font-medium text-on-surface-variant mb-2 px-2">Tình trạng Nộp bài</h2>
+                            <div class="flex items-center justify-between mb-2 px-2">
+                                <h2 class="text-lg font-medium text-on-surface-variant">Tình trạng Nộp bài</h2>
+                                <div id="submission-stats" class="hidden text-sm font-semibold text-on-surface-variant bg-primary-container text-on-primary-container px-3 py-1 rounded-full">
+                                    <span id="submitted-count">0</span>/<span id="total-students">0</span>
+                                </div>
+                            </div>
                             <div id="submission-status-list"
                                 class="w-full flex-1 bg-surface text-on-surface rounded-[24px] p-4 overflow-y-auto text-sm border border-outline-variant smooth-transition hidden">
                                 <div class="text-outline">Chọn lớp và bắt đầu xử lý để xem tình trạng...</div>

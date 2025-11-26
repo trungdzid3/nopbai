@@ -451,10 +451,12 @@ function bindSettingsTabs() {
 
 function handleAssignmentTypeChange(name, folderId) {
     if (activeAssignment && activeAssignment.folderId === folderId) return;
-    activeAssignment = { name, folderId };
+    activeAssignment = { name, folderId, sheetName: name }; // sheetName = name của assignment
     updateAssignmentSelectionUI();
     updateStatus(`→ Đổi sang loại bài tập: ${name}`);
     loadSubmissionStatusFromCache();
+    // Cập nhật thống kê số lượng nộp bài
+    updateSubmissionStats();
     // Removed runAutoScan() - no longer scan on assignment change
     if (isAutoRefreshOn) stopAutoRefresh();
     checkSystemReady();
@@ -3987,6 +3989,111 @@ async function findSheetInFolder(classFolderId) {
     } catch (err) {
         console.error(`Lỗi tìm Sheet trong folder ${classFolderId}:`, err);
         return null;
+    }
+}
+
+/**
+ * Đếm số học sinh từ sheet assignment (dựa trên số thứ tự cao nhất ở cột A)
+ * @param {string} spreadsheetId - ID của spreadsheet
+ * @param {string} sheetName - Tên sheet assignment
+ * @returns {Promise<number>} - Số lượng học sinh
+ */
+async function countStudentsInSheet(spreadsheetId, sheetName) {
+    try {
+        // Đọc cột A từ dòng 2 trở đi (bỏ header)
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!A2:A1000`
+        });
+        
+        const values = response.result.values;
+        if (!values || values.length === 0) return 0;
+        
+        // Tìm số thứ tự cao nhất
+        let maxNumber = 0;
+        for (const row of values) {
+            if (row && row[0]) {
+                const num = parseInt(row[0]);
+                if (!isNaN(num) && num > maxNumber) {
+                    maxNumber = num;
+                }
+            }
+        }
+        
+        return maxNumber;
+    } catch (err) {
+        console.error(`Lỗi đếm học sinh trong sheet ${sheetName}:`, err);
+        return 0;
+    }
+}
+
+/**
+ * Đếm số học sinh đã nộp bài (có checkbox = TRUE ở cột G)
+ * @param {string} spreadsheetId - ID của spreadsheet
+ * @param {string} sheetName - Tên sheet assignment
+ * @returns {Promise<number>} - Số lượng đã nộp
+ */
+async function countSubmittedStudents(spreadsheetId, sheetName) {
+    try {
+        // Đọc cột G từ dòng 2 trở đi (bỏ header)
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!G2:G1000`
+        });
+        
+        const values = response.result.values;
+        if (!values || values.length === 0) return 0;
+        
+        // Đếm số ô có giá trị TRUE
+        let count = 0;
+        for (const row of values) {
+            if (row && row[0] === true) {
+                count++;
+            }
+        }
+        
+        return count;
+    } catch (err) {
+        console.error(`Lỗi đếm học sinh đã nộp trong sheet ${sheetName}:`, err);
+        return 0;
+    }
+}
+
+/**
+ * Cập nhật thống kê số lượng nộp bài
+ */
+async function updateSubmissionStats() {
+    const statsDiv = document.getElementById('submission-stats');
+    const submittedCountSpan = document.getElementById('submitted-count');
+    const totalStudentsSpan = document.getElementById('total-students');
+    
+    if (!activeAssignment || !activeAssignment.sheetName) {
+        if (statsDiv) statsDiv.classList.add('hidden');
+        return;
+    }
+    
+    const classId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
+    const profile = classProfiles.find(p => p.id === classId);
+    
+    if (!profile || !profile.sheetId) {
+        if (statsDiv) statsDiv.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        // Đếm tổng số học sinh và số đã nộp
+        const totalStudents = await countStudentsInSheet(profile.sheetId, activeAssignment.sheetName);
+        const submittedCount = await countSubmittedStudents(profile.sheetId, activeAssignment.sheetName);
+        
+        // Cập nhật UI
+        if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
+        if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
+        if (statsDiv) statsDiv.classList.remove('hidden');
+        
+        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp`);
+    } catch (err) {
+        console.error('[STATS] Lỗi cập nhật thống kê:', err);
+        if (statsDiv) statsDiv.classList.add('hidden');
     }
 }
 
