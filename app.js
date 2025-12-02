@@ -4059,6 +4059,76 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
 }
 
 /**
+ * Tìm tên sheet tương ứng với assignment bằng fuzzy matching
+ * Logic: Tìm 2 từ cuối của assignment name trong tên sheet
+ * VD: "Bài tập thứ 5 đại số" → tìm "thứ 5" + "đại số" → match "Bảng nhận xét (Đại số)"
+ * 
+ * @param {string} assignmentName - Tên loại bài tập (VD: "Bài tập thứ 5 đại số")
+ * @param {Array} allSheetNames - Danh sách tất cả tên sheet
+ * @returns {string|null} - Tên sheet match hoặc null
+ */
+function findAssignmentSheetByFuzzyMatch(assignmentName, allSheetNames) {
+    if (!assignmentName || !allSheetNames || allSheetNames.length === 0) {
+        return null;
+    }
+    
+    // Tách từ từ assignment name
+    const words = assignmentName.toLowerCase().split(/[\s\-_]+/).filter(w => w.length > 0);
+    
+    if (words.length === 0) return null;
+    
+    // Lấy 2 từ cuối
+    const lastTwoWords = words.slice(-2);
+    
+    console.log(`[FUZZY] Assignment: "${assignmentName}" → Tìm 2 từ: [${lastTwoWords.join(', ')}]`);
+    
+    // Tìm sheet chứa cả 2 từ cuối
+    const bestMatches = allSheetNames.filter(sheetName => {
+        const sheetLower = sheetName.toLowerCase();
+        return lastTwoWords.every(word => sheetLower.includes(word));
+    });
+    
+    if (bestMatches.length > 0) {
+        console.log(`[FUZZY] Tìm được ${bestMatches.length} sheet match:`, bestMatches);
+        return bestMatches[0];
+    }
+    
+    // Nếu không tìm được 2 từ cuối, thử 1 từ cuối
+    const lastWord = words[words.length - 1];
+    const secondaryMatches = allSheetNames.filter(sheetName => 
+        sheetName.toLowerCase().includes(lastWord)
+    );
+    
+    if (secondaryMatches.length > 0) {
+        console.log(`[FUZZY] Tìm được ${secondaryMatches.length} sheet match từ 1 từ cuối:`, secondaryMatches);
+        return secondaryMatches[0];
+    }
+    
+    console.log(`[FUZZY] Không tìm được sheet match cho "${assignmentName}"`);
+    return null;
+}
+
+/**
+ * Lấy danh sách tất cả tên sheet từ spreadsheet
+ * @param {string} spreadsheetId - ID của spreadsheet
+ * @returns {Promise<Array>} - Danh sách tên sheet
+ */
+async function getAllSheetNames(spreadsheetId) {
+    try {
+        const response = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: spreadsheetId,
+            fields: 'sheets(properties(title))'
+        });
+        
+        const sheets = response.result.sheets || [];
+        return sheets.map(s => s.properties.title);
+    } catch (err) {
+        console.error('[SHEETS] Lỗi lấy danh sách sheet:', err);
+        return [];
+    }
+}
+
+/**
  * Cập nhật thống kê số lượng nộp bài
  */
 async function updateSubmissionStats() {
@@ -4081,7 +4151,7 @@ async function updateSubmissionStats() {
     
     try {
         // 1. Lấy tên sheet thực tế từ config Sheet (cột F)
-        let sheetNameToUse = activeAssignment.sheetName;
+        let sheetNameToUse = null;
         
         try {
             // Đọc cấu hình bài tập từ sheet Cấu Hình
@@ -4104,10 +4174,30 @@ async function updateSubmissionStats() {
                 }
             }
         } catch (configErr) {
-            console.warn('[STATS] Không thể đọc config, dùng sheetName mặc định:', sheetNameToUse, configErr);
+            console.warn('[STATS] Không thể đọc config:', configErr);
         }
         
-        // 2. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        // 2. Nếu không tìm được từ config, dùng fuzzy matching
+        if (!sheetNameToUse) {
+            console.log('[STATS] Sheet chưa có trong config, thử fuzzy matching...');
+            
+            // Lấy danh sách tất cả sheet
+            const allSheets = await getAllSheetNames(profile.sheetId);
+            console.log('[STATS] Danh sách sheet:', allSheets);
+            
+            // Tìm sheet match bằng fuzzy matching
+            sheetNameToUse = findAssignmentSheetByFuzzyMatch(activeAssignment.name, allSheets);
+            
+            if (sheetNameToUse) {
+                console.log(`[STATS] Fuzzy matching tìm được: "${sheetNameToUse}"`);
+            } else {
+                console.warn(`[STATS] Không tìm được sheet cho "${activeAssignment.name}"`);
+                if (statsDiv) statsDiv.classList.add('hidden');
+                return;
+            }
+        }
+        
+        // 3. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
         let submittedCount = 0;
         submissionItems.forEach(item => {
@@ -4117,10 +4207,10 @@ async function updateSubmissionStats() {
             }
         });
         
-        // 3. Đếm tổng số học sinh từ sheet
+        // 4. Đếm tổng số học sinh từ sheet
         const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
-        // 4. Cập nhật UI
+        // 5. Cập nhật UI
         if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
         if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
         if (statsDiv) statsDiv.classList.remove('hidden');
