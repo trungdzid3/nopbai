@@ -4066,7 +4066,7 @@ async function updateSubmissionStats() {
     const submittedCountSpan = document.getElementById('submitted-count');
     const totalStudentsSpan = document.getElementById('total-students');
     
-    if (!activeAssignment || !activeAssignment.sheetName) {
+    if (!activeAssignment || !activeAssignment.name) {
         if (statsDiv) statsDiv.classList.add('hidden');
         return;
     }
@@ -4080,7 +4080,34 @@ async function updateSubmissionStats() {
     }
     
     try {
-        // Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        // 1. Lấy tên sheet thực tế từ config Sheet (cột F)
+        let sheetNameToUse = activeAssignment.sheetName;
+        
+        try {
+            // Đọc cấu hình bài tập từ sheet Cấu Hình
+            const configResponse = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: profile.sheetId,
+                range: 'Cấu Hình!A:F'
+            });
+            
+            const rows = configResponse.result.values || [];
+            // Tìm hàng có tên assignment = activeAssignment.name
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i] && rows[i][0] === activeAssignment.name) {
+                    // Cột F (index 5) là tên sheet
+                    const configuredSheetName = rows[i][5];
+                    if (configuredSheetName) {
+                        sheetNameToUse = configuredSheetName;
+                        console.log(`[STATS] Tìm được tên sheet từ config: "${sheetNameToUse}"`);
+                    }
+                    break;
+                }
+            }
+        } catch (configErr) {
+            console.warn('[STATS] Không thể đọc config, dùng sheetName mặc định:', sheetNameToUse, configErr);
+        }
+        
+        // 2. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
         let submittedCount = 0;
         submissionItems.forEach(item => {
@@ -4090,15 +4117,15 @@ async function updateSubmissionStats() {
             }
         });
         
-        // Đếm tổng số học sinh từ sheet nhận xét
-        const totalStudents = await countStudentsInSheet(profile.sheetId, activeAssignment.sheetName);
+        // 3. Đếm tổng số học sinh từ sheet
+        const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
-        // Cập nhật UI
+        // 4. Cập nhật UI
         if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
         if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
         if (statsDiv) statsDiv.classList.remove('hidden');
         
-        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp`);
+        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
     } catch (err) {
         console.error('[STATS] Lỗi cập nhật thống kê:', err);
         if (statsDiv) statsDiv.classList.add('hidden');
