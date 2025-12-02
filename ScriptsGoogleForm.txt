@@ -443,6 +443,52 @@ function clearFolderContents(parentFolder) {
 
 
 /**
+ * DỌN DẸP: Xóa toàn bộ nội dung trong folder bài tập và xóa email thông báo liên quan
+ * Gọi thủ công hoặc từ menu: cleanAssignmentAndEmailsByFolderId(folderId, assignmentType)
+ *
+ * @param {string} folderId - ID của thư mục bài tập (assignment folder)
+ * @param {string=} assignmentType - Tên loại bài tập (dùng để chọn mẫu tiêu đề email)
+ */
+function cleanAssignmentAndEmailsByFolderId(folderId, assignmentType) {
+  try {
+    if (!folderId) {
+      Logger.log('cleanAssignmentAndEmailsByFolderId: Thiếu folderId.');
+      return;
+    }
+
+    // 1) Dọn nội dung folder
+    var parentFolder = DriveApp.getFolderById(folderId);
+    if (!parentFolder) {
+      Logger.log(`Không tìm thấy folder với ID: ${folderId}`);
+      return;
+    }
+
+    Logger.log(`🔄 Bắt đầu dọn folder bài tập: ${parentFolder.getName()} (${folderId})`);
+    clearFolderContents(parentFolder);
+
+    // 2) Xóa email liên quan (nếu có mẫu tiêu đề)
+    var at = (assignmentType || '').toString().toLowerCase();
+    var subjectTemplate = SUBJECT_TEMPLATE_OTH; // mặc định
+
+    if (at.indexOf('thu') !== -1 || at.indexOf('thứ') !== -1) {
+      subjectTemplate = SUBJECT_TEMPLATE_THU;
+    } else if (at.indexOf('cn') !== -1 || at.indexOf('chủ') !== -1) {
+      subjectTemplate = SUBJECT_TEMPLATE_SUN;
+    }
+
+    Logger.log(`→ Dọn email với mẫu tiêu đề: ${subjectTemplate}`);
+    cleanupOldEmails(subjectTemplate);
+
+    Logger.log(`✅ Hoàn tất dọn dẹp folder & email cho: ${parentFolder.getName()}`);
+    return `OK: cleaned ${parentFolder.getName()}`;
+  } catch (e) {
+    Logger.log(`❌ Lỗi cleanAssignmentAndEmailsByFolderId: ${e.message}`);
+    return `ERROR: ${e.message}`;
+  }
+}
+
+
+/**
  * HÀM 2: (*** CẬP NHẬT V24 - LOGIC "KHỚP 2 TỪ CUỐI" ***)
  * (Giữ nguyên V24)
  */

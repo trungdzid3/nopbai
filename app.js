@@ -4013,16 +4013,33 @@ async function findSheetInFolder(classFolderId) {
  */
 async function countStudentsInSheet(spreadsheetId, sheetName) {
     try {
-        // Đọc cột A từ dòng 2 trở đi (bỏ header)
+        // 1. Tìm vị trí cột STT
+        const headerResponse = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!1:1`
+        });
+        
+        const headerRow = headerResponse.result.values ? headerResponse.result.values[0] : [];
+        const sttColIndex = headerRow.findIndex(cell => cell && cell.trim().toLowerCase() === 'stt');
+        
+        if (sttColIndex === -1) {
+            console.warn(`Không tìm thấy cột 'STT' trong sheet ${sheetName}`);
+            return 0;
+        }
+        
+        // 2. Lấy chữ cột từ index (A=0, B=1, ..., Z=25)
+        const colLetter = String.fromCharCode(65 + sttColIndex);
+        
+        // 3. Đọc cột STT từ dòng 2 trở đi (bỏ header)
         const response = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
-            range: `${sheetName}!A2:A1000`
+            range: `${sheetName}!${colLetter}2:${colLetter}1000`
         });
         
         const values = response.result.values;
         if (!values || values.length === 0) return 0;
         
-        // Tìm số thứ tự cao nhất
+        // 4. Tìm số thứ tự cao nhất (bỏ qua ô trống)
         let maxNumber = 0;
         for (const row of values) {
             if (row && row[0]) {
@@ -4033,6 +4050,7 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
             }
         }
         
+        console.log(`[STATS] Sheet "${sheetName}": Cột STT là cột ${colLetter}, số học sinh tối đa: ${maxNumber}`);
         return maxNumber;
     } catch (err) {
         console.error(`Lỗi đếm học sinh trong sheet ${sheetName}:`, err);
