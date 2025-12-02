@@ -19,8 +19,8 @@ const PARENT_FOLDER_OTH_ID = "1F_h6sa-I6wmf-3KVrJ49Kg6KJZyJM-Vu";
 // 2. (*** Giữ nguyên V10 ***) Cấu hình Câu hỏi Form
 const STUDENT_NAME_QUESTION_TITLE = "Tên học sinh (chỉ điền tên đệm và tên):";
 const ASSIGNMENT_TYPE_QUESTION_TITLE = "Chọn bài tập:";
-const ASSIGNMENT_TYPE_THU = "Bài tập thứ 5 (Đại số)";
-const ASSIGNMENT_TYPE_SUN = "Bài tập Chủ nhật (Hình học)";
+const ASSIGNMENT_TYPE_THU = "Bài tập thứ 5";
+const ASSIGNMENT_TYPE_SUN = "Bài tập Chủ nhật";
 const ASSIGNMENT_TYPE_OTH = "Khác";
 
 
@@ -443,52 +443,6 @@ function clearFolderContents(parentFolder) {
 
 
 /**
- * DỌN DẸP: Xóa toàn bộ nội dung trong folder bài tập và xóa email thông báo liên quan
- * Gọi thủ công hoặc từ menu: cleanAssignmentAndEmailsByFolderId(folderId, assignmentType)
- *
- * @param {string} folderId - ID của thư mục bài tập (assignment folder)
- * @param {string=} assignmentType - Tên loại bài tập (dùng để chọn mẫu tiêu đề email)
- */
-function cleanAssignmentAndEmailsByFolderId(folderId, assignmentType) {
-  try {
-    if (!folderId) {
-      Logger.log('cleanAssignmentAndEmailsByFolderId: Thiếu folderId.');
-      return;
-    }
-
-    // 1) Dọn nội dung folder
-    var parentFolder = DriveApp.getFolderById(folderId);
-    if (!parentFolder) {
-      Logger.log(`Không tìm thấy folder với ID: ${folderId}`);
-      return;
-    }
-
-    Logger.log(`🔄 Bắt đầu dọn folder bài tập: ${parentFolder.getName()} (${folderId})`);
-    clearFolderContents(parentFolder);
-
-    // 2) Xóa email liên quan (nếu có mẫu tiêu đề)
-    var at = (assignmentType || '').toString().toLowerCase();
-    var subjectTemplate = SUBJECT_TEMPLATE_OTH; // mặc định
-
-    if (at.indexOf('thu') !== -1 || at.indexOf('thứ') !== -1) {
-      subjectTemplate = SUBJECT_TEMPLATE_THU;
-    } else if (at.indexOf('cn') !== -1 || at.indexOf('chủ') !== -1) {
-      subjectTemplate = SUBJECT_TEMPLATE_SUN;
-    }
-
-    Logger.log(`→ Dọn email với mẫu tiêu đề: ${subjectTemplate}`);
-    cleanupOldEmails(subjectTemplate);
-
-    Logger.log(`✅ Hoàn tất dọn dẹp folder & email cho: ${parentFolder.getName()}`);
-    return `OK: cleaned ${parentFolder.getName()}`;
-  } catch (e) {
-    Logger.log(`❌ Lỗi cleanAssignmentAndEmailsByFolderId: ${e.message}`);
-    return `ERROR: ${e.message}`;
-  }
-}
-
-
-/**
  * HÀM 2: (*** CẬP NHẬT V24 - LOGIC "KHỚP 2 TỪ CUỐI" ***)
  * (Giữ nguyên V24)
  */
@@ -715,12 +669,23 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly) {
  */
 function runScheduledCleanupAndEnsureOpen() {
   try {
-    const form = FormApp.getActiveForm();
+    let form = null;
+    try {
+      form = FormApp.getActiveForm();
+    } catch (formErr) {
+      Logger.log("⚠️ Cảnh báo: Không thể lấy Form object từ trigger - Sẽ bỏ qua xử lý Form. Lỗi: " + formErr.message);
+    }
     
-    // 1. Đảm bảo Form luôn mở
-    if (!form.isAcceptingResponses()) {
-      form.setAcceptingResponses(true);
-      Logger.log("Biểu mẫu đang ĐÓNG. Đã MỞ LẠI.");
+    // 1. Đảm bảo Form luôn mở (nếu có form)
+    if (form) {
+      try {
+        if (!form.isAcceptingResponses()) {
+          form.setAcceptingResponses(true);
+          Logger.log("Biểu mẫu đang ĐÓNG. Đã MỞ LẠI.");
+        }
+      } catch (formOpenErr) {
+        Logger.log("⚠️ Lỗi khi mở Form: " + formOpenErr.message);
+      }
     }
 
     const now = new Date();
@@ -742,7 +707,7 @@ function runScheduledCleanupAndEnsureOpen() {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 5 (ĐẠI SỐ) <<<");
         const parentFolderThu = DriveApp.getFolderById(PARENT_FOLDER_THU_ID);
         cleanupOldEmails(SUBJECT_TEMPLATE_THU);
-        cleanupOldFormResponses(form, ASSIGNMENT_TYPE_THU);
+        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_THU);
         clearFolderContents(parentFolderThu);
         scriptProperties.setProperty('LAST_CLEANUP_THU', todayKey);
         clearReconcileEmailCache(scriptProperties); // Xóa cache 1 lần là đủ
@@ -754,7 +719,7 @@ function runScheduledCleanupAndEnsureOpen() {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: KHÁC (Đợt T5) <<<");
         const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
         cleanupOldEmails(SUBJECT_TEMPLATE_OTH);
-        cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
+        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
         clearFolderContents(parentFolderOth);
         scriptProperties.setProperty('LAST_CLEANUP_OTH', todayKey);
         // Không cần xóa cache email lần nữa
@@ -772,7 +737,7 @@ function runScheduledCleanupAndEnsureOpen() {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: CHỦ NHẬT (HÌNH HỌC) <<<");
         const parentFolderSun = DriveApp.getFolderById(PARENT_FOLDER_SUN_ID);
         cleanupOldEmails(SUBJECT_TEMPLATE_SUN);
-        cleanupOldFormResponses(form, ASSIGNMENT_TYPE_SUN);
+        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_SUN);
         clearFolderContents(parentFolderSun);
         scriptProperties.setProperty('LAST_CLEANUP_SUN', todayKey);
         clearReconcileEmailCache(scriptProperties); // Xóa cache 1 lần
@@ -786,7 +751,7 @@ function runScheduledCleanupAndEnsureOpen() {
          Logger.log(">>> ĐẾN GIỜ DỌN DẸP: KHÁC (Đợt CN) <<<");
         const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
         cleanupOldEmails(SUBJECT_TEMPLATE_OTH);
-        cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
+        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
         clearFolderContents(parentFolderOth);
         scriptProperties.setProperty('LAST_CLEANUP_OTH', todayKey);
         Logger.log("--- Hoàn tất dọn dẹp KHÁC (Đợt CN) ---");
