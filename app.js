@@ -506,6 +506,7 @@ function updateAssignmentSelectionUI() {
         btn.addEventListener('dragover', handleDragOver);
         btn.addEventListener('dragleave', handleDragLeave);
         btn.addEventListener('drop', handleDrop);
+        btn.addEventListener('contextmenu', (e) => handleAssignmentContextMenu(e, assignment.folderId, assignment.name));
         assignmentButtonsContainer.appendChild(btn);
     });
 }
@@ -556,6 +557,15 @@ function handleStatusItemContextMenu(e) {
             updateStatus(`→ Mở thư mục: "${folderName || folderId}"`);
             window.open(driveUrl, '_blank');
         }
+    }
+}
+
+function handleAssignmentContextMenu(e, folderId, folderName) {
+    e.preventDefault();
+    if (folderId) {
+        const driveUrl = `https://drive.google.com/drive/folders/${folderId}`;
+        updateStatus(`→ Mở thư mục bài tập: "${folderName}"`);
+        window.open(driveUrl, '_blank');
     }
 }
 
