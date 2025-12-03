@@ -335,7 +335,8 @@ function onFormSubmit(e) {
         }
     }
 
-    // (Xử lý tệp giữ nguyên V13... không thay đổi)
+    // (V24.8+) Xử lý tệp: Không chuyển đổi DOCX, chỉ di chuyển về folder
+    // Logic xử lý file trùng tên: so sánh kích cỡ, thời gian tạo
     const fileResponses = formResponse.getItemResponses().filter(item => item.getItem().getType() === FormApp.ItemType.FILE_UPLOAD);
     if (fileResponses.length > 0) {
       fileResponses.forEach(fileResponse => {
@@ -343,19 +344,31 @@ function onFormSubmit(e) {
         files.forEach(fileId => {
           try {
             const file = DriveApp.getFileById(fileId);
-            const mimeType = file.getMimeType();
             const fileName = file.getName();
-            if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || mimeType === "application/msword") {
-              convertFileToPdf(file, studentFolder);
-            } else {
-              const existingFiles = studentFolder.getFilesByName(fileName);
-              if (existingFiles.hasNext()) {
-                Logger.log(`Tệp "${fileName}" đã tồn tại. Bỏ qua tệp mới.`);
+            const fileSize = file.getSize();
+            const fileTime = file.getLastUpdated().getTime();
+            
+            // Kiểm tra xem file cùng tên đã có trong folder không
+            const existingFilesIter = studentFolder.getFilesByName(fileName);
+            if (existingFilesIter.hasNext()) {
+              const existingFile = existingFilesIter.next();
+              const existingSize = existingFile.getSize();
+              const existingTime = existingFile.getLastUpdated().getTime();
+              
+              // Nếu cùng kích cỡ → xóa file mới (giả định là file trùng)
+              if (fileSize === existingSize) {
                 file.setTrashed(true);
+                Logger.log(`Tệp "${fileName}" đã tồn tại với cùng kích cỡ (${fileSize} bytes). Xóa file mới.`);
               } else {
+                // Kích cỡ khác → giữ cả 2, di chuyển file mới
+                // (app.js sẽ sắp xếp theo thời gian tạo tự động)
                 file.moveTo(studentFolder);
-                Logger.log(`Đã di chuyển (thêm mới) tệp "${fileName}" vào thư mục "${studentFolder.getName()}".`);
+                Logger.log(`Tệp "${fileName}" đã tồn tại nhưng kích cỡ khác (${existingSize} vs ${fileSize} bytes). Giữ cả 2 file. (app.js sẽ xử lý sắp xếp).`);
               }
+            } else {
+              // File không tồn tại → di chuyển file mới
+              file.moveTo(studentFolder);
+              Logger.log(`Đã di chuyển tệp "${fileName}" vào thư mục "${studentFolder.getName()}".`);
             }
           } catch (fileErr) {
             Logger.log(`Lỗi khi xử lý tệp ID ${fileId} (onFormSubmit): ${fileErr.message}`);
@@ -663,103 +676,95 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly) {
 
 
 /**
- * HÀM 3: (*** CẬP NHẬT V24.8 - ĐỒNG BỘ LỊCH DỌN DẸP ***)
- * Chạy dọn dẹp theo lịch (T5 18:00, CN 17:00) và đảm bảo Form mở.
- * YÊU CẦU TRIGGER CHẠY HÀNG GIỜ (HOURLY).
+ * HÀM 3: (*** CẬP NHẬT V24.9 - DỌN DẸP ĐỊNH KỲ CHÍNH XÁC ***)
+ * Chạy dọn dẹp theo lịch cụ thể:
+ * - T5 18:30: Đại số (THU) - xóa email, form responses, và dọn folder
+ * - CN 17:00: Hình học (SUN) - xóa email, form responses, và dọn folder
+ * 
+ * YÊU CẦU: Trigger HOURLY (chạy hàng giờ)
  */
 function runScheduledCleanupAndEnsureOpen() {
   try {
-    let form = null;
-    try {
-      form = FormApp.getActiveForm();
-    } catch (formErr) {
-      Logger.log("⚠️ Cảnh báo: Không thể lấy Form object từ trigger - Sẽ bỏ qua xử lý Form. Lỗi: " + formErr.message);
-    }
-    
-    // 1. Đảm bảo Form luôn mở (nếu có form)
-    if (form) {
-      try {
-        if (!form.isAcceptingResponses()) {
-          form.setAcceptingResponses(true);
-          Logger.log("Biểu mẫu đang ĐÓNG. Đã MỞ LẠI.");
-        }
-      } catch (formOpenErr) {
-        Logger.log("⚠️ Lỗi khi mở Form: " + formOpenErr.message);
-      }
-    }
-
     const now = new Date();
-    const day = now.getDay(); // 0:CN, 1:T2, 4:T5, 5:T6, 6:T7
+    const day = now.getDay(); // 0:CN, 1:T2, ..., 4:T5, 5:T6, 6:T7
     const hour = now.getHours();
-    const minute = now.getMinutes(); 
-    const scriptProperties = PropertiesService.getScriptProperties();
+    const minute = now.getMinutes();
     
-    const todayKey = now.toLocaleDateString("vi-VN"); 
+    Logger.log(`[CLEANUP] Kiểm tra lịch dọn dẹp: ${day === 4 ? 'THỨ 5' : day === 0 ? 'CHỦ NHẬT' : 'Ngày khác'} ${hour}:${minute.toString().padStart(2, '0')}`);
 
-    // --- 1. LỊCH THỨ 5 (ĐẠI SỐ + KHÁC): 18h00 Thứ 5 (Cập nhật V24.8) ---
-    // (Hạn nộp T3 23:00. Dọn dẹp T5 18:00 trước giờ học)
-    if (day === 4 && hour >= 18) {
-      const lastRunThu = scriptProperties.getProperty('LAST_CLEANUP_THU');
-      const lastRunOth = scriptProperties.getProperty('LAST_CLEANUP_OTH');
+    // --- LỊCH ĐẠI SỐ: T5 18:30 ---
+    if (day === 4 && hour === 18 && minute >= 30) {
+      const scriptProperties = PropertiesService.getScriptProperties();
+      const lastRunThu = scriptProperties.getProperty('LAST_CLEANUP_THU_TIME');
+      const today = now.toLocaleDateString("vi-VN");
       
-      // Dọn dẹp ĐẠI SỐ
-      if (lastRunThu !== todayKey) {
-        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 5 (ĐẠI SỐ) <<<");
-        const parentFolderThu = DriveApp.getFolderById(PARENT_FOLDER_THU_ID);
-        cleanupOldEmails(SUBJECT_TEMPLATE_THU);
-        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_THU);
-        clearFolderContents(parentFolderThu);
-        scriptProperties.setProperty('LAST_CLEANUP_THU', todayKey);
-        clearReconcileEmailCache(scriptProperties); // Xóa cache 1 lần là đủ
-        Logger.log("--- Hoàn tất dọn dẹp THỨ 5 ---");
-      }
-      
-      // (V24.8) Dọn dẹp KHÁC (Chạy cùng lúc T5)
-      if (lastRunOth !== todayKey) {
-        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: KHÁC (Đợt T5) <<<");
-        const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
-        cleanupOldEmails(SUBJECT_TEMPLATE_OTH);
-        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
-        clearFolderContents(parentFolderOth);
-        scriptProperties.setProperty('LAST_CLEANUP_OTH', todayKey);
-        // Không cần xóa cache email lần nữa
-        Logger.log("--- Hoàn tất dọn dẹp KHÁC (Đợt T5) ---");
-      }
-    }
-
-    // --- 2. LỊCH CHỦ NHẬT (HÌNH HỌC + KHÁC): 17h00 Chủ Nhật (Cập nhật V24.8) ---
-    else if (day === 0 && hour >= 17) {
-      const lastRunSun = scriptProperties.getProperty('LAST_CLEANUP_SUN');
-      const lastRunOth = scriptProperties.getProperty('LAST_CLEANUP_OTH');
-      
-      // Dọn dẹp HÌNH HỌC
-      if (lastRunSun !== todayKey) {
-        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: CHỦ NHẬT (HÌNH HỌC) <<<");
-        const parentFolderSun = DriveApp.getFolderById(PARENT_FOLDER_SUN_ID);
-        cleanupOldEmails(SUBJECT_TEMPLATE_SUN);
-        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_SUN);
-        clearFolderContents(parentFolderSun);
-        scriptProperties.setProperty('LAST_CLEANUP_SUN', todayKey);
-        clearReconcileEmailCache(scriptProperties); // Xóa cache 1 lần
-        Logger.log("--- Hoàn tất dọn dẹp CHỦ NHẬT ---");
-      }
-      
-      // (V24.8) Dọn dẹp KHÁC (Chạy cùng lúc CN)
-      // (Kiểm tra todayKey khác với lần chạy T5)
-      const lastRunOthDate = scriptProperties.getProperty('LAST_CLEANUP_OTH');
-      if (lastRunOthDate !== todayKey) {
-         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: KHÁC (Đợt CN) <<<");
-        const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
-        cleanupOldEmails(SUBJECT_TEMPLATE_OTH);
-        if (form) cleanupOldFormResponses(form, ASSIGNMENT_TYPE_OTH);
-        clearFolderContents(parentFolderOth);
-        scriptProperties.setProperty('LAST_CLEANUP_OTH', todayKey);
-        Logger.log("--- Hoàn tất dọn dẹp KHÁC (Đợt CN) ---");
+      // Kiểm tra xem hôm nay đã chạy chưa
+      if (lastRunThu !== today) {
+        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 5 18:30 (ĐẠI SỐ) <<<");
+        
+        try {
+          // 1. Xóa email cũ
+          cleanupOldEmails(SUBJECT_TEMPLATE_THU);
+          
+          // 2. Xóa form responses cũ (hơn 7 ngày)
+          const form = FormApp.getActiveForm();
+          cleanupFormResponsesByType(form, ASSIGNMENT_TYPE_THU, 7);
+          
+          // 3. Dọn dẹp folder
+          const parentFolderThu = DriveApp.getFolderById(PARENT_FOLDER_THU_ID);
+          clearFolderContents(parentFolderThu);
+          
+          // 4. Xóa cache email reconcile
+          clearReconcileEmailCache(scriptProperties);
+          
+          // 5. Đánh dấu đã chạy hôm nay
+          scriptProperties.setProperty('LAST_CLEANUP_THU_TIME', today);
+          
+          Logger.log("--- ✅ Hoàn tất dọn dẹp THỨ 5 (ĐẠI SỐ) ---");
+        } catch (thuErr) {
+          Logger.log(`LỖI khi dọn dẹp T5: ${thuErr.message}`);
+        }
+      } else {
+        Logger.log(`[CLEANUP] T5 đã dọn dẹp hôm nay rồi. Sẽ chạy lại ngày mai.`);
       }
     }
     
-    // --- 3. LỊCH KHÁC (Thứ 2) ---
-    // (*** ĐÃ XÓA BỎ TRONG V24.8 ***)
+    // --- LỊCH HÌNH HỌC: CN 17:00 ---
+    else if (day === 0 && hour === 17 && minute >= 0) {
+      const scriptProperties = PropertiesService.getScriptProperties();
+      const lastRunSun = scriptProperties.getProperty('LAST_CLEANUP_SUN_TIME');
+      const today = now.toLocaleDateString("vi-VN");
+      
+      // Kiểm tra xem hôm nay đã chạy chưa
+      if (lastRunSun !== today) {
+        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: CHỦ NHẬT 17:00 (HÌNH HỌC) <<<");
+        
+        try {
+          // 1. Xóa email cũ
+          cleanupOldEmails(SUBJECT_TEMPLATE_SUN);
+          
+          // 2. Xóa form responses cũ (hơn 7 ngày)
+          const form = FormApp.getActiveForm();
+          cleanupFormResponsesByType(form, ASSIGNMENT_TYPE_SUN, 7);
+          
+          // 3. Dọn dẹp folder
+          const parentFolderSun = DriveApp.getFolderById(PARENT_FOLDER_SUN_ID);
+          clearFolderContents(parentFolderSun);
+          
+          // 4. Xóa cache email reconcile
+          clearReconcileEmailCache(scriptProperties);
+          
+          // 5. Đánh dấu đã chạy hôm nay
+          scriptProperties.setProperty('LAST_CLEANUP_SUN_TIME', today);
+          
+          Logger.log("--- ✅ Hoàn tất dọn dẹp CHỦ NHẬT (HÌNH HỌC) ---");
+        } catch (sunErr) {
+          Logger.log(`LỖI khi dọn dẹp CN: ${sunErr.message}`);
+        }
+      } else {
+        Logger.log(`[CLEANUP] CN đã dọn dẹp hôm nay rồi. Sẽ chạy lại tuần sau.`);
+      }
+    }
 
   } catch (err) {
     Logger.log(`LỖI NGHIÊM TRỌNG trong runScheduledCleanupAndEnsureOpen: ${err.message}`);
@@ -833,6 +838,114 @@ function cleanupOldFormResponses(form, assignmentTypeToDelete) {
     }
 }
 
+/**
+ * HÀM (HỖ TRỢ MỚI V24.8+): Dọn dẹp TOÀN BỘ câu trả lời Form cũ theo lịch.
+ * Gọi từ onFormSubmit trigger (có Form context).
+ */
+function cleanupAllOldFormResponses(form) {
+  try {
+    Logger.log(">>> (V24.8+) Bắt đầu dọn dẹp TOÀN BỘ câu trả lời Form cũ <<<");
+    
+    const responses = form.getResponses();
+    if (!responses || responses.length === 0) {
+      Logger.log("Không có câu trả lời để dọn dẹp.");
+      return;
+    }
+
+    let deleteCount = 0;
+    const now = new Date();
+    const retentionDays = 7; // Giữ lại 7 ngày gần nhất
+    const cutoffTime = now.getTime() - (retentionDays * 24 * 60 * 60 * 1000);
+
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      const timestamp = response.getTimestamp();
+      
+      if (timestamp && timestamp.getTime() < cutoffTime) {
+        try {
+          form.deleteResponse(response.getId());
+          deleteCount++;
+        } catch (deleteErr) {
+          Logger.log(`Lỗi khi xóa response: ${deleteErr.message}`);
+        }
+      }
+    }
+
+    Logger.log(`--- Hoàn tất dọn dẹp. ĐÃ XÓA ${deleteCount} câu trả lời cũ hơn ${retentionDays} ngày ---`);
+
+  } catch (err) {
+    Logger.log(`Lỗi nghiêm trọng trong cleanupAllOldFormResponses: ${err.message}`);
+  }
+}
+
+/**
+ * HÀM (HỖ TRỢ MỚI V24.9): Xóa form responses của một loại bài tập cũ hơn N ngày.
+ * Dùng cho dọn dẹp định kỳ (chạy từ hourly trigger với Form context).
+ */
+function cleanupFormResponsesByType(form, assignmentType, retentionDays) {
+  try {
+    Logger.log(`[CLEANUP] Bắt đầu xóa form responses cho "${assignmentType}" cũ hơn ${retentionDays} ngày`);
+    
+    const responses = form.getResponses();
+    if (!responses || responses.length === 0) {
+      Logger.log(`[CLEANUP] Không có response để xóa cho "${assignmentType}".`);
+      return;
+    }
+
+    let deleteCount = 0;
+    const now = new Date();
+    const cutoffTime = now.getTime() - (retentionDays * 24 * 60 * 60 * 1000);
+
+    // Tìm câu hỏi Assignment Type
+    let assignmentQuestionItemId = null;
+    const items = form.getItems();
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].getTitle() === ASSIGNMENT_TYPE_QUESTION_TITLE) {
+        assignmentQuestionItemId = items[i].getId();
+        break;
+      }
+    }
+
+    if (!assignmentQuestionItemId) {
+      Logger.log(`[CLEANUP] Không tìm thấy câu hỏi "${ASSIGNMENT_TYPE_QUESTION_TITLE}".`);
+      return;
+    }
+
+    // Lặp qua các responses
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      const timestamp = response.getTimestamp();
+
+      // Kiểm tra timestamp
+      if (!timestamp || timestamp.getTime() >= cutoffTime) {
+        continue; // Bỏ qua responses mới hơn
+      }
+
+      // Kiểm tra assignment type
+      let itemResponse;
+      try {
+        itemResponse = response.getResponseForItem(form.getItemById(assignmentQuestionItemId));
+      } catch (e) {
+        continue;
+      }
+
+      if (itemResponse && itemResponse.getResponse() === assignmentType) {
+        try {
+          form.deleteResponse(response.getId());
+          deleteCount++;
+        } catch (deleteErr) {
+          Logger.log(`[CLEANUP] Lỗi xóa response: ${deleteErr.message}`);
+        }
+      }
+    }
+
+    Logger.log(`[CLEANUP] ✅ Đã xóa ${deleteCount} responses của "${assignmentType}" cũ hơn ${retentionDays} ngày.`);
+
+  } catch (err) {
+    Logger.log(`[CLEANUP] Lỗi trong cleanupFormResponsesByType: ${err.message}`);
+  }
+}
+
 // ------------------------------------------------------------------
 // KẾT THÚC PHẦN THAY THẾ
 // ------------------------------------------------------------------
@@ -840,26 +953,17 @@ function cleanupOldFormResponses(form, assignmentTypeToDelete) {
 
 /**
  * HÀM 4: DỌN DẸP ĐỊNH KỲ (DOCX)
- * (Giữ nguyên V13)
+ * (DEPRECATED - V24.8+) - Hàm này không còn dùng vì DOCX conversion đã bị bỏ
  */
 function periodicCleanup() {
-  Logger.log("--- Bắt đầu Quét Dọn & Chuyển Đổi Định Kỳ (DOCX) ---");
-  
-  const parentFolderThu = DriveApp.getFolderById(PARENT_FOLDER_THU_ID); 
-  const parentFolderSun = DriveApp.getFolderById(PARENT_FOLDER_SUN_ID); 
-  const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID); 
-
-  let totalConverted = 0;
-  totalConverted += scanAndConvertFolder(parentFolderThu);
-  totalConverted += scanAndConvertFolder(parentFolderSun);
-  totalConverted += scanAndConvertFolder(parentFolderOth); 
-
-  Logger.log(`--- Hoàn tất Quét Dọn Định Kỳ. Tổng cộng đã chuyển đổi ${totalConverted} tệp sót lại. ---`);
+  Logger.log(`[DEPRECATED] periodicCleanup() không còn hoạt động trong V24.8+. DOCX conversion đã bị bỏ.`);
+  return;
 }
 
 /**
  * HÀM (HỖ TRỢ): Quét một thư mục cha, tìm thư mục con và chuyển đổi tệp docx.
- * (Giữ nguyên V23)
+ * (DEPRECATED - V24.8+) - Hàm này không còn hoạt động vì bỏ DOCX conversion
+ * Giữ lại để backward compatibility nhưng sẽ không làm gì.
  */
 function scanAndConvertFolder(parentFolder) {
   if (!parentFolder) {
@@ -867,37 +971,8 @@ function scanAndConvertFolder(parentFolder) {
     return 0;
   }
 
-  Logger.log(`Đang quét dọn DOCX trong: "${parentFolder.getName()}"`);
-  let filesConverted = 0;
-  try {
-    const subfolders = parentFolder.getFolders();
-
-    while (subfolders.hasNext()) {
-      const studentFolder = subfolders.next();
-      if (studentFolder.getName().startsWith("[") && studentFolder.getName().endsWith("]")) {
-        Logger.log(`Bỏ qua thư mục lưu trữ: ${studentFolder.getName()}`);
-        continue;
-      }
-
-      const docxFiles = studentFolder.getFilesByType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-      while (docxFiles.hasNext()) {
-        const file = docxFiles.next();
-        convertFileToPdf(file, studentFolder); 
-        filesConverted++;
-      }
-
-      const docFiles = studentFolder.getFilesByType("application/msword");
-      while (docFiles.hasNext()) {
-        const file = docFiles.next();
-        convertFileToPdf(file, studentFolder); 
-        filesConverted++;
-      }
-    }
-    Logger.log(`Hoàn tất quét "${parentFolder.getName()}", đã chuyển đổi ${filesConverted} tệp.`);
-  } catch (err) {
-    Logger.log(`Lỗi khi quét dọn DOCX trong "${parentFolder.getName()}": ${err.message}`);
-  }
-  return filesConverted;
+  Logger.log(`[DEPRECATED] scanAndConvertFolder() không còn hoạt động trong V24.8+. DOCX conversion đã bị bỏ.`);
+  return 0;
 }
 
 
@@ -906,54 +981,18 @@ function scanAndConvertFolder(parentFolder) {
 // ==================================================================
 
 /**
- * (*** CẬP NHẬT V24.3 ***) Chuyển đổi DOCX sang PDF (Xử lý lỗi hỏng tệp)
- * Nếu chuyển đổi lỗi, sẽ đổi tên tệp gốc để đánh dấu.
+ * (DEPRECATED - V24.8+) Hàm này không còn dùng nữa.
+ * Lý do: DOCX → PDF conversion bị lỗi, gây mất dữ liệu học sinh.
+ * Thay vào đó: app.js đã có hàm xử lý file upload riêng biệt.
+ * File DOCX/Word sẽ được di chuyển vào folder nhưng app.js sẽ xử lý.
+ * 
+ * Hàm này giữ lại để backward compatibility nhưng không được gọi.
  */
 function convertFileToPdf(file, targetFolder) {
-  const fileName = file.getName(); // Lấy tên tệp ngay từ đầu
-  try {
-    if (file.isTrashed()) return;
-    
-    const pdfName = fileName.replace(/\.docx?$/i, '.pdf');
-
-    const existingPdfs = targetFolder.getFilesByName(pdfName);
-    if (existingPdfs.hasNext()) {
-        Logger.log(`Tệp PDF "${pdfName}" đã tồn tại. Bỏ qua chuyển đổi.`);
-        file.setTrashed(true);
-        return; 
-    }
-
-    Logger.log(`Phát hiện tệp DOCX/DOC (ID: ${file.getId()}): "${fileName}"`);
-    
-    let pdfBlob;
-    try {
-      // Tách riêng khối chuyển đổi để bắt lỗi cụ thể
-      pdfBlob = file.getAs('application/pdf');
-      
-    } catch (conversionErr) {
-      // --- LỖI CỤ THỂ KHI CONVERSION FAILED ---
-      Logger.log(`--- LỖI CHUYỂN ĐỔI PDF ---`);
-      Logger.log(`Lỗi khi chuyển đổi tệp "${fileName}": ${conversionErr.message}`);
-      Logger.log(`Tệp này có thể bị hỏng, trống hoặc không hợp lệ. Sẽ đổi tên tệp gốc.`);
-      
-      try {
-        // Đổi tên tệp gốc để không chạy lại và để người dùng biết
-        file.setName(`[LỖI CHUYỂN ĐỔI] ${fileName}`);
-      } catch (renameErr) {
-        Logger.log(`Không thể đổi tên tệp lỗi: ${renameErr.message}`);
-      }
-      return; // Dừng, không làm gì nữa với tệp này
-    }
-
-    // --- Nếu chuyển đổi thành công ---
-    const pdfFile = targetFolder.createFile(pdfBlob).setName(pdfName);
-    Logger.log(`Đã CHUYỂN ĐỔI "${fileName}" thành "${pdfFile.getName()}" và lưu vào "${targetFolder.getName()}".`);
-    file.setTrashed(true); // Xóa tệp gốc
-
-  } catch (generalErr) {
-    // Lỗi chung (ví dụ: không lấy được tên, không có quyền, v.v.)
-    Logger.log(`Lỗi chung (ngoài conversion) với tệp "${fileName}": ${generalErr.message}`);
-  }
+  // [V24.8+] Hàm này đã deprecated
+  // KHÔNG chuyển đổi DOCX nữa vì gây mất file khi conversion lỗi
+  Logger.log(`[DEPRECATED] convertFileToPdf() không được dùng trong V24.8+`);
+  return;
 }
 
 
