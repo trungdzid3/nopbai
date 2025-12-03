@@ -2276,14 +2276,15 @@ async function handleProcessClick() {
 function getStatusClasses(status) {
     const currentDesign = localStorage.getItem('design-system') || 'material3';
     
+    // Liquid Glass: CSS handles all styling via data-status selector
+    // Material 3: Apply Tailwind classes
+    if (currentDesign === 'liquid-glass') {
+        return []; // CSS handles styling via data-status attribute
+    }
+    
     switch (status) {
         case 'processed':
-            // Material 3: primary-container | Liquid Glass: tím (purple)
-            if (currentDesign === 'liquid-glass') {
-                return ['bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'];
-            } else {
-                return ['bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'];
-            }
+            return ['bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'];
         case 'overdue':
             return ['bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'];
         case 'processing':
@@ -2299,7 +2300,6 @@ function getStatusClasses(status) {
 function getAllStatusClasses() {
     return [
         'bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary',
-        'bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200',
         'bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200',
         'bg-secondary-container', 'text-on-secondary-container', 'animate-pulse',
         'bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200',
@@ -2313,11 +2313,6 @@ function displaySubmissionStatus(statusList) {
         submissionStatusList.innerHTML = '<div class="text-outline">Chưa có dữ liệu cho lớp này. Bắt đầu xử lý để quét...</div>';
         return;
     }
-
-    // Lấy danh sách học sinh từ class profile hiện tại
-    const classId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
-    const profile = classProfiles.find(p => p.id === classId);
-    const totalStudents = profile && profile.students ? profile.students.length : 0;
 
     const list = document.createElement('ul');
     list.className = 'space-y-2';
@@ -2365,13 +2360,7 @@ function displaySubmissionStatus(statusList) {
         
         if (extraItemClass) item.classList.add(extraItemClass);
         
-        // Thêm số lượng nộp bài nếu có dữ liệu tổng học sinh
-        let submissionCount = '';
-        if (totalStudents > 0) {
-            submissionCount = `<span class="text-xs text-on-surface-variant ml-2">📊 ${totalStudents}</span>`;
-        }
-        
-        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-1"><span class="text-sm font-medium flex-shrink-0">${statusText}</span>${submissionCount}</div>`;
+        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-1"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
         list.appendChild(item);
     });
     submissionStatusList.appendChild(list);
@@ -4233,7 +4222,10 @@ async function updateSubmissionStats() {
             }
         }
         
-        // 3. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        // 3. Đếm tổng số học sinh từ sheet
+        const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
+        
+        // 4. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
         let submittedCount = 0;
         submissionItems.forEach(item => {
@@ -4242,9 +4234,6 @@ async function updateSubmissionStats() {
                 submittedCount++;
             }
         });
-        
-        // 4. Đếm tổng số học sinh từ sheet
-        const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
         // 5. Cập nhật UI
         if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;

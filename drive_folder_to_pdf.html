@@ -1564,10 +1564,21 @@
             transform: scale(1.02);
         }
 
+        body[data-design="apple"] .m3-settings-nav-button {
+            text-align: left;
+            justify-content: flex-start;
+        }
+
         body[data-design="apple"] .m3-settings-nav-button[data-active="true"] {
             background-color: color-mix(in srgb, var(--c-action) 25%, transparent);
             color: var(--c-content);
             font-weight: 600;
+        }
+
+        body[data-design="apple"].dark .m3-settings-nav-button,
+        body.dark[data-design="apple"] .m3-settings-nav-button {
+            text-align: left;
+            justify-content: flex-start;
         }
 
         body[data-design="apple"].dark .m3-settings-nav-button[data-active="true"],
