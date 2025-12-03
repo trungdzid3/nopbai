@@ -2272,6 +2272,41 @@ async function handleProcessClick() {
     }
 }
 
+// Helper: Lấy class màu dựa trên status và current design/theme
+function getStatusClasses(status) {
+    const currentDesign = localStorage.getItem('design-system') || 'material3';
+    
+    switch (status) {
+        case 'processed':
+            // Material 3: primary-container | Liquid Glass: tím (purple)
+            if (currentDesign === 'liquid-glass') {
+                return ['bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200'];
+            } else {
+                return ['bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'];
+            }
+        case 'overdue':
+            return ['bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'];
+        case 'processing':
+            return ['bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'];
+        case 'error':
+            return ['bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200'];
+        default:
+            return ['bg-surface-container', 'text-on-surface'];
+    }
+}
+
+// Helper: Lấy tất cả class có thể có để remove
+function getAllStatusClasses() {
+    return [
+        'bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary',
+        'bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200',
+        'bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200',
+        'bg-secondary-container', 'text-on-secondary-container', 'animate-pulse',
+        'bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200',
+        'bg-surface-container', 'text-on-surface'
+    ];
+}
+
 function displaySubmissionStatus(statusList) {
     submissionStatusList.innerHTML = '';
     if (!statusList || statusList.length === 0) {
@@ -2297,31 +2332,25 @@ function displaySubmissionStatus(statusList) {
         item.className = 'flex items-center justify-between py-1 px-2 rounded-xl smooth-transition';
 
         let statusText = '';
-        const classesToAdd = [];
         let extraItemClass = '';
 
         switch (itemData.status) {
             case 'processed': 
                 statusText = 'Đã xử lý'; 
-                classesToAdd.push('bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'); 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'overdue': 
                 statusText = 'Quá hạn'; 
-                classesToAdd.push('bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'); 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'processing': 
                 statusText = 'Đang xử lý...'; 
-                classesToAdd.push('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'); 
                 break;
             case 'error': 
                 statusText = 'Lỗi'; 
-                classesToAdd.push('bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200'); 
                 break;
             default: 
                 statusText = 'Chưa xử lý'; 
-                classesToAdd.push('bg-surface-container', 'text-on-surface'); 
                 break;
         }
 
@@ -2329,7 +2358,11 @@ function displaySubmissionStatus(statusList) {
         item.dataset.selected = "false";
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
-        item.classList.add(...classesToAdd);
+        
+        // Áp dụng class màu dựa trên status
+        const statusClasses = getStatusClasses(itemData.status);
+        item.classList.add(...statusClasses);
+        
         if (extraItemClass) item.classList.add(extraItemClass);
         
         // Thêm số lượng nộp bài nếu có dữ liệu tổng học sinh
@@ -2421,8 +2454,9 @@ async function processFoldersConcurrently(folders, folderTypeName) {
             if (statusElement) {
                 statusElement.dataset.status = 'processing';
                 statusElement.querySelector('span:last-child').textContent = 'Đang xử lý...';
-                statusElement.classList.remove('bg-orange-200', 'text-orange-900', 'dark:bg-orange-800', 'dark:text-orange-100', 'bg-error-container', 'text-on-error-container', 'bg-tertiary-container', 'text-on-tertiary-container');
-                statusElement.classList.add('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
+                // Remove all status classes before adding new ones
+                statusElement.classList.remove(...getAllStatusClasses());
+                statusElement.classList.add(...getStatusClasses('processing'));
             }
 
             wasSuccessful = await processSingleFolder(folder.id, folder.name, folderTypeName);
@@ -2434,8 +2468,9 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                 if (statusElement) {
                     statusElement.dataset.status = 'processed';
                     statusElement.querySelector('span:last-child').textContent = 'Đã xử lý';
-                    statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-reprocessable');
+                    // Remove all status classes before adding new ones
+                    statusElement.classList.remove(...getAllStatusClasses());
+                    statusElement.classList.add(...getStatusClasses('processed'), 'submission-item-reprocessable');
                 }
             } else {
                 updateStatus(`⚠ Tạm dừng "${folder.name}" do lỗi.`, true);
@@ -2443,8 +2478,9 @@ async function processFoldersConcurrently(folders, folderTypeName) {
                 if (statusElement) {
                     statusElement.dataset.status = 'error';
                     statusElement.querySelector('span:last-child').textContent = 'Lỗi';
-                    statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-                    statusElement.classList.add('bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200');
+                    // Remove all status classes before adding new ones
+                    statusElement.classList.remove(...getAllStatusClasses());
+                    statusElement.classList.add(...getStatusClasses('error'));
                 }
             }
         } catch (error) {
