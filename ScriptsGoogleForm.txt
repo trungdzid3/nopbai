@@ -365,6 +365,10 @@ function onFormSubmit(e) {
                 file.moveTo(studentFolder);
                 Logger.log(`Tệp "${fileName}" đã tồn tại nhưng kích cỡ khác (${existingSize} vs ${fileSize} bytes). Giữ cả 2 file. (app.js sẽ xử lý sắp xếp).`);
               }
+            } else {
+              // File không tồn tại trong folder → di chuyển file vào folder
+              file.moveTo(studentFolder);
+              Logger.log(`Đã di chuyển tệp "${fileName}" vào thư mục "${studentFolder.getName()}".`);
             }
           } catch (fileErr) {
             Logger.log(`Lỗi khi xử lý tệp ID ${fileId} (onFormSubmit): ${fileErr.message}`);
