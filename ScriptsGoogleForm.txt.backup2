@@ -352,80 +352,31 @@ function onFormSubmit(e) {
             
             // Kiểm tra xem file cùng tên đã có trong folder không
             const existingFilesIter = studentFolder.getFilesByName(fileName);
-            let shouldDelete = false;
-            
             if (existingFilesIter.hasNext()) {
-              // Lấy tất cả file cùng tên
-              const allFilesWithSameName = studentFolder.getFilesByName(fileName);
-              const existingFiles = [];
-              while (allFilesWithSameName.hasNext()) {
-                existingFiles.push(allFilesWithSameName.next());
-              }
+              // File tên giống đã tồn tại
+              const existingFile = existingFilesIter.next();
+              const existingSize = existingFile.getSize();
+              const existingTime = existingFile.getLastUpdated().getTime();
               
-              Logger.log(`[FILE HANDLING] Tìm thấy ${existingFiles.length} file(s) cùng tên "${fileName}"`);
+              Logger.log(`[FILE HANDLING] File tên "${fileName}" đã tồn tại. Existing: ${existingSize}B (${new Date(existingTime).toLocaleString('vi-VN')}), New: ${fileSize}B (${new Date(fileTime).toLocaleString('vi-VN')})`);
               
-              // Kiểm tra: CÙNG tên + CÙNG kích cỡ + CÙNG thời gian = XÓA file mới (duplicate hoàn toàn)
-              for (const existingFile of existingFiles) {
-                const existingSize = existingFile.getSize();
-                const existingTime = existingFile.getLastUpdated().getTime();
-                
-                if (fileSize === existingSize && fileTime === existingTime) {
-                  file.setTrashed(true);
-                  Logger.log(`[FILE HANDLING] ✓ DUPLICATE HOÀN TOÀN (cùng tên, kích cỡ, thời gian) → XÓA file mới.`);
-                  shouldDelete = true;
-                  break;
-                }
-              }
-              
-              if (!shouldDelete) {
-                // Nếu không phải duplicate hoàn toàn, kiểm tra size
-                let isDifferentSize = false;
-                
-                for (const existingFile of existingFiles) {
-                  const existingSize = existingFile.getSize();
-                  const existingTime = existingFile.getLastUpdated().getTime();
-                  
-                  // CÙNG kích cỡ + KHÁC thời gian = giữ file MỚI HƠN, xóa file CỮ
-                  if (fileSize === existingSize && fileTime !== existingTime) {
-                    if (fileTime > existingTime) {
-                      existingFile.setTrashed(true);
-                      file.moveTo(studentFolder);
-                      Logger.log(`[FILE HANDLING] ✓ CÙNG KÍCH CỠ, KHÁC THỜI GIAN: File mới MỚI hơn → XÓA file cũ, GIỮ file mới.`);
-                    } else {
-                      file.setTrashed(true);
-                      Logger.log(`[FILE HANDLING] ✓ CÙNG KÍCH CỠ, KHÁC THỜI GIAN: File cũ MỚI hơn → XÓA file mới, GIỮ file cũ.`);
-                    }
-                    shouldDelete = true;
-                    break;
-                  }
-                  
-                  // Kiểm tra size khác
-                  if (fileSize !== existingSize) {
-                    isDifferentSize = true;
-                  }
-                }
-                
-                // Nếu size khác → rename file với suffix để app.js phân biệt
-                if (!shouldDelete && isDifferentSize) {
-                  const nameParts = fileName.lastIndexOf('.') > -1 
-                    ? [fileName.substring(0, fileName.lastIndexOf('.')), fileName.substring(fileName.lastIndexOf('.'))]
-                    : [fileName, ''];
-                  
-                  const baseFileName = nameParts[0];
-                  const fileExtension = nameParts[1];
-                  
-                  // Tìm suffix không trùng
-                  let suffix = 1;
-                  let newFileName = `${baseFileName}_${suffix}${fileExtension}`;
-                  while (doesFileExistInFolder(studentFolder, newFileName)) {
-                    suffix++;
-                    newFileName = `${baseFileName}_${suffix}${fileExtension}`;
-                  }
-                  
-                  file.setName(newFileName);
+              // Nếu cùng kích cỡ → so sánh thời gian tạo để xác định file cũ
+              if (fileSize === existingSize) {
+                if (fileTime > existingTime) {
+                  // File mới này MỚI HƠN → Xóa file CỦA
+                  existingFile.setTrashed(true);
+                  // Di chuyển file MỚI vào folder
                   file.moveTo(studentFolder);
-                  Logger.log(`[FILE HANDLING] ✓ KÍCH CỠ KHÁC: Rename "${fileName}" → "${newFileName}" (để app.js sắp xếp PDF).`);
+                  Logger.log(`[FILE HANDLING] ✓ File mới (${new Date(fileTime).toLocaleString('vi-VN')}) MỚI hơn file cũ → XÓA file cũ, GIỮ file mới: "${fileName}".`);
+                } else {
+                  // File mới này CỦA HƠN (hoặc cùng thời gian) → Xóa file MỚI
+                  file.setTrashed(true);
+                  Logger.log(`[FILE HANDLING] ✓ File cũ (${new Date(existingTime).toLocaleString('vi-VN')}) CỦA hơn hoặc bằng file mới → XÓA file mới, GIỮ file cũ: "${fileName}".`);
                 }
+              } else {
+                // Kích cỡ khác → giữ cả 2, di chuyển file mới vào folder
+                file.moveTo(studentFolder);
+                Logger.log(`[FILE HANDLING] ✓ Kích cỡ khác (${existingSize}B vs ${fileSize}B) → GIỮ cả 2 file. app.js sẽ sắp xếp theo thời gian: "${fileName}".`);
               }
             } else {
               // File không tồn tại trong folder → di chuyển file vào folder
