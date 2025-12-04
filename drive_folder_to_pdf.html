@@ -258,6 +258,148 @@
             background: #000000;
         }
 
+        /* ==================================================================
+       2.5. GIAO DIỆN NEO-BRUTALISM (New Creative Theme)
+       ================================================================== */
+        body[data-design="neo"] {
+            --font-family: 'Courier New', Courier, monospace;
+            
+            /* Neo Colors */
+            --neo-bg: #FFDEE9;
+            --neo-bg-gradient: linear-gradient(0deg, #FFDEE9 0%, #B5FFFC 100%);
+            --neo-surface: #FFFFFF;
+            --neo-border: #000000;
+            --neo-shadow: #000000;
+            --neo-primary: #FF0080; /* Hot Pink */
+            --neo-secondary: #7928CA; /* Purple */
+            
+            /* Override Material Variables */
+            --m3-background: #B5FFFC; /* Fallback */
+            --m3-surface: #FFFFFF;
+            --m3-surface-container: #FFFFFF;
+            --m3-surface-container-highest: #FFFFFF;
+            --m3-surface-variant: #F0F0F0;
+            
+            --m3-on-surface: #000000;
+            --m3-on-surface-variant: #000000;
+            --m3-on-background: #000000;
+            
+            --m3-outline: #000000;
+            --m3-outline-variant: #000000;
+            
+            --m3-primary: var(--neo-primary);
+            --m3-on-primary: #FFFFFF;
+            
+            /* Shapes */
+            --radius-card: 0px;
+            --radius-btn: 0px;
+            --radius-input: 0px;
+            
+            /* Border Width */
+            --border-width: 2px;
+            --shadow-offset: 4px;
+        }
+
+        body[data-design="neo"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: var(--neo-bg-gradient);
+            opacity: 1;
+        }
+
+        /* Neo Components */
+        body[data-design="neo"] .m3-button,
+        body[data-design="neo"] .m3-setting-card,
+        body[data-design="neo"] .m3-modal-content,
+        body[data-design="neo"] .m3-input,
+        body[data-design="neo"] .m3-select,
+        body[data-design="neo"] .assignment-chip,
+        body[data-design="neo"] .custom-dropdown-trigger,
+        body[data-design="neo"] .custom-dropdown-menu {
+            border: var(--border-width) solid var(--neo-border) !important;
+            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px var(--neo-shadow) !important;
+            border-radius: 0px !important;
+            transition: all 0.1s ease;
+        }
+
+        body[data-design="neo"] .m3-button:active,
+        body[data-design="neo"] .custom-dropdown-trigger:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--neo-shadow) !important;
+        }
+
+        body[data-design="neo"] .m3-button-filled {
+            background-color: var(--neo-primary);
+            color: #FFFFFF;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        body[data-design="neo"] .m3-button-tonal {
+            background-color: #FFFFFF;
+            color: #000000;
+        }
+        
+        body[data-design="neo"] .m3-button-tonal:hover {
+            background-color: #F0F0F0;
+        }
+
+        /* Sidebar & Containers */
+        body[data-design="neo"] aside {
+            background-color: rgba(255, 255, 255, 0.5);
+            border-right: var(--border-width) solid var(--neo-border);
+        }
+
+        /* Status List */
+        body[data-design="neo"] #submission-status-list li {
+            border: var(--border-width) solid var(--neo-border);
+            box-shadow: 2px 2px 0px var(--neo-shadow);
+            margin-bottom: 8px;
+            background: #FFFFFF;
+            border-radius: 0px;
+            font-weight: bold;
+        }
+        
+        body[data-design="neo"] #submission-status-list li[data-status="submitted"] {
+            background-color: #A7F3D0; /* Green */
+            color: #000000;
+        }
+        
+        body[data-design="neo"] #submission-status-list li[data-status="processed"] {
+            background-color: #DDD6FE; /* Purple */
+            color: #000000;
+        }
+        
+        body[data-design="neo"] #submission-status-list li[data-status="overdue"] {
+            background-color: #FDE047; /* Yellow */
+            color: #000000;
+        }
+        
+        body[data-design="neo"] #submission-status-list li[data-status="error"] {
+            background-color: #FECACA; /* Red */
+            color: #000000;
+        }
+
+        /* Dark Mode Neo */
+        body[data-design="neo"].dark {
+            --neo-bg-gradient: linear-gradient(0deg, #2d3436 0%, #000000 100%);
+            --neo-surface: #000000;
+            --neo-border: #FFFFFF;
+            --neo-shadow: #FFFFFF;
+            --m3-on-surface: #FFFFFF;
+            --m3-on-surface-variant: #FFFFFF;
+            --m3-outline: #FFFFFF;
+        }
+        
+        body[data-design="neo"].dark .m3-button,
+        body[data-design="neo"].dark .m3-setting-card,
+        body[data-design="neo"].dark .m3-modal-content {
+            background-color: #000000;
+            color: #FFFFFF;
+        }
+
         /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
 
         body[data-design="apple"] .m3-button {
@@ -2553,6 +2695,9 @@
                                 <button id="design-apple"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="apple">Liquid Glass</button>
+                                <button id="design-neo"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
+                                    data-value="neo">Neo-Brutalism</button>
                             </div>
                         </section>
                         <section class="m3-setting-card rounded-2xl">

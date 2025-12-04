@@ -691,55 +691,112 @@ function onFormSubmit(e, recipientEmail) {
         }
       }
       
-      // Xử lý file upload - TÌM TỪ "File responses" FOLDER
+      // Xử lý file upload - TÌM TỪ "File responses" FOLDER (V24.10 - Smart Deduplication)
       const fileResponses = formResponse.getItemResponses().filter(item => 
         item.getItem().getType() === FormApp.ItemType.FILE_UPLOAD
       );
       
       if (fileResponses.length > 0) {
-        Logger.log(`Tìm thấy ${fileResponses.length} file upload items`);
+        Logger.log(`[FILE HANDLING] Tìm thấy ${fileResponses.length} file upload items`);
         
         fileResponses.forEach(fileResponse => {
           const fileIds = fileResponse.getResponse();
           
           if (!fileIds || fileIds.length === 0) {
-            Logger.log('Không có file IDs trong response');
+            Logger.log('[FILE HANDLING] Không có file IDs trong response');
             return;
           }
           
-          Logger.log(`Xử lý ${fileIds.length} files`);
+          Logger.log(`[FILE HANDLING] Xử lý ${fileIds.length} files`);
           
           fileIds.forEach(fileId => {
             try {
               const file = DriveApp.getFileById(fileId);
               const fileName = file.getName();
               const fileSize = file.getSize();
+              const fileTime = file.getLastUpdated().getTime();
               
-              Logger.log(`Xử lý file: "${fileName}" (${fileSize} bytes)`);
+              Logger.log(`[FILE HANDLING] Xử lý tệp: "${fileName}" (${fileSize} bytes, ${new Date(fileTime).toLocaleString('vi-VN')})`);
               
-              // Kiểm tra file đã tồn tại trong folder học sinh
-              const existingFiles = studentFolder.getFilesByName(fileName);
-              if (existingFiles.hasNext()) {
-                const existingFile = existingFiles.next();
-                const existingSize = existingFile.getSize();
+              // Lấy tất cả file cùng tên (có thể có nhiều)
+              const allFilesWithSameName = studentFolder.getFilesByName(fileName);
+              const existingFiles = [];
+              while (allFilesWithSameName.hasNext()) {
+                existingFiles.push(allFilesWithSameName.next());
+              }
+              
+              let shouldDelete = false;
+              
+              if (existingFiles.length > 0) {
+                Logger.log(`[FILE HANDLING] Tìm thấy ${existingFiles.length} file(s) cùng tên "${fileName}"`);
                 
-                if (fileSize > existingSize) {
-                  existingFile.setTrashed(true);
-                  file.moveTo(studentFolder);
-                  Logger.log(`Thay thế file cũ: "${fileName}" (${existingSize} → ${fileSize} bytes)`);
-                } else if (fileSize === existingSize) {
-                  file.setTrashed(true);
-                  Logger.log(`File trùng: "${fileName}" (${fileSize} bytes). Xóa bản mới.`);
-                } else {
-                  const newName = `${fileName.replace(/\.[^.]+$/, '')}_${Date.now()}${fileName.match(/\.[^.]+$/)[0]}`;
-                  file.setName(newName);
-                  file.moveTo(studentFolder);
-                  Logger.log(`Đổi tên file nhỏ hơn: "${fileName}" → "${newName}"`);
+                // Kiểm tra: CÙNG tên + CÙNG kích cỡ + CÙNG thời gian = XÓA file mới (duplicate hoàn toàn)
+                for (const existingFile of existingFiles) {
+                  const existingSize = existingFile.getSize();
+                  const existingTime = existingFile.getLastUpdated().getTime();
+                  
+                  if (fileSize === existingSize && fileTime === existingTime) {
+                    file.setTrashed(true);
+                    Logger.log(`[FILE HANDLING] ✓ DUPLICATE HOÀN TOÀN (cùng tên, kích cỡ, thời gian) → XÓA file mới.`);
+                    shouldDelete = true;
+                    break;
+                  }
+                }
+                
+                if (!shouldDelete) {
+                  // Nếu không phải duplicate hoàn toàn, kiểm tra size
+                  let isDifferentSize = false;
+                  
+                  for (const existingFile of existingFiles) {
+                    const existingSize = existingFile.getSize();
+                    const existingTime = existingFile.getLastUpdated().getTime();
+                    
+                    // CÙNG kích cỡ + KHÁC thời gian = giữ file MỚI HƠN, xóa file CỮ
+                    if (fileSize === existingSize && fileTime !== existingTime) {
+                      if (fileTime > existingTime) {
+                        existingFile.setTrashed(true);
+                        file.moveTo(studentFolder);
+                        Logger.log(`[FILE HANDLING] ✓ CÙNG KÍCH CỠ, KHÁC THỜI GIAN: File mới MỚI hơn → XÓA file cũ, GIỮ file mới.`);
+                      } else {
+                        file.setTrashed(true);
+                        Logger.log(`[FILE HANDLING] ✓ CÙNG KÍCH CỠ, KHÁC THỜI GIAN: File cũ MỚI hơn → XÓA file mới, GIỮ file cũ.`);
+                      }
+                      shouldDelete = true;
+                      break;
+                    }
+                    
+                    // Kiểm tra size khác
+                    if (fileSize !== existingSize) {
+                      isDifferentSize = true;
+                    }
+                  }
+                  
+                  // Nếu size khác → rename file với suffix để app.js phân biệt
+                  if (!shouldDelete && isDifferentSize) {
+                    const nameParts = fileName.lastIndexOf('.') > -1 
+                      ? [fileName.substring(0, fileName.lastIndexOf('.')), fileName.substring(fileName.lastIndexOf('.'))]
+                      : [fileName, ''];
+                    
+                    const baseFileName = nameParts[0];
+                    const fileExtension = nameParts[1];
+                    
+                    // Tìm suffix không trùng
+                    let suffix = 1;
+                    let newFileName = `${baseFileName}_${suffix}${fileExtension}`;
+                    while (doesFileExistInFolder(studentFolder, newFileName)) {
+                      suffix++;
+                      newFileName = `${baseFileName}_${suffix}${fileExtension}`;
+                    }
+                    
+                    file.setName(newFileName);
+                    file.moveTo(studentFolder);
+                    Logger.log(`[FILE HANDLING] ✓ KÍCH CỠ KHÁC: Rename "${fileName}" → "${newFileName}".`);
+                  }
                 }
               } else {
                 // Move file từ "File responses" sang folder học sinh
                 file.moveTo(studentFolder);
-                Logger.log(`✅ Di chuyển file: "${fileName}" vào "${studentFolder.getName()}"`);
+                Logger.log(`[FILE HANDLING] ✓ FILE MỚI → DI CHUYỂN: "${fileName}"`);
               }
               
               // Convert DOCX sang PDF nếu cần
@@ -748,12 +805,12 @@ function onFormSubmit(e, recipientEmail) {
               }
               
             } catch (fileErr) {
-              Logger.log(`❌ Lỗi xử lý file ID ${fileId}: ${fileErr.message}`);
+              Logger.log(`[FILE HANDLING] ❌ Lỗi xử lý file ID ${fileId}: ${fileErr.message}`);
             }
           });
         });
       } else {
-        Logger.log('Không có file upload trong form response');
+        Logger.log('[FILE HANDLING] Không có file upload trong form response');
       }
     }
     
@@ -1387,6 +1444,28 @@ function cleanEmails(assignmentType) {
     
   } catch (err) {
     Logger.log(`Lỗi xóa email: ${err.message}`);
+  }
+}
+
+/**
+ * (HELPER V24.10): Kiểm tra xem file có tên đã tồn tại trong folder
+ * (*** CẢI THIỆN: Thêm try-catch, logging chi tiết ***)
+ */
+function doesFileExistInFolder(parentFolder, fileName) {
+  try {
+    if (!parentFolder) {
+      Logger.log(`[FILE] ✗ Folder không tồn tại khi kiểm tra file "${fileName}"`);
+      return false;
+    }
+    const files = parentFolder.getFilesByName(fileName);
+    const exists = files.hasNext();
+    if (exists) {
+      Logger.log(`[FILE] ✓ File "${fileName}" đã tồn tại trong folder`);
+    }
+    return exists;
+  } catch (err) {
+    Logger.log(`[FILE] ✗ Lỗi kiểm tra file "${fileName}": ${err.message}`);
+    return false;
   }
 }
 

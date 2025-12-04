@@ -229,9 +229,13 @@ function doGet(e) {
 function onFormSubmit(e) {
   try {
     // === Phần 1: Lấy thông tin cơ bản ===
+    Logger.log(`\n========== BẮT ĐẦU XỬ LÝ FORM SUBMISSION ==========`);
+    
     const form = FormApp.getActiveForm();
     const formResponse = e.response;
     const now = new Date(); // Thời gian nộp BÀI GỐC
+    
+    Logger.log(`[SUBMISSION] Thời gian nộp: ${now.toLocaleString('vi-VN')}`);
     
     // (*** V14.1 : LOGIC DU DI ***)
     const adjustedTime = new Date(now.getTime() - GRACE_PERIOD_MINUTES * 60000);
@@ -469,8 +473,13 @@ function onFormSubmit(e) {
       Logger.log("Chưa cấu hình RECIPIENT_EMAIL. Bỏ qua bước gửi mail.");
     }
 
+    Logger.log(`\n========== KẾT THÚC XỬ LÝ FORM SUBMISSION ==========\n`);
+
   } catch (err) {
-    Logger.log(`Lỗi nghiêm trọng trong onFormSubmit: ${err.message}`);
+    Logger.log(`\n❌ ❌ ❌ LỖI NGHIÊM TRỌNG trong onFormSubmit ❌ ❌ ❌`);
+    Logger.log(`[ERROR] ${err.message}`);
+    Logger.log(`[STACK] ${err.stack}`);
+    Logger.log(`========== SUBMISSION FAILED ==========\n`);
   }
 }
 
@@ -479,43 +488,80 @@ function onFormSubmit(e) {
 // ------------------------------------------------------------------
 
 /**
- * HÀM (HỖ TRỢ - CẬP NHẬT V24.1): Xóa SẠCH (File + Folder) trong thư mục cha.
+ * HÀM (HỖ TRỢ - CẬP NHẬT V24.10): Xóa SẠCH (File + Folder) trong thư mục cha.
+ * (*** CẢI THIỆN: Thêm try-catch chi tiết, skip lỗi từng file, logging chi tiết ***)
  *
  * @param {GoogleAppsScript.Drive.Folder} parentFolder Thư mục cha cần dọn dẹp.
+ * @return {Object} {success: boolean, fileCount: number, folderCount: number, errors: string[]}
  */
 function clearFolderContents(parentFolder) {
+  const result = { success: false, fileCount: 0, folderCount: 0, errors: [] };
+  
   if (!parentFolder) {
-    Logger.log(`Lỗi (clearFolderContents): Thư mục cha không tồn tại hoặc ID sai.`);
-    return;
+    Logger.log(`[CLEANUP] ✗ LỖI: Thư mục cha không tồn tại hoặc ID sai.`);
+    result.errors.push("Thư mục cha không tồn tại");
+    return result;
   }
   
   const folderName = parentFolder.getName();
-  Logger.log(`Đang dọn dẹp TOÀN BỘ nội dung trong: "${folderName}"...`);
+  Logger.log(`[CLEANUP] Bắt đầu dọn dẹp TOÀN BỘ nội dung trong: "${folderName}"...`);
   
   try {
     // 1. Xóa tất cả các TỆP TIN (Files) nằm trực tiếp trong thư mục cha
-    const files = parentFolder.getFiles();
-    let fileCount = 0;
-    while (files.hasNext()) {
-      const file = files.next();
-      file.setTrashed(true);
-      fileCount++;
+    try {
+      const files = parentFolder.getFiles();
+      while (files.hasNext()) {
+        const file = files.next();
+        try {
+          file.setTrashed(true);
+          result.fileCount++;
+          Logger.log(`[CLEANUP] ✓ Xóa file: "${file.getName()}"`);
+        } catch (fileErr) {
+          const errorMsg = `Lỗi xóa file "${file.getName()}": ${fileErr.message}`;
+          Logger.log(`[CLEANUP] ✗ ${errorMsg}`);
+          result.errors.push(errorMsg);
+        }
+      }
+    } catch (filesErr) {
+      const errorMsg = `Lỗi liệt kê files: ${filesErr.message}`;
+      Logger.log(`[CLEANUP] ✗ ${errorMsg}`);
+      result.errors.push(errorMsg);
     }
 
     // 2. Xóa tất cả các THƯ MỤC CON (Folders)
-    const subfolders = parentFolder.getFolders();
-    let folderCount = 0;
-    while (subfolders.hasNext()) {
-      const folder = subfolders.next();
-      folder.setTrashed(true);
-      folderCount++;
+    try {
+      const subfolders = parentFolder.getFolders();
+      while (subfolders.hasNext()) {
+        const folder = subfolders.next();
+        try {
+          const folderSize = folder.getSize();
+          folder.setTrashed(true);
+          result.folderCount++;
+          Logger.log(`[CLEANUP] ✓ Xóa folder: "${folder.getName()}" (${folderSize} bytes)`);
+        } catch (folderErr) {
+          const errorMsg = `Lỗi xóa folder "${folder.getName()}": ${folderErr.message}`;
+          Logger.log(`[CLEANUP] ✗ ${errorMsg}`);
+          result.errors.push(errorMsg);
+        }
+      }
+    } catch (foldersErr) {
+      const errorMsg = `Lỗi liệt kê folders: ${foldersErr.message}`;
+      Logger.log(`[CLEANUP] ✗ ${errorMsg}`);
+      result.errors.push(errorMsg);
     }
     
-    Logger.log(`Đã dọn dẹp xong "${folderName}": Xóa ${fileCount} tệp và ${folderCount} thư mục con.`);
+    result.success = true;
+    Logger.log(`[CLEANUP] ✓ Dọn dẹp xong "${folderName}": Xóa ${result.fileCount} tệp và ${result.folderCount} thư mục con.`);
+    if (result.errors.length > 0) {
+      Logger.log(`[CLEANUP] ⚠ Có ${result.errors.length} lỗi trong quá trình dọn dẹp.`);
+    }
     
   } catch (err) {
-    Logger.log(`Lỗi khi dọn dẹp thư mục "${folderName}": ${err.message}`);
+    Logger.log(`[CLEANUP] ✗ LỖI CHUNG khi dọn dẹp "${folderName}": ${err.message}`);
+    result.errors.push(`Lỗi chung: ${err.message}`);
   }
+  
+  return result;
 }
 
 
@@ -860,27 +906,57 @@ function cleanupOldEmails(subjectTemplate) {
 }
 
 /**
- * HÀM (HỖ TRỢ): Dọn dẹp câu trả lời form cũ.
+ * HÀM (HỖ TRỢ - CẬP NHẬT V24.10): Dọn dẹp câu trả lời form cũ.
+ * (*** CẢI THIỆN: Thêm error handling chi tiết, logging, skip lỗi ***)
  * (Giữ nguyên V13/V24)
  */
 function cleanupOldFormResponses(form, assignmentTypeToDelete) {
-    Logger.log(`Bắt đầu xóa câu trả lời Form cho: "${assignmentTypeToDelete}"`);
+    Logger.log(`[CLEANUP_FORM] Bắt đầu xóa câu trả lời Form cho: "${assignmentTypeToDelete}"`);
     let deleteCount = 0;
+    let errorCount = 0;
+    
     try {
       const responses = form.getResponses();
       let assignmentQuestionItemId = null;
       const items = form.getItems();
+      
+      // Tìm ID của câu hỏi loại bài tập
       for (let i = 0; i < items.length; i++) {
         if (items[i].getTitle() === ASSIGNMENT_TYPE_QUESTION_TITLE) {
           assignmentQuestionItemId = items[i].getId();
+          Logger.log(`[CLEANUP_FORM] ✓ Tìm thấy câu hỏi ID=${assignmentQuestionItemId}`);
           break;
         }
       }
 
       if (assignmentQuestionItemId === null) {
-        Logger.log(`Không tìm thấy ID câu hỏi cho: "${ASSIGNMENT_TYPE_QUESTION_TITLE}". Không thể xóa câu trả lời.`);
+        Logger.log(`[CLEANUP_FORM] ✗ Không tìm thấy ID câu hỏi: "${ASSIGNMENT_TYPE_QUESTION_TITLE}". Không thể xóa câu trả lời.`);
         return;
       }
+      
+      // Xóa câu trả lời
+      for (let i = 0; i < responses.length; i++) {
+        try {
+          const response = responses[i];
+          const itemResponse = response.getResponseForItem(items[assignmentQuestionItemId]);
+          
+          if (itemResponse && itemResponse.getResponse() === assignmentTypeToDelete) {
+            form.deleteResponse(response.getId());
+            deleteCount++;
+            Logger.log(`[CLEANUP_FORM] ✓ Xóa câu trả lời #${i + 1}`);
+          }
+        } catch (responseErr) {
+          errorCount++;
+          Logger.log(`[CLEANUP_FORM] ⚠ Lỗi xóa câu trả lời #${i + 1}: ${responseErr.message}`);
+        }
+      }
+      
+      Logger.log(`[CLEANUP_FORM] ✓ Hoàn thành: Xóa ${deleteCount} câu trả lời, ${errorCount} lỗi`);
+      
+    } catch (err) {
+      Logger.log(`[CLEANUP_FORM] ✗ Lỗi chung khi dọn dẹp form: ${err.message}`);
+    }
+}
 
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i];
@@ -1074,34 +1150,71 @@ function getResponseByTitle(formResponse, title) {
 }
 
 /**
- * (Giữ nguyên V13) Lấy một thư mục. Nếu chưa có, tạo mới.
+ * (Giữ nguyên V13 - CẬP NHẬT V24.10) Lấy một thư mục. Nếu chưa có, tạo mới.
+ * (*** CẢI THIỆN: Thêm try-catch, logging chi tiết ***)
  */
 function getOrCreateFolder(root, folderName) {
-  const folders = root.getFoldersByName(folderName);
-  if (folders.hasNext()) {
-    return folders.next();
-  } else {
-    return root.createFolder(folderName);
+  try {
+    const folders = root.getFoldersByName(folderName);
+    if (folders.hasNext()) {
+      const folder = folders.next();
+      Logger.log(`[FOLDER] ✓ Sử dụng folder hiện tại: "${folderName}"`);
+      return folder;
+    } else {
+      const newFolder = root.createFolder(folderName);
+      Logger.log(`[FOLDER] ✓ Tạo folder mới: "${folderName}"`);
+      return newFolder;
+    }
+  } catch (err) {
+    Logger.log(`[FOLDER] ✗ Lỗi getOrCreateFolder "${folderName}": ${err.message}`);
+    return null;
   }
 }
 
 /**
- * (Giğữ nguyên V13) Lấy một thư mục chỉ bằng tên (không tạo mới).
+ * (Giữ nguyên V13) Lấy một thư mục chỉ bằng tên (không tạo mới).
  */
 function getFolderByName(root, folderName) {
-  const folders = root.getFoldersByName(folderName);
-  if (folders.hasNext()) {
-    return folders.next();
+  try {
+    const folders = root.getFoldersByName(folderName);
+    if (folders.hasNext()) {
+      const folder = folders.next();
+      Logger.log(`[FOLDER] ✓ Tìm thấy folder: "${folderName}"`);
+      
+      // Cảnh báo nếu có nhiều folders cùng tên
+      if (folders.hasNext()) {
+        Logger.log(`[FOLDER] ⚠ Cảnh báo: Có nhiều folders cùng tên "${folderName}". Sử dụng folder đầu tiên.`);
+      }
+      return folder;
+    }
+    Logger.log(`[FOLDER] ✗ Không tìm thấy folder: "${folderName}"`);
+    return null;
+  } catch (err) {
+    Logger.log(`[FOLDER] ✗ Lỗi khi tìm folder "${folderName}": ${err.message}`);
+    return null;
   }
-  return null;
 }
 
 /**
  * (HELPER V24.10): Kiểm tra xem file có tên đã tồn tại trong folder
+ * (*** CẢI THIỆN: Thêm try-catch, logging chi tiết ***)
  */
 function doesFileExistInFolder(parentFolder, fileName) {
-  const files = parentFolder.getFilesByName(fileName);
-  return files.hasNext();
+  try {
+    if (!parentFolder) {
+      Logger.log(`[FILE] ✗ Folder không tồn tại khi kiểm tra file "${fileName}"`);
+      return false;
+    }
+    const files = parentFolder.getFilesByName(fileName);
+    const exists = files.hasNext();
+    if (exists) {
+      Logger.log(`[FILE] ✓ File "${fileName}" đã tồn tại trong folder`);
+    }
+    return exists;
+  } catch (err) {
+    Logger.log(`[FILE] ✗ Lỗi kiểm tra file "${fileName}": ${err.message}`);
+    return false;
+  }
 }
 
 /**
@@ -1380,69 +1493,113 @@ function sendCorrectionEmail(suspectName, sheetName, sheetTabId, checkboxCol, be
 
 
 /**
- * HÀM (HỖ TRỢ MỚI V23): Chuẩn hóa chuỗi (Lowercase, Bỏ dấu, Xóa TẤT CẢ ngoặc, Xóa Tiền tố)
+ * HÀM (HỖ TRỢ MỚI V23 - CẬP NHẬT V24.10): Chuẩn hóa chuỗi (Lowercase, Bỏ dấu, Xóa TẤT CẢ ngoặc, Xóa Tiền tố)
+ * (*** CẢI THIỆN: Thêm error handling, logging chi tiết ***)
  * (Giữ nguyên V23)
  */
 function normalizeString(str) {
-  if (!str || typeof str !== 'string') {
+  try {
+    if (!str || typeof str !== 'string') {
+      Logger.log(`[NORMALIZE] ⚠ Chuỗi không hợp lệ: ${typeof str}`);
+      return "";
+    }
+    
+    const prefixRegex = new RegExp(`^(${PREFIX_KEYWORDS_TO_REMOVE.join("|")})\\s+`, 'g');
+    const original = str;
+    
+    let s = str.toLowerCase(); // (V23) Luôn lowercase ĐẦU TIÊN
+    
+    const normalized = s.trim()
+            .replace(prefixRegex, "") 
+            .replace(/[\(\[\{].*?[\)\]\}]/g, "") 
+            .replace(/[-_,\/\\|]/g, ' ')
+            .normalize('NFD') 
+            .replace(/[\u0300-\u036f]/g, '') 
+            .replace(/đ/g, 'd') 
+            .replace(/\s+/g, ' ') 
+            .trim();
+    
+    if (original !== normalized) {
+      Logger.log(`[NORMALIZE] Chuỗi chuẩn hóa: "${original}" → "${normalized}"`);
+    }
+    
+    return normalized;
+  } catch (err) {
+    Logger.log(`[NORMALIZE] ✗ Lỗi chuẩn hóa: ${err.message}`);
     return "";
   }
-  
-  const prefixRegex = new RegExp(`^(${PREFIX_KEYWORDS_TO_REMOVE.join("|")})\\s+`, 'g');
-
-  let s = str.toLowerCase(); // (V23) Luôn lowercase ĐẦU TIÊN
-
-  return s.trim()
-          .replace(prefixRegex, "") 
-          .replace(/[\(\[\{].*?[\)\]\}]/g, "") 
-          .replace(/[-_,\/\\|]/g, ' ')
-          .normalize('NFD') 
-          .replace(/[\u0300-\u036f]/g, '') 
-          .replace(/đ/g, 'd') 
-          .replace(/\s+/g, ' ') 
-          .trim(); 
 }
 
 /**
- * HÀM (HỖ TRỢ MỚI V11): Tính khoảng cách Levenshtein (Đo lường lỗi Typo)
+ * HÀM (HỖ TRỢ MỚI V11 - CẬP NHẬT V24.10): Tính khoảng cách Levenshtein (Đo lường lỗi Typo)
+ * (*** CẢI THIỆN: Thêm error handling, logging chi tiết ***)
  * (Giữ nguyên V13)
  */
 function levenshteinDistance(s1, s2) {
-  s1 = s1 || "";
-  s2 = s2 || "";
-  const m = s1.length;
-  const n = s2.length;
-  let dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(null));
-
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      let cost = (s1[i - 1] === s2[j - 1]) ? 0 : 1;
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,      // Deletion (Xóa)
-        dp[i][j - 1] + 1,      // Insertion (Chèn)
-        dp[i - 1][j - 1] + cost // Substitution (Thay thế)
-      );
+  try {
+    s1 = s1 || "";
+    s2 = s2 || "";
+    
+    // Validate input
+    if (typeof s1 !== 'string' || typeof s2 !== 'string') {
+      Logger.log(`[LEVENSHTEIN] ⚠ Input không hợp lệ: s1=${typeof s1}, s2=${typeof s2}`);
+      return Math.max(s1.length, s2.length);
     }
+    
+    const m = s1.length;
+    const n = s2.length;
+    let dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(null));
+
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        let cost = (s1[i - 1] === s2[j - 1]) ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,      // Deletion (Xóa)
+          dp[i][j - 1] + 1,      // Insertion (Chèn)
+          dp[i - 1][j - 1] + cost // Substitution (Thay thế)
+        );
+      }
+    }
+    
+    const distance = dp[m][n];
+    Logger.log(`[LEVENSHTEIN] Khoảng cách "${s1}" ↔ "${s2}": ${distance}`);
+    return distance;
+  } catch (err) {
+    Logger.log(`[LEVENSHTEIN] ✗ Lỗi tính toán: ${err.message}`);
+    return 999; // Trả về giá trị lớn để chỉ lỗi
   }
-  return dp[m][n];
 }
 
 /**
- * HÀM (HỖ TRỢ MỚI V14): Tìm một trang tính (tab) bằng GID của nó.
+ * HÀM (HỖ TRỢ MỚI V14 - CẬP NHẬT V24.10): Tìm một trang tính (tab) bằng GID của nó.
+ * (*** CẢI THIỆN: Thêm error handling, logging chi tiết ***)
  */
 function getSheetByTabId(spreadsheet, id) {
-  if (!spreadsheet || id == null) return null;
-  
-  const sheets = spreadsheet.getSheets();
-  for (let i = 0; i < sheets.length; i++) {
-    if (sheets[i].getSheetId() == id) { 
-      return sheets[i];
+  try {
+    if (!spreadsheet || id == null) {
+      Logger.log(`[SHEET] ✗ Spreadsheet không hợp lệ hoặc ID sai`);
+      return null;
     }
+    
+    const sheets = spreadsheet.getSheets();
+    Logger.log(`[SHEET] Tìm kiếm sheet với GID=${id} trong ${sheets.length} sheets`);
+    
+    for (let i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() == id) {
+        Logger.log(`[SHEET] ✓ Tìm thấy sheet: "${sheets[i].getName()}" (GID=${id})`);
+        return sheets[i];
+      }
+    }
+    
+    Logger.log(`[SHEET] ✗ Không tìm thấy sheet với GID=${id}`);
+    return null; // Không tìm thấy
+  } catch (err) {
+    Logger.log(`[SHEET] ✗ Lỗi khi tìm sheet GID=${id}: ${err.message}`);
+    return null;
   }
-  return null; // Không tìm thấy
 }
 
 /**
