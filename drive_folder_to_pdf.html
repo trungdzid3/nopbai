@@ -287,9 +287,17 @@
         }
 
         body[data-design="apple"] .m3-button-filled {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
-            color: var(--c-content);
+            background-color: var(--c-action);
+            color: #fff;
             border: none;
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
+                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
         }
 
         body[data-design="apple"].dark .m3-button-filled,
@@ -307,7 +315,13 @@
         }
 
         body[data-design="apple"] .m3-button-filled:hover {
-            background-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+            background-color: color-mix(in srgb, var(--c-action) 90%, transparent);
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 45%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                0px 16px 40px color-mix(in srgb, var(--c-action) 70%, transparent),
+                0px 8px 20px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
         }
 
         body[data-design="apple"].dark .m3-button-filled:hover,
