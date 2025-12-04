@@ -567,9 +567,15 @@
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
-            color: var(--c-content);
-            backdrop-filter: blur(5px) url(#liquid-filter);
+            background-color: var(--c-action);
+            color: #fff;
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
+                        inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                        0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
+                        0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
+                        0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
@@ -586,7 +592,7 @@
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
-            background-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+            background-color: color-mix(in srgb, var(--c-action) 90%, transparent);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"]:hover,
