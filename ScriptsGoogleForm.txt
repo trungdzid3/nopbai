@@ -348,33 +348,39 @@ function onFormSubmit(e) {
             const fileSize = file.getSize();
             const fileTime = file.getLastUpdated().getTime();
             
+            Logger.log(`[FILE HANDLING] Xử lý tệp: "${fileName}" (${fileSize} bytes) cho học sinh "${studentName}"`);
+            
             // Kiểm tra xem file cùng tên đã có trong folder không
             const existingFilesIter = studentFolder.getFilesByName(fileName);
             if (existingFilesIter.hasNext()) {
+              // File tên giống đã tồn tại
               const existingFile = existingFilesIter.next();
               const existingSize = existingFile.getSize();
               const existingTime = existingFile.getLastUpdated().getTime();
               
+              Logger.log(`[FILE HANDLING] File tên "${fileName}" đã tồn tại trong folder. Existing: ${existingSize}B, New: ${fileSize}B`);
+              
               // Nếu cùng kích cỡ → xóa file mới (giả định là file trùng)
               if (fileSize === existingSize) {
                 file.setTrashed(true);
-                Logger.log(`Tệp "${fileName}" đã tồn tại với cùng kích cỡ (${fileSize} bytes). Xóa file mới.`);
+                Logger.log(`[FILE HANDLING] ✓ Xóa file mới (duplicate): "${fileName}" - cùng kích cỡ (${fileSize} bytes).`);
               } else {
-                // Kích cỡ khác → giữ cả 2, di chuyển file mới
-                // (app.js sẽ sắp xếp theo thời gian tạo tự động)
+                // Kích cỡ khác → giữ cả 2, di chuyển file mới vào folder
                 file.moveTo(studentFolder);
-                Logger.log(`Tệp "${fileName}" đã tồn tại nhưng kích cỡ khác (${existingSize} vs ${fileSize} bytes). Giữ cả 2 file. (app.js sẽ xử lý sắp xếp).`);
+                Logger.log(`[FILE HANDLING] ✓ Di chuyển file mới vào folder (kích cỡ khác): "${fileName}" (${existingSize}B vs ${fileSize}B).`);
               }
             } else {
               // File không tồn tại trong folder → di chuyển file vào folder
               file.moveTo(studentFolder);
-              Logger.log(`Đã di chuyển tệp "${fileName}" vào thư mục "${studentFolder.getName()}".`);
+              Logger.log(`[FILE HANDLING] ✓ Di chuyển file MỚI vào folder: "${fileName}" (${fileSize} bytes).`);
             }
           } catch (fileErr) {
-            Logger.log(`Lỗi khi xử lý tệp ID ${fileId} (onFormSubmit): ${fileErr.message}`);
+            Logger.log(`[FILE HANDLING] LỖI khi xử lý tệp ID ${fileId}: ${fileErr.message}`);
           }
         });
       });
+    } else {
+      Logger.log(`[FILE HANDLING] Không có tệp nào được nộp cho học sinh "${studentName}".`);
     }
 
     // === Phần 4: (*** CẬP NHẬT V24 ***) Cập nhật Google Sheet (Logic 4 Giai đoạn) ===
@@ -1035,6 +1041,7 @@ function getFolderByName(root, folderName) {
 /**
  * (Giữ nguyên V23: Dùng logic "Smart Match" (A.every || B.every))
  * Tìm kiếm thông minh một thư mục con dựa trên tên học sinh.
+ * (*** CẬP NHẬT V24.9: Cải thiện để đảm bảo tìm thấy folder ngay cả sau cleanup ***)
  */
 function findExistingStudentFolder(parentFolder, studentName) {
   try {
@@ -1042,6 +1049,8 @@ function findExistingStudentFolder(parentFolder, studentName) {
     const studentNameWords = studentNameNormalized.split(/\s+/).filter(Boolean);
     const allSubfolders = parentFolder.getFolders();
     let foundFolders = [];
+
+    Logger.log(`[FOLDER SEARCH] Tìm kiếm folder cho học sinh: "${studentName}" (normalized: "${studentNameNormalized}")`);
 
     while (allSubfolders.hasNext()) {
       const folder = allSubfolders.next();
@@ -1056,21 +1065,25 @@ function findExistingStudentFolder(parentFolder, studentName) {
       const folderWordsInStudent = folderNameWords.every(word => studentNameWords.includes(word));
 
       if (studentWordsInFolder || folderWordsInStudent) {
+        Logger.log(`[FOLDER SEARCH] ✓ Tìm thấy folder khớp: "${folderName}" (normalized: "${folderNameNormalized}")`);
         foundFolders.push(folder);
       }
     }
 
     if (foundFolders.length === 1) {
+      Logger.log(`[FOLDER SEARCH] ✓ Xác định 1 folder khớp duy nhất: "${foundFolders[0].getName()}"`);
       return foundFolders[0];
     } else if (foundFolders.length > 1) {
-       Logger.log(`Tìm thấy ${foundFolders.length} thư mục khớp với "${studentName}". Sẽ tạo thư mục mới để tránh nhầm lẫn.`);
+       Logger.log(`[FOLDER SEARCH] ⚠ Tìm thấy ${foundFolders.length} thư mục khớp với "${studentName}". Sẽ tạo thư mục mới để tránh nhầm lẫn.`);
+       Logger.log(`[FOLDER SEARCH] Các folder tìm thấy: ${foundFolders.map(f => f.getName()).join(", ")}`);
        return null;
     } else {
+       Logger.log(`[FOLDER SEARCH] ✗ Không tìm thấy folder nào khớp với "${studentName}". Sẽ tạo thư mục mới.`);
        return null;
     }
 
   } catch (err) {
-       Logger.log(`Lỗi khi tìm kiếm thư mục thông minh: ${err.message}`);
+       Logger.log(`[FOLDER SEARCH] LỖI: Lỗi khi tìm kiếm thư mục thông minh: ${err.message}`);
        return null;
   }
 }
