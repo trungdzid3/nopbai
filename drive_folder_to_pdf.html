@@ -259,146 +259,107 @@
         }
 
         /* ==================================================================
-       2.5. GIAO DIỆN NEO-BRUTALISM (New Creative Theme)
+       2.5. GIAO DIỆN MODERN (Gradient & Glass)
        ================================================================== */
-        body[data-design="neo"] {
-            --font-family: 'Courier New', Courier, monospace;
-            
-            /* Neo Colors */
-            --neo-bg: #FFDEE9;
-            --neo-bg-gradient: linear-gradient(0deg, #FFDEE9 0%, #B5FFFC 100%);
-            --neo-surface: #FFFFFF;
-            --neo-border: #000000;
-            --neo-shadow: #000000;
-            --neo-primary: #FF0080; /* Hot Pink */
-            --neo-secondary: #7928CA; /* Purple */
+        body[data-design="modern"] {
+            --font-family: 'Be Vietnam Pro', sans-serif;
             
             /* Override Material Variables */
-            --m3-background: #B5FFFC; /* Fallback */
-            --m3-surface: #FFFFFF;
-            --m3-surface-container: #FFFFFF;
-            --m3-surface-container-highest: #FFFFFF;
-            --m3-surface-variant: #F0F0F0;
+            --m3-background: transparent;
+            --m3-surface: rgba(255, 255, 255, 0.7);
+            --m3-surface-container: rgba(255, 255, 255, 0.6);
+            --m3-surface-container-highest: rgba(255, 255, 255, 0.5);
+            --m3-surface-variant: rgba(255, 255, 255, 0.4);
             
-            --m3-on-surface: #000000;
-            --m3-on-surface-variant: #000000;
-            --m3-on-background: #000000;
+            --m3-on-surface: #1e293b;
+            --m3-on-surface-variant: #475569;
+            --m3-on-background: #0f172a;
             
-            --m3-outline: #000000;
-            --m3-outline-variant: #000000;
+            --m3-outline: rgba(148, 163, 184, 0.4);
+            --m3-outline-variant: rgba(148, 163, 184, 0.2);
             
-            --m3-primary: var(--neo-primary);
+            --m3-primary: #3b82f6;
             --m3-on-primary: #FFFFFF;
             
             /* Shapes */
-            --radius-card: 0px;
-            --radius-btn: 0px;
-            --radius-input: 0px;
-            
-            /* Border Width */
-            --border-width: 2px;
-            --shadow-offset: 4px;
+            --radius-card: 24px;
+            --radius-btn: 14px;
+            --radius-input: 12px;
         }
 
-        body[data-design="neo"]::before {
+        body[data-design="modern"]::before {
             content: "";
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: var(--neo-bg-gradient);
+            background: #e0c3fc;
+            background-image: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
             opacity: 1;
+            transition: background-image 0.5s ease;
         }
 
-        /* Neo Components */
-        body[data-design="neo"] .m3-button,
-        body[data-design="neo"] .m3-setting-card,
-        body[data-design="neo"] .m3-modal-content,
-        body[data-design="neo"] .m3-input,
-        body[data-design="neo"] .m3-select,
-        body[data-design="neo"] .assignment-chip,
-        body[data-design="neo"] .custom-dropdown-trigger,
-        body[data-design="neo"] .custom-dropdown-menu {
-            border: var(--border-width) solid var(--neo-border) !important;
-            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px var(--neo-shadow) !important;
-            border-radius: 0px !important;
-            transition: all 0.1s ease;
+        body[data-design="modern"].dark::before {
+            background-image: linear-gradient(to top, #09203f 0%, #537895 100%);
         }
 
-        body[data-design="neo"] .m3-button:active,
-        body[data-design="neo"] .custom-dropdown-trigger:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px var(--neo-shadow) !important;
+        /* Modern Components */
+        body[data-design="modern"] .m3-setting-card,
+        body[data-design="modern"] .m3-modal-content,
+        body[data-design="modern"] aside {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
         }
 
-        body[data-design="neo"] .m3-button-filled {
-            background-color: var(--neo-primary);
-            color: #FFFFFF;
-            font-weight: bold;
-            text-transform: uppercase;
+        body[data-design="modern"].dark .m3-setting-card,
+        body[data-design="modern"].dark .m3-modal-content,
+        body[data-design="modern"].dark aside {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f8fafc;
         }
 
-        body[data-design="neo"] .m3-button-tonal {
-            background-color: #FFFFFF;
-            color: #000000;
+        /* Buttons */
+        body[data-design="modern"] .m3-button-filled {
+            background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            color: white;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        body[data-design="neo"] .m3-button-tonal:hover {
-            background-color: #F0F0F0;
+        body[data-design="modern"] .m3-button-filled:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
         }
-
-        /* Sidebar & Containers */
-        body[data-design="neo"] aside {
-            background-color: rgba(255, 255, 255, 0.5);
-            border-right: var(--border-width) solid var(--neo-border);
+        
+        body[data-design="modern"].dark .m3-button-filled {
+            background-image: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
+            color: #0f172a;
+            box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
         }
 
         /* Status List */
-        body[data-design="neo"] #submission-status-list li {
-            border: var(--border-width) solid var(--neo-border);
-            box-shadow: 2px 2px 0px var(--neo-shadow);
+        body[data-design="modern"] #submission-status-list li {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             margin-bottom: 8px;
-            background: #FFFFFF;
-            border-radius: 0px;
-            font-weight: bold;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="submitted"] {
-            background-color: #A7F3D0; /* Green */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="processed"] {
-            background-color: #DDD6FE; /* Purple */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="overdue"] {
-            background-color: #FDE047; /* Yellow */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="error"] {
-            background-color: #FECACA; /* Red */
-            color: #000000;
+            border-radius: 16px;
+            backdrop-filter: blur(4px);
         }
 
-        /* Dark Mode Neo */
-        body[data-design="neo"].dark {
-            --neo-bg-gradient: linear-gradient(0deg, #2d3436 0%, #000000 100%);
-            --neo-surface: #000000;
-            --neo-border: #FFFFFF;
-            --neo-shadow: #FFFFFF;
-            --m3-on-surface: #FFFFFF;
-            --m3-on-surface-variant: #FFFFFF;
-            --m3-outline: #FFFFFF;
+        body[data-design="modern"].dark #submission-status-list li {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
         }
         
-        body[data-design="neo"].dark .m3-button,
-        body[data-design="neo"].dark .m3-setting-card,
-        body[data-design="neo"].dark .m3-modal-content {
-            background-color: #000000;
-            color: #FFFFFF;
-        }
+        /* Text Colors in Dark Mode */
+        body[data-design="modern"].dark .text-on-surface { color: #f1f5f9; }
+        body[data-design="modern"].dark .text-on-surface-variant { color: #cbd5e1; }
 
         /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
 
@@ -2697,7 +2658,7 @@
                                     data-value="apple">Liquid Glass</button>
                                 <button id="design-neo"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
-                                    data-value="neo">Neo-Brutalism</button>
+                                    data-value="modern">Modern</button>
                             </div>
                         </section>
                         <section class="m3-setting-card rounded-2xl">
