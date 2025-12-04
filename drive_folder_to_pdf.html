@@ -259,485 +259,290 @@
         }
 
         /* ==================================================================
-       2.5. GIAO DIỆN NEO-BRUTALISM (Restored & Improved)
+       2.5. GIAO DIỆN FLUENT (Microsoft Fluent Design + Acrylic)
        ================================================================== */
-        body[data-design="neo"] {
-            --font-family: 'Courier New', Courier, monospace;
+        body[data-design="fluent"] {
+            --font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             
-            /* Neo Colors */
-            --neo-bg: #FFDEE9;
-            --neo-bg-gradient: linear-gradient(0deg, #FFDEE9 0%, #B5FFFC 100%);
-            --neo-surface: #FFFFFF;
-            --neo-border: #000000;
-            --neo-shadow: #000000;
-            --neo-primary: #FF0080; /* Hot Pink */
-            --neo-secondary: #7928CA; /* Purple */
-            
-            /* Override Material Variables */
-            --m3-background: #B5FFFC; /* Fallback */
-            --m3-surface: #FFFFFF;
-            --m3-surface-container: #FFFFFF;
-            --m3-surface-container-highest: #FFFFFF;
-            --m3-surface-variant: #F0F0F0;
-            
-            --m3-on-surface: #000000;
-            --m3-on-surface-variant: #000000;
-            --m3-on-background: #000000;
-            
-            --m3-outline: #000000;
-            --m3-outline-variant: #000000;
-            
-            --m3-primary: var(--neo-primary);
-            --m3-on-primary: #FFFFFF;
-            
-            /* Shapes */
-            --radius-card: 0px;
-            --radius-btn: 0px;
-            --radius-input: 0px;
-            
-            /* Border Width */
-            --border-width: 2px;
-            --shadow-offset: 4px;
-        }
-
-        body[data-design="neo"]::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: var(--neo-bg-gradient);
-            opacity: 1;
-        }
-
-        /* Neo Components */
-        body[data-design="neo"] .m3-button,
-        body[data-design="neo"] .m3-setting-card,
-        body[data-design="neo"] .m3-modal-content,
-        body[data-design="neo"] .m3-input,
-        body[data-design="neo"] .m3-select,
-        body[data-design="neo"] .assignment-chip,
-        body[data-design="neo"] .custom-dropdown-trigger,
-        body[data-design="neo"] .custom-dropdown-menu {
-            border: var(--border-width) solid var(--neo-border) !important;
-            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px var(--neo-shadow) !important;
-            border-radius: 0px !important;
-            transition: all 0.1s ease;
-        }
-
-        body[data-design="neo"] .m3-button:active,
-        body[data-design="neo"] .custom-dropdown-trigger:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px var(--neo-shadow) !important;
-        }
-
-        body[data-design="neo"] .m3-button-filled {
-            background-color: var(--neo-primary);
-            color: #FFFFFF;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        body[data-design="neo"] .m3-button-tonal {
-            background-color: #FFFFFF;
-            color: #000000;
-        }
-        
-        body[data-design="neo"] .m3-button-tonal:hover {
-            background-color: #F0F0F0;
-        }
-
-        /* Sidebar & Containers */
-        body[data-design="neo"] aside {
-            background-color: rgba(255, 255, 255, 0.5);
-            border-right: var(--border-width) solid var(--neo-border);
-        }
-
-        /* Status List */
-        body[data-design="neo"] #submission-status-list li {
-            border: var(--border-width) solid var(--neo-border);
-            box-shadow: 2px 2px 0px var(--neo-shadow);
-            margin-bottom: 8px;
-            background: #FFFFFF;
-            border-radius: 0px;
-            font-weight: bold;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="submitted"] {
-            background-color: #A7F3D0; /* Green */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="processed"] {
-            background-color: #DDD6FE; /* Purple */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="overdue"] {
-            background-color: #FDE047; /* Yellow */
-            color: #000000;
-        }
-        
-        body[data-design="neo"] #submission-status-list li[data-status="error"] {
-            background-color: #FECACA; /* Red */
-            color: #000000;
-        }
-
-        /* Dark Mode Neo (REDESIGNED - CYBERPUNK STYLE) */
-        body[data-design="neo"].dark {
-            --neo-bg-gradient: linear-gradient(135deg, #0a0e27 0%, #1a0e2e 100%);
-            --neo-surface: #1a0e2e;
-            --neo-border: #00ff9f; /* Neon Green */
-            --neo-shadow: #00ff9f;
-            --neo-primary: #ff2a6d; /* Hot Pink */
-            --neo-accent: #05d9e8; /* Cyan */
-            --m3-on-surface: #ffffff;
-            --m3-on-surface-variant: #b8c5d6;
-            --m3-outline: #00ff9f;
-            --m3-background: #0a0e27;
-        }
-        
-        body[data-design="neo"].dark::before {
-            background: var(--neo-bg-gradient);
-            animation: nebula 20s ease infinite;
-        }
-        
-        @keyframes nebula {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-        
-        body[data-design="neo"].dark .m3-button,
-        body[data-design="neo"].dark .m3-setting-card,
-        body[data-design="neo"].dark .m3-modal-content,
-        body[data-design="neo"].dark aside,
-        body[data-design="neo"].dark .m3-input,
-        body[data-design="neo"].dark .m3-select,
-        body[data-design="neo"].dark .custom-dropdown-trigger,
-        body[data-design="neo"].dark .custom-dropdown-menu {
-            background-color: #1a0e2e;
-            color: #FFFFFF;
-            border-color: var(--neo-border) !important;
-            box-shadow: 4px 4px 0px var(--neo-shadow) !important;
-        }
-
-        body[data-design="neo"].dark .m3-button:active {
-            box-shadow: 2px 2px 0px var(--neo-shadow) !important;
-        }
-        
-        body[data-design="neo"].dark .m3-button-filled {
-            background: linear-gradient(135deg, #ff2a6d 0%, #05d9e8 100%);
-            border-color: #05d9e8 !important;
-            box-shadow: 4px 4px 0px #05d9e8, 0 0 20px rgba(5, 217, 232, 0.3) !important;
-        }
-        
-        body[data-design="neo"].dark .m3-button-filled:hover {
-            box-shadow: 4px 4px 0px #05d9e8, 0 0 30px rgba(5, 217, 232, 0.5) !important;
-        }
-        
-        body[data-design="neo"].dark #submission-status-list li {
-            background-color: #1a0e2e;
-            border-color: var(--neo-border) !important;
-        }
-        
-        body[data-design="neo"].dark #submission-status-list li[data-status="submitted"] {
-            background-color: #1a0e2e;
-            border-color: #00ff9f !important;
-            box-shadow: 2px 2px 0px #00ff9f, inset 0 0 10px rgba(0, 255, 159, 0.2) !important;
-        }
-        
-        body[data-design="neo"].dark #submission-status-list li[data-status="processed"] {
-            background-color: #1a0e2e;
-            border-color: #05d9e8 !important;
-            box-shadow: 2px 2px 0px #05d9e8, inset 0 0 10px rgba(5, 217, 232, 0.2) !important;
-        }
-        
-        body[data-design="neo"].dark #submission-status-list li[data-status="overdue"] {
-            background-color: #1a0e2e;
-            border-color: #ffd60a !important;
-            box-shadow: 2px 2px 0px #ffd60a, inset 0 0 10px rgba(255, 214, 10, 0.2) !important;
-        }
-        
-        body[data-design="neo"].dark #submission-status-list li[data-status="error"] {
-            background-color: #1a0e2e;
-            border-color: #ff2a6d !important;
-            box-shadow: 2px 2px 0px #ff2a6d, inset 0 0 10px rgba(255, 42, 109, 0.2) !important;
-        }
-
-        body[data-design="neo"].dark .text-on-surface,
-        body[data-design="neo"].dark .text-on-surface-variant {
-            color: #FFFFFF !important;
-        }
-
-        /* ==================================================================
-       2.6. GIAO DIỆN MODERN (REDESIGNED - AURORA GRADIENT)
-       ================================================================== */
-        body[data-design="modern"] {
-            --font-family: 'Be Vietnam Pro', sans-serif;
-            
-            /* Modern Palette */
-            --modern-primary: #667eea; /* Indigo */
-            --modern-secondary: #764ba2; /* Purple */
-            --modern-accent: #f093fb; /* Pink */
-            --modern-success: #4facfe; /* Blue */
+            /* Fluent Colors */
+            --fluent-primary: #0078d4;
+            --fluent-primary-hover: #106ebe;
+            --fluent-accent: #8764b8;
+            --fluent-success: #107c10;
+            --fluent-warning: #faa21b;
+            --fluent-error: #d13438;
             
             /* Override Material Variables */
             --m3-background: transparent;
-            --m3-surface: rgba(255, 255, 255, 0.85);
-            --m3-surface-container: rgba(255, 255, 255, 0.75);
-            --m3-surface-container-highest: rgba(255, 255, 255, 0.65);
-            --m3-surface-variant: rgba(255, 255, 255, 0.55);
+            --m3-surface: rgba(243, 243, 243, 0.7);
+            --m3-surface-container: rgba(249, 249, 249, 0.8);
+            --m3-surface-container-highest: rgba(255, 255, 255, 0.9);
+            --m3-surface-variant: rgba(245, 245, 245, 0.75);
             
-            --m3-on-surface: #2d3748;
-            --m3-on-surface-variant: #4a5568;
-            --m3-on-background: #1a202c;
+            --m3-on-surface: #201f1e;
+            --m3-on-surface-variant: #605e5c;
+            --m3-on-background: #323130;
             
-            --m3-outline: rgba(102, 126, 234, 0.2);
-            --m3-outline-variant: rgba(102, 126, 234, 0.1);
+            --m3-outline: rgba(0, 120, 212, 0.2);
+            --m3-outline-variant: rgba(0, 120, 212, 0.1);
             
-            --m3-primary: var(--modern-primary);
+            --m3-primary: var(--fluent-primary);
             --m3-on-primary: #FFFFFF;
             
-            /* Shapes */
-            --radius-card: 20px;
-            --radius-btn: 16px;
-            --radius-input: 14px;
+            /* Shapes - Fluent uses subtle rounded corners */
+            --radius-card: 8px;
+            --radius-btn: 4px;
+            --radius-input: 4px;
         }
 
-        body[data-design="modern"]::before {
+        /* Light Mode Background */
+        body[data-design="fluent"]::before {
             content: "";
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            opacity: 0.15;
-            transition: all 0.5s ease;
-        }
-        
-        body[data-design="modern"]::after {
-            content: "";
-            position: fixed;
-            inset: 0;
-            z-index: -2;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            animation: aurora 15s ease infinite;
-        }
-        
-        @keyframes aurora {
-            0%, 100% { 
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            }
-            25% {
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            }
-            50% {
-                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            }
-            75% {
-                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            }
+            background: linear-gradient(135deg, #e3edf7 0%, #f3f4f6 50%, #e5e7eb 100%);
+            opacity: 1;
         }
 
-        body[data-design="modern"].dark::before {
-            opacity: 0.3;
-        }
-        
-        body[data-design="modern"].dark::after {
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-            animation: none;
-        }
-
-        /* Modern Components */
-        body[data-design="modern"] .m3-setting-card,
-        body[data-design="modern"] .m3-modal-content,
-        body[data-design="modern"] aside {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(30px) saturate(150%);
-            -webkit-backdrop-filter: blur(30px) saturate(150%);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        /* Dark Mode */
+        body[data-design="fluent"].dark {
+            --m3-surface: rgba(32, 31, 30, 0.7);
+            --m3-surface-container: rgba(37, 36, 35, 0.8);
+            --m3-surface-container-highest: rgba(43, 42, 41, 0.9);
+            --m3-surface-variant: rgba(50, 49, 48, 0.75);
+            
+            --m3-on-surface: #ffffff;
+            --m3-on-surface-variant: #d2d0ce;
+            --m3-on-background: #f3f2f1;
+            
+            --m3-outline: rgba(99, 162, 230, 0.3);
+            --fluent-primary: #60cdff;
         }
 
-        body[data-design="modern"].dark .m3-setting-card,
-        body[data-design="modern"].dark .m3-modal-content,
-        body[data-design="modern"].dark aside {
-            background: rgba(26, 32, 44, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            color: #f7fafc;
+        body[data-design="fluent"].dark::before {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d30 50%, #1e1e1e 100%);
         }
 
-        /* Creative Buttons with Shine Effect */
-        body[data-design="modern"] .m3-button-filled {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        /* Acrylic Effect - Blurred translucent surfaces */
+        body[data-design="fluent"] .m3-setting-card,
+        body[data-design="fluent"] .m3-modal-content,
+        body[data-design="fluent"] aside {
+            background: rgba(252, 252, 252, 0.85);
+            backdrop-filter: blur(40px) saturate(125%);
+            -webkit-backdrop-filter: blur(40px) saturate(125%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.13),
+                        0 0.3px 0.9px rgba(0, 0, 0, 0.11);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body[data-design="fluent"] .m3-setting-card:hover,
+        body[data-design="fluent"] .m3-modal-content:hover {
+            box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.13),
+                        0 0.6px 1.8px rgba(0, 0, 0, 0.11);
+        }
+
+        body[data-design="fluent"].dark .m3-setting-card,
+        body[data-design="fluent"].dark .m3-modal-content,
+        body[data-design="fluent"].dark aside {
+            background: rgba(32, 31, 30, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.26),
+                        0 0.3px 0.9px rgba(0, 0, 0, 0.22);
+        }
+
+        /* Fluent Buttons with Reveal Effect */
+        body[data-design="fluent"] .m3-button-filled {
+            background: var(--fluent-primary);
+            border: 1px solid transparent;
             color: white;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
-        
-        body[data-design="modern"] .m3-button-filled::before {
+
+        body[data-design="fluent"] .m3-button-filled::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, 
-                transparent 30%, 
-                rgba(255, 255, 255, 0.3) 50%, 
-                transparent 70%);
-            transform: rotate(45deg);
-            transition: all 0.6s ease;
-        }
-        
-        body[data-design="modern"] .m3-button-filled:hover::before {
-            left: 100%;
-        }
-        
-        body[data-design="modern"] .m3-button-filled span {
-            position: relative;
-            z-index: 2;
-        }
-        
-        body[data-design="modern"] .m3-button-filled:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        body[data-design="modern"] .m3-button-filled:active {
-            transform: translateY(0px);
-            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
         }
 
-        body[data-design="modern"].dark .m3-button-filled {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-        
-        body[data-design="modern"].dark .m3-button-filled:hover {
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        body[data-design="fluent"] .m3-button-filled:hover {
+            background: var(--fluent-primary-hover);
+            box-shadow: 0 0.3px 0.9px rgba(0, 0, 0, 0.1),
+                        0 1.6px 3.6px rgba(0, 0, 0, 0.13);
         }
 
-        /* Modern Inputs with Focus Animation */
-        body[data-design="modern"] .m3-input,
-        body[data-design="modern"] .m3-select {
-            background: rgba(255, 255, 255, 0.6);
-            border: 2px solid rgba(102, 126, 234, 0.2);
-            transition: all 0.3s ease;
-        }
-        
-        body[data-design="modern"] .m3-input:focus,
-        body[data-design="modern"] .m3-select:focus {
-            background: rgba(255, 255, 255, 0.95);
-            border-color: var(--modern-primary);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15),
-                        0 4px 12px rgba(102, 126, 234, 0.2);
-            transform: scale(1.01);
+        body[data-design="fluent"] .m3-button-filled:active::before {
+            width: 300px;
+            height: 300px;
         }
 
-        body[data-design="modern"].dark .m3-input,
-        body[data-design="modern"].dark .m3-select {
-            background: rgba(26, 32, 44, 0.6);
-            border-color: rgba(79, 172, 254, 0.3);
-            color: #FFFFFF;
-        }
-        
-        body[data-design="modern"].dark .m3-input:focus,
-        body[data-design="modern"].dark .m3-select:focus {
-            background: rgba(26, 32, 44, 0.9);
-            border-color: #4facfe;
-            box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2),
-                        0 4px 12px rgba(79, 172, 254, 0.3);
+        body[data-design="fluent"].dark .m3-button-filled {
+            background: var(--fluent-primary);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* Status List - Animated Cards */
-        body[data-design="modern"] #submission-status-list li {
+        body[data-design="fluent"].dark .m3-button-filled:hover {
+            background: #4fb3f6;
+        }
+
+        /* Fluent Tonal Buttons */
+        body[data-design="fluent"] .m3-button-tonal,
+        body[data-design="fluent"] .m3-button-outlined {
+            background: rgba(0, 120, 212, 0.05);
+            border: 1px solid rgba(0, 120, 212, 0.2);
+            color: var(--fluent-primary);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body[data-design="fluent"] .m3-button-tonal:hover,
+        body[data-design="fluent"] .m3-button-outlined:hover {
+            background: rgba(0, 120, 212, 0.1);
+            border-color: rgba(0, 120, 212, 0.3);
+        }
+
+        body[data-design="fluent"].dark .m3-button-tonal,
+        body[data-design="fluent"].dark .m3-button-outlined {
+            background: rgba(96, 205, 255, 0.08);
+            border-color: rgba(96, 205, 255, 0.25);
+            color: var(--fluent-primary);
+        }
+
+        body[data-design="fluent"].dark .m3-button-tonal:hover,
+        body[data-design="fluent"].dark .m3-button-outlined:hover {
+            background: rgba(96, 205, 255, 0.15);
+            border-color: rgba(96, 205, 255, 0.4);
+        }
+
+        /* Fluent Inputs */
+        body[data-design="fluent"] .m3-input,
+        body[data-design="fluent"] .m3-select {
             background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid transparent;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 2px solid rgba(0, 120, 212, 0.3);
+            transition: all 0.2s ease;
         }
-        
-        body[data-design="modern"] #submission-status-list li::before {
+
+        body[data-design="fluent"] .m3-input:hover,
+        body[data-design="fluent"] .m3-select:hover {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body[data-design="fluent"] .m3-input:focus,
+        body[data-design="fluent"] .m3-select:focus {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.1);
+            border-bottom-color: var(--fluent-primary);
+            box-shadow: 0 0 0 1px var(--fluent-primary);
+        }
+
+        body[data-design="fluent"].dark .m3-input,
+        body[data-design="fluent"].dark .m3-select {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            border-bottom-color: rgba(96, 205, 255, 0.4);
+            color: #ffffff;
+        }
+
+        body[data-design="fluent"].dark .m3-input:focus,
+        body[data-design="fluent"].dark .m3-select:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-bottom-color: var(--fluent-primary);
+            box-shadow: 0 0 0 1px var(--fluent-primary);
+        }
+
+        /* Status List - Fluent Style */
+        body[data-design="fluent"] #submission-status-list li {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-left: 3px solid transparent;
+            margin-bottom: 6px;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body[data-design="fluent"] #submission-status-list li:hover {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.08);
+            transform: translateX(3px);
+            box-shadow: 0 0.3px 0.9px rgba(0, 0, 0, 0.1),
+                        0 1.6px 3.6px rgba(0, 0, 0, 0.13);
+        }
+
+        body[data-design="fluent"] #submission-status-list li[data-status="submitted"] {
+            border-left-color: var(--fluent-success);
+        }
+
+        body[data-design="fluent"] #submission-status-list li[data-status="processed"] {
+            border-left-color: var(--fluent-accent);
+        }
+
+        body[data-design="fluent"] #submission-status-list li[data-status="overdue"] {
+            border-left-color: var(--fluent-warning);
+        }
+
+        body[data-design="fluent"] #submission-status-list li[data-status="error"] {
+            border-left-color: var(--fluent-error);
+        }
+
+        body[data-design="fluent"].dark #submission-status-list li {
+            background: rgba(32, 31, 30, 0.6);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: #f3f2f1;
+        }
+
+        body[data-design="fluent"].dark #submission-status-list li:hover {
+            background: rgba(32, 31, 30, 0.85);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Reveal Effect on Hover (Fluent signature) */
+        body[data-design="fluent"] .m3-button,
+        body[data-design="fluent"] .m3-setting-card,
+        body[data-design="fluent"] #submission-status-list li {
+            position: relative;
+        }
+
+        body[data-design="fluent"] .m3-button::after,
+        body[data-design="fluent"] .m3-setting-card::after,
+        body[data-design="fluent"] #submission-status-list li::after {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1));
-            transition: width 0.3s ease;
-            z-index: 0;
-        }
-        
-        body[data-design="modern"] #submission-status-list li:hover::before {
             width: 100%;
-        }
-        
-        body[data-design="modern"] #submission-status-list li:hover {
-            transform: translateX(6px);
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
-        }
-        
-        body[data-design="modern"] #submission-status-list li[data-status="submitted"] {
-            border-left-color: #48bb78; /* Green */
-        }
-        
-        body[data-design="modern"] #submission-status-list li[data-status="processed"] {
-            border-left-color: #667eea; /* Indigo */
-        }
-        
-        body[data-design="modern"] #submission-status-list li[data-status="overdue"] {
-            border-left-color: #ed8936; /* Orange */
-        }
-        
-        body[data-design="modern"] #submission-status-list li[data-status="error"] {
-            border-left-color: #f56565; /* Red */
+            height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                        rgba(255, 255, 255, 0.1) 0%, 
+                        transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
         }
 
-        body[data-design="modern"].dark #submission-status-list li {
-            background: rgba(26, 32, 44, 0.7);
-            color: #f1f5f9;
+        body[data-design="fluent"] .m3-button:hover::after,
+        body[data-design="fluent"] .m3-setting-card:hover::after,
+        body[data-design="fluent"] #submission-status-list li:hover::after {
+            opacity: 1;
         }
-        
-        body[data-design="modern"].dark #submission-status-list li::before {
-            background: linear-gradient(90deg, transparent, rgba(79, 172, 254, 0.1));
-        }
-        
-        body[data-design="modern"].dark #submission-status-list li:hover {
-            background: rgba(26, 32, 44, 0.95);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-        }
-        
-        body[data-design="modern"].dark #submission-status-list li[data-status="submitted"] {
-            border-left-color: #68d391;
-        }
-        
-        body[data-design="modern"].dark #submission-status-list li[data-status="processed"] {
-            border-left-color: #4facfe;
-        }
-        
-        body[data-design="modern"].dark #submission-status-list li[data-status="overdue"] {
-            border-left-color: #f6ad55;
-        }
-        
-        body[data-design="modern"].dark #submission-status-list li[data-status="error"] {
-            border-left-color: #fc8181;
+
+        body[data-design="fluent"].dark .m3-button::after,
+        body[data-design="fluent"].dark .m3-setting-card::after,
+        body[data-design="fluent"].dark #submission-status-list li::after {
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                        rgba(255, 255, 255, 0.05) 0%, 
+                        transparent 50%);
         }
 
         /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
@@ -3035,12 +2840,9 @@
                                 <button id="design-apple"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="apple">Liquid Glass</button>
-                                <button id="design-neo"
+                                <button id="design-fluent"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
-                                    data-value="neo">Neo-Brutalism</button>
-                                <button id="design-modern"
-                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
-                                    data-value="modern">Modern</button>
+                                    data-value="fluent">Fluent Design</button>
                             </div>
                         </section>
                         <section class="m3-setting-card rounded-2xl">
