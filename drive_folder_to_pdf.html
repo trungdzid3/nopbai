@@ -1356,19 +1356,25 @@
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: var(--c-action) !important;
-            color: white !important;
+            background-color: color-mix(in srgb, var(--c-action) 30%, transparent) !important;
+            color: var(--c-content) !important;
             backdrop-filter: none !important;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2) !important;
+            box-shadow: none !important;
             border: none !important;
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="processed"] {
             background-color: var(--c-action) !important;
-            color: white !important;
-            backdrop-filter: none !important;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+            color: var(--c-light) !important;
+            backdrop-filter: blur(20px) saturate(var(--saturation)) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation)) !important;
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
+                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent) !important;
             border: none !important;
         }
 
