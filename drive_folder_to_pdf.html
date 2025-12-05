@@ -1339,24 +1339,37 @@
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: transparent;
+            background-color: transparent !important;
             color: var(--c-content);
-            backdrop-filter: none;
+            backdrop-filter: none !important;
+            box-shadow: none !important;
+            border: none !important;
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="submitted"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: transparent;
+            background-color: transparent !important;
             color: var(--c-light);
-            backdrop-filter: none;
-            box-shadow: none;
-            border: none;
+            backdrop-filter: none !important;
+            box-shadow: none !important;
+            border: none !important;
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: color-mix(in srgb, var(--c-action) 35%, transparent);
-            color: var(--c-content);
-            backdrop-filter: blur(5px) url(#liquid-filter);
+            background: linear-gradient(135deg, #8B5CF6 0%, #BF5AF2 100%) !important;
+            color: white !important;
+            backdrop-filter: blur(10px) !important;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3) !important;
+            border: none !important;
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
+        body.dark[data-design="apple"] #submission-status-list li[data-status="processed"] {
+            background: linear-gradient(135deg, #8B5CF6 0%, #BF5AF2 100%) !important;
+            color: white !important;
+            backdrop-filter: blur(10px) !important;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4) !important;
+            border: none !important;
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
