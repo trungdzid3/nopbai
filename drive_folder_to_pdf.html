@@ -797,20 +797,13 @@
         body[data-design="clay"] {
             --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
             
-            /* Clay Colors */
+            /* Clay Colors - Dynamic based on Material 3 primary */
+            --clay-primary: var(--m3-primary, #6c5ce7);
             --clay-bg: #eef2f5;
             --clay-surface: #eef2f5;
-            --clay-primary: #6c5ce7;
             --clay-text: #4a4a4a;
             --clay-shadow-light: #ffffff;
             --clay-shadow-dark: #d1d9e6;
-            
-            /* Override Material Variables */
-            --m3-background: var(--clay-bg);
-            --m3-surface: var(--clay-surface);
-            --m3-surface-container: var(--clay-surface);
-            --m3-on-surface: var(--clay-text);
-            --m3-primary: var(--clay-primary);
             
             /* Shapes - Very Rounded */
             --radius-card: 32px;
@@ -831,12 +824,9 @@
         body[data-design="clay"].dark {
             --clay-bg: #2d3436;
             --clay-surface: #2d3436;
-            --clay-primary: #a29bfe;
             --clay-text: #dfe6e9;
             --clay-shadow-light: #3a4346;
             --clay-shadow-dark: #202526;
-            
-            --m3-on-surface: #dfe6e9;
         }
 
         /* Clay Cards - Floating 3D Effect */
@@ -2791,8 +2781,12 @@
             display: inline-block !important;
         }
 
-        /* --- HIDE ACCENT COLOR SECTION IN LIQUID GLASS --- */
+        /* --- HIDE ACCENT COLOR SECTION IN LIQUID GLASS & FLUENT --- */
         body[data-design="apple"] #accent-color-section {
+            display: none !important;
+        }
+
+        body[data-design="fluent"] #accent-color-section {
             display: none !important;
         }
 
