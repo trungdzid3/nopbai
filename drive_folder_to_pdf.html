@@ -2530,12 +2530,12 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Status Log - Fixed Height with Text Wrapping */
+        /* Status Log - Responsive Height then Fixed, with Line Wrapping */
         #status-log {
-            max-height: clamp(200px, 50vh, 600px);
+            max-height: min(50vh, 600px);
             overflow-y: auto;
             word-wrap: break-word;
-            word-break: break-word;
+            overflow-wrap: break-word;
             white-space: pre-wrap;
         }
 
