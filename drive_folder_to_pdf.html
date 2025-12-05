@@ -2530,6 +2530,21 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Submission Status List - Fixed Height with Text Wrapping */
+        #submission-status-list {
+            max-height: clamp(200px, 40vh, 500px);
+            overflow-y: auto;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        #submission-status-list li {
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
+
         .log-entry {
             animation: slideIn 0.3s ease-out;
         }
