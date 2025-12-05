@@ -808,6 +808,37 @@
                         transparent 50%);
         }
 
+        /* Fluent: Submission Stats Badge & Clear Button */
+        body[data-design="fluent"] #submission-stats {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%) !important;
+            color: #8b5cf6 !important;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        body[data-design="fluent"].dark #submission-stats {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(244, 114, 182, 0.25) 100%) !important;
+            color: #a78bfa !important;
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+
+        body[data-design="fluent"] #clear_log {
+            color: #8b5cf6;
+            transition: all 0.3s ease;
+        }
+
+        body[data-design="fluent"] #clear_log:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: #a78bfa;
+        }
+
+        body[data-design="fluent"].dark #clear_log {
+            color: #a78bfa;
+        }
+
+        body[data-design="fluent"].dark #clear_log:hover {
+            background: rgba(139, 92, 246, 0.15);
+        }
+
         /* ==================================================================
        2.6. GIAO DIỆN CLAY SOFT (Claymorphism - 3D Soft UI)
        ================================================================== */
@@ -995,6 +1026,24 @@
         body[data-design="clay"] #submission-status-list li[data-status="processed"]::before { background: #6c5ce7; }
         body[data-design="clay"] #submission-status-list li[data-status="overdue"]::before { background: #fdcb6e; }
         body[data-design="clay"] #submission-status-list li[data-status="error"]::before { background: #d63031; }
+
+        /* Clay: Submission Stats Badge & Clear Button */
+        body[data-design="clay"] #submission-stats {
+            background: var(--clay-primary-light, #e8f5e9) !important;
+            color: var(--m3-primary) !important;
+            border: 1px solid var(--m3-primary);
+        }
+
+        body[data-design="clay"] #clear_log {
+            color: var(--m3-primary);
+            transition: all 0.3s ease;
+        }
+
+        body[data-design="clay"] #clear_log:hover {
+            background: rgba(var(--m3-primary-rgb, 108, 92, 231), 0.08);
+            color: var(--m3-primary);
+            transform: scale(1.05);
+        }
 
         /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
 
@@ -1708,6 +1757,24 @@
         body[data-design="prism"] #submission-status-list li[data-status="processed"] { border-left-color: #00d2ff; }
         body[data-design="prism"] #submission-status-list li[data-status="overdue"] { border-left-color: #fcb045; }
         body[data-design="prism"] #submission-status-list li[data-status="error"] { border-left-color: #ff6b6b; }
+
+        /* Prism: Submission Stats Badge & Clear Button */
+        body[data-design="prism"] #submission-stats {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.2) 0%, rgba(252, 176, 69, 0.2) 100%) !important;
+            color: #00d2ff !important;
+            border: 1px solid rgba(0, 210, 255, 0.4);
+        }
+
+        body[data-design="prism"] #clear_log {
+            color: #00d2ff;
+            transition: all 0.3s ease;
+        }
+
+        body[data-design="prism"] #clear_log:hover {
+            background: rgba(0, 210, 255, 0.12);
+            color: #00ffff;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
+        }
 
         /* ==================================================================
        3. CSS UTILITIES (Shared)
