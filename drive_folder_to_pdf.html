@@ -1326,16 +1326,6 @@
             margin-bottom: 6px;
         }
 
-        body[data-design="apple"] #submission-status-list li[data-status="overdue"] {
-            font-weight: 500;
-            backdrop-filter: blur(5px) url(#liquid-filter);
-            box-shadow:
-                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
-                inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 90%), transparent),
-                inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 80%), transparent),
-                0px 1px 5px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent);
-        }
-
         /* Copy exact styling from .m3-button-outlined */
         body[data-design="apple"] #submission-status-list li[data-status="submitted"] {
             background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
