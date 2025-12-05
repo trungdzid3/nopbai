@@ -364,6 +364,7 @@
                 rgba(168, 85, 247, 0.4),
                 rgba(236, 72, 153, 0.4),
                 rgba(59, 130, 246, 0.4));
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
@@ -757,6 +758,12 @@
                 0 8px 24px rgba(239, 68, 68, 0.2),
                 0 0 20px rgba(239, 68, 68, 0.1);
         }
+
+        /* Reveal Effect on Hover (Fluent signature) */
+        body[data-design="fluent"] .m3-button::after,
+        body[data-design="fluent"] .m3-setting-card::after,
+        body[data-design="fluent"] #submission-status-list li::after {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
