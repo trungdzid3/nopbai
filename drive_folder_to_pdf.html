@@ -1338,44 +1338,75 @@
                 0px 1px 5px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent);
         }
 
+        /* Copy exact styling from .m3-button-outlined */
         body[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: transparent !important;
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
             color: var(--c-content);
-            backdrop-filter: none !important;
-            box-shadow: none !important;
-            border: none !important;
+            border: none;
+            backdrop-filter: blur(5px) url(#liquid-filter);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="submitted"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: transparent !important;
-            color: var(--c-light);
-            backdrop-filter: none !important;
-            box-shadow: none !important;
-            border: none !important;
+            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            color: var(--c-content);
+            border: 1px solid color-mix(in srgb, var(--c-light) 8%, transparent);
+            backdrop-filter: blur(30px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(30px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
+                        0 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent);
         }
 
+        body[data-design="apple"] #submission-status-list li[data-status="submitted"]:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 25%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="submitted"]:hover,
+        body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"]:hover {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 20%), transparent),
+                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
+                        0 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
+                        0 8px 24px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent);
+            border-color: color-mix(in srgb, var(--c-light) 12%, transparent);
+        }
+
+        /* Copy exact styling from .m3-button-filled */
         body[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent) !important;
-            color: var(--c-content) !important;
-            backdrop-filter: none !important;
-            box-shadow: none !important;
-            border: none !important;
+            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
+            color: var(--c-content);
+            border: none;
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: var(--c-action) !important;
-            color: var(--c-light) !important;
-            backdrop-filter: blur(20px) saturate(var(--saturation)) !important;
-            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation)) !important;
+            background-color: var(--c-action);
+            color: var(--c-light);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
             box-shadow:
                 inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
                 inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
                 0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
                 0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
-                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent) !important;
-            border: none !important;
+                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
+            background-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="processed"]:hover,
+        body.dark[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
+            background-color: color-mix(in srgb, var(--c-action) 90%, var(--c-dark));
+            box-shadow:
+                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 45%), transparent),
+                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
+                0px 16px 40px color-mix(in srgb, var(--c-action) 70%, transparent),
+                0px 8px 20px color-mix(in srgb, var(--c-action) 50%, transparent),
+                0px 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
