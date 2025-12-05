@@ -4008,8 +4008,10 @@ async function findFormInFolder(classFolderId) {
         
         if (response.result.files && response.result.files.length > 0) {
             const form = response.result.files[0];
-            // Tạo link rút gọn: https://docs.google.com/forms/d/{formId}/viewform
-            form.shortLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
+            // Link chỉnh sửa Form
+            form.shortLink = `https://docs.google.com/forms/d/${form.id}/edit`;
+            // Link xuất bản (viewform) để lấy khi cần
+            form.publishedLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
             return form;
         }
         
