@@ -784,6 +784,196 @@
                         transparent 50%);
         }
 
+        /* ==================================================================
+       2.6. GIAO DIỆN CLAY SOFT (Claymorphism - 3D Soft UI)
+       ================================================================== */
+        body[data-design="clay"] {
+            --font-family: 'Nunito', 'Quicksand', 'Segoe UI Rounded', sans-serif;
+            
+            /* Clay Colors */
+            --clay-bg: #eef2f5;
+            --clay-surface: #eef2f5;
+            --clay-primary: #6c5ce7;
+            --clay-text: #4a4a4a;
+            --clay-shadow-light: #ffffff;
+            --clay-shadow-dark: #d1d9e6;
+            
+            /* Override Material Variables */
+            --m3-background: var(--clay-bg);
+            --m3-surface: var(--clay-surface);
+            --m3-surface-container: var(--clay-surface);
+            --m3-on-surface: var(--clay-text);
+            --m3-primary: var(--clay-primary);
+            
+            /* Shapes - Very Rounded */
+            --radius-card: 32px;
+            --radius-btn: 50px;
+            --radius-input: 24px;
+        }
+
+        /* Background */
+        body[data-design="clay"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: var(--clay-bg);
+        }
+
+        /* Dark Mode Clay */
+        body[data-design="clay"].dark {
+            --clay-bg: #2d3436;
+            --clay-surface: #2d3436;
+            --clay-primary: #a29bfe;
+            --clay-text: #dfe6e9;
+            --clay-shadow-light: #3a4346;
+            --clay-shadow-dark: #202526;
+            
+            --m3-on-surface: #dfe6e9;
+        }
+
+        /* Clay Cards - Floating 3D Effect */
+        body[data-design="clay"] .m3-setting-card,
+        body[data-design="clay"] .m3-modal-content,
+        body[data-design="clay"] aside {
+            background: var(--clay-surface);
+            border: none;
+            box-shadow: 
+                12px 12px 24px var(--clay-shadow-dark), 
+                -12px -12px 24px var(--clay-shadow-light);
+            border-radius: var(--radius-card) !important;
+            padding: 32px !important;
+            transition: all 0.3s ease;
+        }
+
+        body[data-design="clay"] .m3-setting-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                16px 16px 32px var(--clay-shadow-dark), 
+                -16px -16px 32px var(--clay-shadow-light);
+        }
+
+        /* Clay Buttons - Pill Shaped & Extruded */
+        body[data-design="clay"] .m3-button-filled {
+            background: var(--clay-surface);
+            color: var(--clay-primary);
+            font-weight: 800;
+            border: none;
+            border-radius: 50px !important;
+            padding: 16px 32px !important;
+            box-shadow: 
+                8px 8px 16px var(--clay-shadow-dark), 
+                -8px -8px 16px var(--clay-shadow-light);
+            transition: all 0.2s ease;
+        }
+
+        body[data-design="clay"] .m3-button-filled:hover {
+            color: var(--clay-primary);
+            transform: scale(1.05);
+            box-shadow: 
+                10px 10px 20px var(--clay-shadow-dark), 
+                -10px -10px 20px var(--clay-shadow-light);
+        }
+
+        body[data-design="clay"] .m3-button-filled:active {
+            transform: scale(0.95);
+            box-shadow: 
+                inset 6px 6px 12px var(--clay-shadow-dark), 
+                inset -6px -6px 12px var(--clay-shadow-light);
+        }
+
+        /* Primary Action Button (Filled with Color) */
+        body[data-design="clay"] #process-btn {
+            background: var(--clay-primary);
+            color: white;
+            box-shadow: 
+                8px 8px 16px var(--clay-shadow-dark), 
+                -8px -8px 16px var(--clay-shadow-light);
+        }
+        
+        body[data-design="clay"] #process-btn:hover {
+            background: var(--clay-primary);
+            color: white;
+            filter: brightness(1.1);
+        }
+
+        /* Tonal & Outlined Buttons -> Clay Style */
+        body[data-design="clay"] .m3-button-tonal,
+        body[data-design="clay"] .m3-button-outlined {
+            background: var(--clay-surface);
+            color: var(--clay-text);
+            border: none;
+            border-radius: 50px !important;
+            box-shadow: 
+                6px 6px 12px var(--clay-shadow-dark), 
+                -6px -6px 12px var(--clay-shadow-light);
+        }
+
+        body[data-design="clay"] .m3-button-tonal:active,
+        body[data-design="clay"] .m3-button-outlined:active {
+            box-shadow: 
+                inset 4px 4px 8px var(--clay-shadow-dark), 
+                inset -4px -4px 8px var(--clay-shadow-light);
+        }
+
+        /* Inputs - Inset Shadow (Pressed In) */
+        body[data-design="clay"] .m3-input,
+        body[data-design="clay"] .m3-select {
+            background: var(--clay-surface);
+            border: none;
+            border-radius: var(--radius-input) !important;
+            padding: 16px 24px !important;
+            box-shadow: 
+                inset 6px 6px 12px var(--clay-shadow-dark), 
+                inset -6px -6px 12px var(--clay-shadow-light);
+            color: var(--clay-text);
+            transition: all 0.2s ease;
+        }
+
+        body[data-design="clay"] .m3-input:focus,
+        body[data-design="clay"] .m3-select:focus {
+            box-shadow: 
+                inset 8px 8px 16px var(--clay-shadow-dark), 
+                inset -8px -8px 16px var(--clay-shadow-light),
+                0 0 0 2px var(--clay-primary);
+        }
+
+        /* Status List - Bubbly Items */
+        body[data-design="clay"] #submission-status-list li {
+            background: var(--clay-surface);
+            border: none;
+            border-radius: 20px !important;
+            margin-bottom: 16px !important;
+            padding: 20px !important;
+            box-shadow: 
+                8px 8px 16px var(--clay-shadow-dark), 
+                -8px -8px 16px var(--clay-shadow-light);
+            transition: all 0.3s ease;
+        }
+
+        body[data-design="clay"] #submission-status-list li:hover {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 
+                12px 12px 24px var(--clay-shadow-dark), 
+                -12px -12px 24px var(--clay-shadow-light);
+        }
+
+        /* Status Colors as Dots */
+        body[data-design="clay"] #submission-status-list li::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 12px;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        body[data-design="clay"] #submission-status-list li[data-status="submitted"]::before { background: #00b894; }
+        body[data-design="clay"] #submission-status-list li[data-status="processed"]::before { background: #6c5ce7; }
+        body[data-design="clay"] #submission-status-list li[data-status="overdue"]::before { background: #fdcb6e; }
+        body[data-design="clay"] #submission-status-list li[data-status="error"]::before { background: #d63031; }
+
         /* --- MAPPING CLASSES: Chuyển đổi class M3 sang Style Liquid Glass --- */
 
         body[data-design="apple"] .m3-button {
@@ -3082,6 +3272,9 @@
                                 <button id="design-fluent"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="fluent">Fluent Design</button>
+                                <button id="design-clay"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
+                                    data-value="clay">Clay Soft</button>
                             </div>
                         </section>
                         <section class="m3-setting-card rounded-2xl">
