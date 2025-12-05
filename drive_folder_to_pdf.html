@@ -556,6 +556,20 @@
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         }
 
+        /* Reset generic buttons to avoid Material colors in Fluent */
+        body[data-design="fluent"] .m3-button:not(.m3-button-filled):not(.m3-button-tonal):not(.m3-button-outlined) {
+            background: rgba(255, 255, 255, 0.08);
+            color: #0f172a;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px !important;
+        }
+
+        body[data-design="fluent"].dark .m3-button:not(.m3-button-filled):not(.m3-button-tonal):not(.m3-button-outlined) {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
         /* Inputs - Floating Style */
         body[data-design="fluent"] .m3-input,
         body[data-design="fluent"] .m3-select {
@@ -1613,6 +1627,13 @@
             font-weight: 600;
             padding: 12px 22px !important;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Reset generic buttons to avoid Material colors in Prism */
+        body[data-design="prism"] .m3-button:not(.m3-button-filled):not(.m3-button-tonal):not(.m3-button-outlined) {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--prism-text);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         body[data-design="prism"] .m3-button-tonal:hover,
@@ -2954,12 +2975,10 @@
             display: inline-block !important;
         }
 
-        /* --- HIDE ACCENT COLOR SECTION IN LIQUID GLASS & FLUENT --- */
-        body[data-design="apple"] #accent-color-section {
-            display: none !important;
-        }
-
-        body[data-design="fluent"] #accent-color-section {
+        /* --- HIDE ACCENT COLOR SECTION IN LIQUID GLASS, FLUENT, PRISM --- */
+        body[data-design="apple"] #accent-color-section,
+        body[data-design="fluent"] #accent-color-section,
+        body[data-design="prism"] #accent-color-section {
             display: none !important;
         }
 
