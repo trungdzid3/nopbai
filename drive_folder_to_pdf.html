@@ -1487,6 +1487,184 @@
         }
 
         /* ==================================================================
+       2.7. GIAO DIỆN PRISM EDGE (Neon Tech Grid)
+       ================================================================== */
+        body[data-design="prism"] {
+            --font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+            --prism-bg: #0c1024;
+            --prism-surface: #121832;
+            --prism-border: rgba(255, 255, 255, 0.08);
+            --prism-text: #e5e7eb;
+            --prism-muted: #9ca3af;
+            --prism-glow1: #ff6b6b;
+            --prism-glow2: #fcb045;
+            --prism-glow3: #00d2ff;
+
+            /* Override Material variables for better contrast */
+            --m3-background: var(--prism-bg);
+            --m3-surface: var(--prism-surface);
+            --m3-surface-container: #0f172a;
+            --m3-surface-container-highest: #161e36;
+            --m3-on-surface: var(--prism-text);
+            --m3-on-surface-variant: var(--prism-muted);
+            --m3-outline: rgba(255, 255, 255, 0.12);
+            --m3-primary: #8b5cf6;
+
+            /* Shapes */
+            --radius-card: 18px;
+            --radius-btn: 14px;
+            --radius-input: 14px;
+        }
+
+        /* Background with mesh + grid */
+        body[data-design="prism"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: radial-gradient(circle at 20% 20%, rgba(255, 107, 107, 0.18), transparent 35%),
+                        radial-gradient(circle at 80% 30%, rgba(252, 176, 69, 0.16), transparent 40%),
+                        radial-gradient(circle at 50% 80%, rgba(0, 210, 255, 0.2), transparent 35%),
+                        linear-gradient(135deg, #0b1024 0%, #0f162e 50%, #0c1227 100%);
+            background-size: 140% 140%;
+            filter: saturate(120%);
+        }
+
+        body[data-design="prism"]::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        /* Cards */
+        body[data-design="prism"] .m3-setting-card,
+        body[data-design="prism"] .m3-modal-content,
+        body[data-design="prism"] aside {
+            background: linear-gradient(145deg, rgba(22, 30, 54, 0.85), rgba(17, 23, 45, 0.92));
+            border: 1px solid var(--prism-border);
+            border-radius: var(--radius-card) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body[data-design="prism"] .m3-setting-card::before,
+        body[data-design="prism"] .m3-modal-content::before,
+        body[data-design="prism"] aside::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(120deg, rgba(255, 107, 107, 0.25), rgba(252, 176, 69, 0.22), rgba(0, 210, 255, 0.25));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        body[data-design="prism"] .m3-setting-card:hover,
+        body[data-design="prism"] .m3-modal-content:hover,
+        body[data-design="prism"] aside:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45), 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        body[data-design="prism"] .m3-setting-card:hover::before,
+        body[data-design="prism"] .m3-modal-content:hover::before,
+        body[data-design="prism"] aside:hover::before {
+            opacity: 1;
+        }
+
+        /* Buttons */
+        body[data-design="prism"] .m3-button-filled {
+            background: linear-gradient(120deg, #ff6b6b, #fcb045, #00d2ff);
+            background-size: 180% 180%;
+            color: #0b1024;
+            border: none;
+            border-radius: 16px !important;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            padding: 14px 26px !important;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.25), 0 4px 12px rgba(0, 210, 255, 0.2);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-position 0.4s ease;
+        }
+
+        body[data-design="prism"] .m3-button-filled:hover {
+            transform: translateY(-2px) scale(1.02);
+            background-position: 100% 50%;
+            box-shadow: 0 14px 36px rgba(255, 107, 107, 0.28), 0 6px 16px rgba(0, 210, 255, 0.24);
+        }
+
+        body[data-design="prism"] .m3-button-filled:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        body[data-design="prism"] .m3-button-tonal,
+        body[data-design="prism"] .m3-button-outlined {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--prism-text);
+            border-radius: 14px !important;
+            font-weight: 600;
+            padding: 12px 22px !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        body[data-design="prism"] .m3-button-tonal:hover,
+        body[data-design="prism"] .m3-button-outlined:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Inputs */
+        body[data-design="prism"] .m3-input,
+        body[data-design="prism"] .m3-select {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-input) !important;
+            color: var(--prism-text);
+            padding: 14px 18px !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        body[data-design="prism"] .m3-input:focus,
+        body[data-design="prism"] .m3-select:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Status List */
+        body[data-design="prism"] #submission-status-list li {
+            background: linear-gradient(135deg, rgba(19, 27, 50, 0.9), rgba(14, 22, 39, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-left: 4px solid transparent;
+            color: var(--prism-text);
+            border-radius: 16px !important;
+            padding: 14px 18px !important;
+            margin-bottom: 10px !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        body[data-design="prism"] #submission-status-list li:hover {
+            transform: translateX(6px);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        body[data-design="prism"] #submission-status-list li[data-status="submitted"] { border-left-color: #22c55e; }
+        body[data-design="prism"] #submission-status-list li[data-status="processed"] { border-left-color: #00d2ff; }
+        body[data-design="prism"] #submission-status-list li[data-status="overdue"] { border-left-color: #fcb045; }
+        body[data-design="prism"] #submission-status-list li[data-status="error"] { border-left-color: #ff6b6b; }
+
+        /* ==================================================================
        3. CSS UTILITIES (Shared)
        ================================================================== */
         .bg-primary {
@@ -3271,6 +3449,9 @@
                                 <button id="design-clay"
                                     class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
                                     data-value="clay">Clay Soft</button>
+                                <button id="design-prism"
+                                    class="design-btn m3-button m3-button-tonal text-sm py-2 px-4 rounded-full"
+                                    data-value="prism">Prism Edge</button>
                             </div>
                         </section>
                         <section class="m3-setting-card rounded-2xl">
