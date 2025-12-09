@@ -765,6 +765,7 @@ function runScheduledCleanupAndEnsureOpen() {
       // Kiểm tra xem hôm nay đã chạy chưa
       if (lastRunThu !== today) {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 5 18:30 (ĐẠI SỐ) <<<");
+        Logger.log(`SUBJECT_TEMPLATE_THU = "${SUBJECT_TEMPLATE_THU}"`);
         
         try {
           // 1. Xóa email cũ
@@ -802,6 +803,7 @@ function runScheduledCleanupAndEnsureOpen() {
       // Kiểm tra xem hôm nay đã chạy chưa
       if (lastRunSun !== today) {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: CHỦ NHẬT 17:00 (HÌNH HỌC) <<<");
+        Logger.log(`SUBJECT_TEMPLATE_SUN = "${SUBJECT_TEMPLATE_SUN}"`);
         
         try {
           // 1. Xóa email cũ
