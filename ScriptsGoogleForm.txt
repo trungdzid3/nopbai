@@ -765,15 +765,14 @@ function runScheduledCleanupAndEnsureOpen() {
       // Kiểm tra xem hôm nay đã chạy chưa
       if (lastRunThu !== today) {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 5 18:30 (ĐẠI SỐ) <<<");
-        Logger.log(`SUBJECT_TEMPLATE_THU = "${SUBJECT_TEMPLATE_THU}"`);
         
         try {
           // 1. Xóa email cũ
-          cleanupOldEmails(SUBJECT_TEMPLATE_THU);
+          cleanupOldEmails("Biểu mẫu: Bài tập Thứ 5");
           
           // 2. Xóa form responses cũ (hơn 7 ngày)
           const form = FormApp.getActiveForm();
-          cleanupFormResponsesByType(form, ASSIGNMENT_TYPE_THU, 7);
+          cleanupFormResponsesByType(form, "Bài tập Thứ 5 (Đại số)", 7);
           
           // 3. Dọn dẹp folder
           const parentFolderThu = DriveApp.getFolderById(PARENT_FOLDER_THU_ID);
@@ -803,15 +802,14 @@ function runScheduledCleanupAndEnsureOpen() {
       // Kiểm tra xem hôm nay đã chạy chưa
       if (lastRunSun !== today) {
         Logger.log(">>> ĐẾN GIỜ DỌN DẸP: CHỦ NHẬT 17:00 (HÌNH HỌC) <<<");
-        Logger.log(`SUBJECT_TEMPLATE_SUN = "${SUBJECT_TEMPLATE_SUN}"`);
         
         try {
           // 1. Xóa email cũ
-          cleanupOldEmails(SUBJECT_TEMPLATE_SUN);
+          cleanupOldEmails("Biểu mẫu: Bài tập Chủ Nhật");
           
           // 2. Xóa form responses cũ (hơn 7 ngày)
           const form = FormApp.getActiveForm();
-          cleanupFormResponsesByType(form, ASSIGNMENT_TYPE_SUN, 7);
+          cleanupFormResponsesByType(form, "Bài tập Chủ Nhật (Hình học)", 7);
           
           // 3. Dọn dẹp folder
           const parentFolderSun = DriveApp.getFolderById(PARENT_FOLDER_SUN_ID);
