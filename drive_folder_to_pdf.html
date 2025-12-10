@@ -1896,29 +1896,73 @@
         
         /* Clay Settings Modal */
         body[data-design="clay"] #settings_modal .m3-modal-content {
-            background: linear-gradient(145deg, #f0f0f3, #e8e8eb);
+            background: linear-gradient(145deg, #ececf0, #e0e0e5);
             border: none;
             border-radius: 32px;
             box-shadow: 
-                20px 20px 60px #d1d1d4,
+                20px 20px 60px #bebebf,
                 -20px -20px 60px #ffffff,
                 inset 2px 2px 5px rgba(255, 255, 255, 0.5);
         }
         
         body[data-design="clay"] #settings_modal .m3-setting-card {
-            background: linear-gradient(145deg, #e8e8eb, #ffffff);
+            background: linear-gradient(145deg, #e0e0e5, #f5f5f8);
             border: none;
             border-radius: 20px;
             box-shadow: 
-                8px 8px 16px #d1d1d4,
+                8px 8px 16px #bebebf,
                 -8px -8px 16px #ffffff;
         }
         
         body[data-design="clay"] #settings_modal .m3-setting-card:hover {
             transform: translateY(-3px);
             box-shadow: 
-                10px 10px 20px #d1d1d4,
+                10px 10px 20px #bebebf,
                 -10px -10px 20px #ffffff;
+        }
+        
+        /* Clay text and elements colors */
+        body[data-design="clay"] #settings_modal h2,
+        body[data-design="clay"] #settings_modal h3,
+        body[data-design="clay"] #settings_modal label,
+        body[data-design="clay"] #settings_modal .text-on-surface {
+            color: #2c3e50 !important;
+        }
+        
+        body[data-design="clay"] #settings_modal .text-on-surface-variant,
+        body[data-design="clay"] #settings_modal p {
+            color: #546e7a !important;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-input,
+        body[data-design="clay"] #settings_modal .m3-select {
+            background: linear-gradient(145deg, #f5f5f8, #ececf0);
+            box-shadow: inset 4px 4px 8px #bebebf, inset -4px -4px 8px #ffffff;
+            border: none;
+            color: #2c3e50;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-button-tonal,
+        body[data-design="clay"] #settings_modal .design-btn,
+        body[data-design="clay"] #settings_modal .theme-btn {
+            background: linear-gradient(145deg, #e0e0e5, #f5f5f8);
+            box-shadow: 6px 6px 12px #bebebf, -6px -6px 12px #ffffff;
+            border: none;
+            color: #3d5a80;
+            font-weight: 600;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-button-tonal:hover,
+        body[data-design="clay"] #settings_modal .design-btn:hover,
+        body[data-design="clay"] #settings_modal .theme-btn:hover {
+            box-shadow: 8px 8px 16px #bebebf, -8px -8px 16px #ffffff;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-button-filled {
+            background: linear-gradient(145deg, #5a7fa8, #4a6f98);
+            box-shadow: 6px 6px 12px #bebebf, -6px -6px 12px #ffffff;
+            border: none;
+            color: #ffffff;
         }
         
         /* Prism Settings Modal */
@@ -1974,17 +2018,19 @@
         }
         
         body[data-design="clay"] #settings_modal .m3-settings-nav-button {
-            background: linear-gradient(145deg, #f0f0f3, #ffffff);
-            box-shadow: 4px 4px 8px #d1d1d4, -4px -4px 8px #ffffff;
+            background: linear-gradient(145deg, #e0e0e5, #f5f5f8);
+            box-shadow: 4px 4px 8px #bebebf, -4px -4px 8px #ffffff;
             border: none !important;
             margin: 0 6px;
             border-radius: 16px 16px 0 0;
+            color: #546e7a;
+            font-weight: 600;
         }
         
         body[data-design="clay"] #settings_modal .m3-settings-nav-button[data-active="true"] {
-            background: linear-gradient(145deg, #ffffff, #e8e8eb);
-            box-shadow: inset 3px 3px 6px #d1d1d4, inset -3px -3px 6px #ffffff;
-            color: #3d5a80 !important;
+            background: linear-gradient(145deg, #5a7fa8, #4a6f98);
+            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.15), inset -3px -3px 6px rgba(255,255,255,0.1);
+            color: #ffffff !important;
         }
         
         body[data-design="prism"] #settings_modal .m3-settings-nav-button {
