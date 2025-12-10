@@ -167,10 +167,6 @@ function initApp() {
     // [NEW] Load System Config (Chỉ load Root Folder)
     if (localStorage.getItem('root_folder_id') && inpRootFolderId) inpRootFolderId.value = localStorage.getItem('root_folder_id');
 
-    // Set initial state of auto-refresh switch
-    // Auto refresh always enabled on app start
-    startAutoRefresh();
-
     bindModalEvents();
     bindSettingsTabs();
     bindClassManagementEvents();
@@ -2059,6 +2055,9 @@ async function fetchAndSaveEmailHint() {
 function checkInitStatus() {
     checkSystemReady();
     if (gapiInited && gisInited) {
+        // Start auto refresh now that gapi is ready
+        startAutoRefresh();
+        
         if (LOGIN_HINT) {
             updateStatus("→ Đăng nhập tự động...");
             // Try silent login immediately
@@ -3299,11 +3298,18 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
 
 function startAutoRefresh() {
     if (isAutoRefreshOn && autoRefreshTimer) return;
-    if (!classProfileSelect.value || !gapi.client.getToken() || !activeAssignment) {
-        updateStatus("⏸ Chưa quét: Vui lòng chọn Lớp, Bài tập và Đăng nhập.", true);
-        isAutoRefreshOn = false;
+    
+    // Check if gapi is available and initialized
+    if (typeof gapi === 'undefined' || !gapi.client || !gapi.client.getToken) {
+        // Gapi not ready yet, skip for now (will retry on next opportunity)
         return;
     }
+    
+    if (!classProfileSelect.value || !gapi.client.getToken() || !activeAssignment) {
+        // Not fully ready yet - silently skip
+        return;
+    }
+    
     isAutoRefreshOn = true;
     updateStatus("✓ Quét nền tự động được bật (mỗi 5 phút).");
 
