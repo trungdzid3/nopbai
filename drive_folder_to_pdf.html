@@ -1605,6 +1605,66 @@
             --radius-btn: 14px;
             --radius-input: 14px;
         }
+        
+        /* Prism Light Mode - Bright tech aesthetic */
+        body[data-design="prism"]:not(.dark) {
+            --prism-bg: #f5f7fa;
+            --prism-surface: #ffffff;
+            --prism-border: rgba(0, 0, 0, 0.1);
+            --prism-text: #1a202c;
+            --prism-muted: #4a5568;
+            
+            --m3-background: var(--prism-bg);
+            --m3-surface: var(--prism-surface);
+            --m3-surface-container: #f0f4f8;
+            --m3-surface-container-highest: #e5eaf0;
+            --m3-on-surface: var(--prism-text);
+            --m3-on-surface-variant: var(--prism-muted);
+            --m3-outline: rgba(0, 0, 0, 0.12);
+        }
+        
+        body[data-design="prism"]:not(.dark)::before {
+            background: radial-gradient(circle at 20% 20%, rgba(255, 107, 107, 0.08), transparent 35%),
+                        radial-gradient(circle at 80% 30%, rgba(252, 176, 69, 0.06), transparent 40%),
+                        radial-gradient(circle at 50% 80%, rgba(0, 210, 255, 0.1), transparent 35%),
+                        linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f2f5f8 100%);
+        }
+        
+        body[data-design="prism"]:not(.dark)::after {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            opacity: 0.4;
+        }
+        
+        body[data-design="prism"]:not(.dark) .m3-setting-card,
+        body[data-design="prism"]:not(.dark) .m3-modal-content,
+        body[data-design="prism"]:not(.dark) aside {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 247, 250, 0.98));
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.05),
+                0 0 0 1px rgba(0, 210, 255, 0.1);
+        }
+        
+        body[data-design="prism"]:not(.dark) .m3-button-filled {
+            box-shadow: 
+                0 4px 12px rgba(139, 92, 246, 0.3),
+                0 0 20px rgba(139, 92, 246, 0.15);
+        }
+        
+        body[data-design="prism"]:not(.dark) .m3-button-tonal,
+        body[data-design="prism"]:not(.dark) .m3-button-outlined {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            color: var(--prism-text);
+        }
+        
+        body[data-design="prism"]:not(.dark) .m3-input,
+        body[data-design="prism"]:not(.dark) .m3-select {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--prism-text);
+        }
 
         /* Background with mesh + grid */
         body[data-design="prism"]::before {
