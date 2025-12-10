@@ -3774,9 +3774,12 @@ function initMobileView() {
     }
     
     if (overlay && sidebar) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('active');
+        overlay.addEventListener('click', (e) => {
+            // Chỉ đóng sidebar nếu click vào overlay, không phải vào sidebar
+            if (e.target === overlay) {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+            }
         });
     }
     

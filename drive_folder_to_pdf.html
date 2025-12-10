@@ -2246,6 +2246,7 @@
                 width: 85vw;
                 max-width: 320px;
                 overflow-y: auto;
+                pointer-events: auto;
             }
             
             body[data-view-mode="auto"] aside.mobile-open,
@@ -2282,6 +2283,14 @@
         body[data-view-mode="desktop"] main {
             padding-top: 1rem !important;
             padding-bottom: 1rem !important;
+        }
+        
+        /* Ensure buttons in mobile sidebar are clickable */
+        body[data-view-mode="auto"] aside button,
+        body[data-view-mode="mobile"] aside button {
+            position: relative;
+            z-index: 1;
+            pointer-events: auto;
         }
         
         /* Mobile view enforcement - make mobile layout always visible in mobile */
