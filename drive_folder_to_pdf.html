@@ -1787,6 +1787,166 @@
         }
 
         /* ==================================================================
+       2.8. SETTINGS MODAL - THEME-SPECIFIC STYLING
+       ================================================================== */
+       
+        /* Apple/Liquid Glass Settings Modal */
+        body[data-design="apple"] #settings_modal .m3-modal-content {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        body[data-design="apple"].dark #settings_modal .m3-modal-content {
+            background: rgba(28, 28, 30, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        body[data-design="apple"] #settings_modal .m3-setting-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        
+        body[data-design="apple"].dark #settings_modal .m3-setting-card {
+            background: rgba(58, 58, 60, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Fluent Settings Modal */
+        body[data-design="fluent"] #settings_modal .m3-modal-content {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 242, 255, 0.85) 100%);
+            backdrop-filter: blur(60px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(100, 149, 237, 0.15), 0 0 80px rgba(100, 149, 237, 0.08);
+        }
+        
+        body[data-design="fluent"].dark #settings_modal .m3-modal-content {
+            background: linear-gradient(135deg, rgba(20, 20, 35, 0.85) 0%, rgba(30, 30, 50, 0.85) 100%);
+            border: 1px solid rgba(100, 149, 237, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 120px rgba(100, 149, 237, 0.15);
+        }
+        
+        body[data-design="fluent"] #settings_modal .m3-setting-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(100, 149, 237, 0.2);
+            box-shadow: 0 2px 8px rgba(100, 149, 237, 0.1);
+            position: relative;
+        }
+        
+        body[data-design="fluent"] #settings_modal .m3-setting-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(100, 149, 237, 0.3), rgba(138, 43, 226, 0.3));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        body[data-design="fluent"] #settings_modal .m3-setting-card:hover::before {
+            opacity: 1;
+        }
+        
+        body[data-design="fluent"].dark #settings_modal .m3-setting-card {
+            background: rgba(30, 30, 50, 0.6);
+            border: 1px solid rgba(100, 149, 237, 0.25);
+        }
+        
+        /* Clay Settings Modal */
+        body[data-design="clay"] #settings_modal .m3-modal-content {
+            background: linear-gradient(145deg, #f0f0f3, #e8e8eb);
+            border: none;
+            box-shadow: 
+                20px 20px 60px #d1d1d4,
+                -20px -20px 60px #ffffff,
+                inset 2px 2px 5px rgba(255, 255, 255, 0.5);
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-setting-card {
+            background: linear-gradient(145deg, #e8e8eb, #ffffff);
+            border: none;
+            box-shadow: 
+                6px 6px 12px #d1d1d4,
+                -6px -6px 12px #ffffff;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-setting-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                8px 8px 16px #d1d1d4,
+                -8px -8px 16px #ffffff;
+        }
+        
+        /* Prism Settings Modal */
+        body[data-design="prism"] #settings_modal .m3-modal-content {
+            background: linear-gradient(145deg, rgba(10, 10, 20, 0.95), rgba(15, 15, 30, 0.95));
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(0, 210, 255, 0.2),
+                0 0 80px rgba(0, 210, 255, 0.15);
+        }
+        
+        body[data-design="prism"] #settings_modal .m3-setting-card {
+            background: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            border-left: 3px solid rgba(0, 210, 255, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        body[data-design="prism"] #settings_modal .m3-setting-card:hover {
+            border-left-color: #00d2ff;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.6),
+                0 0 20px rgba(0, 210, 255, 0.2);
+        }
+        
+        /* Tab Navigation - Theme Specific */
+        body[data-design="apple"] #settings_modal .m3-settings-nav-button[data-active="true"] {
+            border-color: rgba(191, 90, 242, 0.8) !important;
+            color: rgba(191, 90, 242, 1) !important;
+            background: rgba(191, 90, 242, 0.08);
+        }
+        
+        body[data-design="fluent"] #settings_modal .m3-settings-nav-button[data-active="true"] {
+            border-color: #6495ED !important;
+            color: #6495ED !important;
+            background: rgba(100, 149, 237, 0.08);
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-settings-nav-button {
+            background: linear-gradient(145deg, #e8e8eb, #ffffff);
+            box-shadow: 3px 3px 6px #d1d1d4, -3px -3px 6px #ffffff;
+            border: none !important;
+            margin: 0 4px;
+            border-radius: 20px;
+        }
+        
+        body[data-design="clay"] #settings_modal .m3-settings-nav-button[data-active="true"] {
+            background: linear-gradient(145deg, #ffffff, #e8e8eb);
+            box-shadow: inset 2px 2px 5px #d1d1d4, inset -2px -2px 5px #ffffff;
+            color: #3d5a80 !important;
+        }
+        
+        body[data-design="prism"] #settings_modal .m3-settings-nav-button[data-active="true"] {
+            border-color: #00d2ff !important;
+            color: #00d2ff !important;
+            background: rgba(0, 210, 255, 0.1);
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        /* ==================================================================
        3. CSS UTILITIES (Shared)
        ================================================================== */
         .bg-primary {
@@ -2571,8 +2731,35 @@
 
         .m3-setting-card {
             background-color: var(--m3-surface-container);
-            padding: 16px;
+            padding: 20px;
             border: 1px solid var(--m3-outline-variant);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .m3-setting-card:hover {
+            border-color: var(--m3-outline);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Settings Modal Tabs */
+        .m3-settings-nav-button {
+            position: relative;
+            font-weight: 500;
+        }
+        
+        .m3-settings-nav-button[data-active="true"] {
+            color: var(--m3-primary) !important;
+            font-weight: 600;
+        }
+        
+        #settings_modal .m3-modal-content {
+            max-width: 640px;
+        }
+        
+        #settings_modal h3 {
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
 
         .m3-modal {
