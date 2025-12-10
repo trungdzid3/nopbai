@@ -159,6 +159,7 @@ function initApp() {
     statusLog.innerHTML = '<div class="log-entry text-outline">Khởi tạo ứng dụng...</div>';
 
     initTheme();
+    initMobileView(); // Initialize mobile view
     loadClassProfiles();
     loadActiveClass();
     loadSubmissionStatusFromCache();
@@ -3750,6 +3751,94 @@ function initTheme() {
 customColorInput.addEventListener('input', () => {
     applyTheme(localStorage.getItem('theme') || 'system', customColorInput.value);
 });
+
+// ==================================================================
+// MOBILE VIEW LOGIC
+// ==================================================================
+
+function initMobileView() {
+    const body = document.body;
+    const savedViewMode = localStorage.getItem('viewMode') || 'auto';
+    body.setAttribute('data-view-mode', savedViewMode);
+    
+    // Mobile menu toggle
+    const mobileMenuToggle = document.getElementById('mobile_menu_toggle');
+    const sidebar = document.querySelector('aside');
+    const overlay = document.getElementById('mobile_sidebar_overlay');
+    
+    if (mobileMenuToggle) {
+        mobileMenuToggle.onclick = () => {
+            sidebar?.classList.toggle('mobile-open');
+            overlay?.classList.toggle('active');
+        };
+    }
+    
+    if (overlay) {
+        overlay.onclick = () => {
+            sidebar?.classList.remove('mobile-open');
+            overlay?.classList.remove('active');
+        };
+    }
+    
+    // Mobile view toggle (switch between mobile/desktop)
+    const mobileViewToggle = document.getElementById('mobile_view_toggle');
+    if (mobileViewToggle) {
+        mobileViewToggle.onclick = () => {
+            const currentMode = body.getAttribute('data-view-mode');
+            const newMode = currentMode === 'desktop' ? 'auto' : 'desktop';
+            body.setAttribute('data-view-mode', newMode);
+            localStorage.setItem('viewMode', newMode);
+            
+            // Update button icon and title
+            if (newMode === 'desktop') {
+                mobileViewToggle.title = 'Chuyển sang giao diện điện thoại';
+                mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>`;
+            } else {
+                mobileViewToggle.title = 'Chuyển sang giao diện máy tính';
+                mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>`;
+            }
+        };
+    }
+    
+    // Mobile bottom navigation
+    const bottomNavItems = document.querySelectorAll('.mobile-bottom-nav-item');
+    bottomNavItems.forEach(item => {
+        item.onclick = () => {
+            const nav = item.dataset.nav;
+            
+            // Update active state
+            bottomNavItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            
+            // Handle navigation
+            switch(nav) {
+                case 'home':
+                    // Scroll to top of main content
+                    document.querySelector('main')?.scrollTo(0, 0);
+                    break;
+                case 'assignments':
+                    // Scroll to assignments section
+                    document.getElementById('assignment-buttons-container')?.scrollIntoView({ behavior: 'smooth' });
+                    break;
+                case 'status':
+                    // Scroll to status section
+                    document.getElementById('submission-status-list')?.scrollIntoView({ behavior: 'smooth' });
+                    break;
+                case 'settings':
+                    // Open settings modal
+                    document.getElementById('settings_modal')?.setAttribute('aria-hidden', 'false');
+                    break;
+            }
+        };
+    });
+}
 
 // ==================================================================
 // AUTO-UPDATE: KIỂM TRA PHIÊN BẢN MỚI

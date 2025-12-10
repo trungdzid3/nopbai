@@ -2143,6 +2143,129 @@
         /* ==================================================================
        3. CSS UTILITIES (Shared)
        ================================================================== */
+        
+        /* Mobile View Styles */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: var(--m3-surface-container);
+            border-bottom: 1px solid var(--m3-outline-variant);
+        }
+        
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: var(--m3-surface-container);
+            border-top: 1px solid var(--m3-outline-variant);
+            padding: 8px 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px;
+            color: var(--m3-on-surface-variant);
+            transition: all 0.2s;
+            border-radius: 12px;
+        }
+        
+        .mobile-bottom-nav-item.active {
+            color: var(--m3-primary);
+            background: rgba(var(--m3-primary-rgb, 139, 92, 246), 0.1);
+        }
+        
+        .mobile-bottom-nav-text {
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        /* Mobile sidebar overlay */
+        .mobile-sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .mobile-sidebar-overlay.active {
+            opacity: 1;
+        }
+        
+        /* Auto-detect mobile or force desktop */
+        @media (max-width: 768px) {
+            body[data-view-mode="auto"] .mobile-header,
+            body[data-view-mode="mobile"] .mobile-header {
+                display: block;
+            }
+            
+            body[data-view-mode="auto"] .mobile-bottom-nav,
+            body[data-view-mode="mobile"] .mobile-bottom-nav {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            body[data-view-mode="auto"] aside,
+            body[data-view-mode="mobile"] aside {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                bottom: 0;
+                z-index: 50;
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                width: 85vw;
+                max-width: 320px;
+            }
+            
+            body[data-view-mode="auto"] aside.mobile-open,
+            body[data-view-mode="mobile"] aside.mobile-open {
+                transform: translateX(0);
+            }
+            
+            body[data-view-mode="auto"] main,
+            body[data-view-mode="mobile"] main {
+                padding-top: 64px;
+                padding-bottom: 72px;
+            }
+            
+            body[data-view-mode="auto"] .mobile-sidebar-overlay,
+            body[data-view-mode="mobile"] .mobile-sidebar-overlay {
+                display: block;
+            }
+        }
+        
+        /* Force desktop view on mobile */
+        body[data-view-mode="desktop"] .mobile-header,
+        body[data-view-mode="desktop"] .mobile-bottom-nav,
+        body[data-view-mode="desktop"] .mobile-sidebar-overlay {
+            display: none !important;
+        }
+        
+        body[data-view-mode="desktop"] aside {
+            position: static !important;
+            transform: none !important;
+        }
+        
+        body[data-view-mode="desktop"] main {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+        
         .bg-primary {
             background-color: var(--m3-primary);
         }
@@ -3646,7 +3769,7 @@
     </style>
 </head>
 
-<body class="bg-background text-on-background antialiased min-h-screen" data-design="material">
+<body class="bg-background text-on-background antialiased min-h-screen" data-design="material" data-view-mode="auto">
 
     <!-- SVG Filter -->
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
@@ -3656,7 +3779,30 @@
         </filter>
     </svg>
 
-    <div class="flex h-screen">
+    <!-- Mobile Header -->
+    <header id="mobile_header" class="mobile-header">
+        <div class="flex items-center justify-between px-4 py-3">
+            <div class="flex items-center gap-3">
+                <button id="mobile_menu_toggle" class="m3-button m3-button-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h1 class="text-lg font-medium text-on-surface">PDF Bài tập</h1>
+            </div>
+            <button id="mobile_view_toggle" class="m3-button m3-button-icon-tonal" title="Chuyển sang giao diện máy tính">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex h-screen" id="app_container">
         <!-- SIDEBAR (Giữ nguyên) -->
         <aside
             class="w-80 bg-surface-container-highest p-4 flex flex-col space-y-4 overflow-y-auto min-h-screen sticky top-0 transition-colors duration-300">
@@ -3861,6 +4007,39 @@
             </div>
         </main>
     </div>
+    
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile_sidebar_overlay" class="mobile-sidebar-overlay"></div>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <button class="mobile-bottom-nav-item active" data-nav="home">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="mobile-bottom-nav-text">Trang chủ</span>
+        </button>
+        <button class="mobile-bottom-nav-item" data-nav="assignments">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span class="mobile-bottom-nav-text">Bài tập</span>
+        </button>
+        <button class="mobile-bottom-nav-item" data-nav="status">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span class="mobile-bottom-nav-text">Trạng thái</span>
+        </button>
+        <button class="mobile-bottom-nav-item" data-nav="settings">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m0-6h6m-6 0H6"></path>
+            </svg>
+            <span class="mobile-bottom-nav-text">Cài đặt</span>
+        </button>
+    </nav>
 
     <!-- GUIDE MODAL -->
     <div id="guide_modal" aria-hidden="true"
