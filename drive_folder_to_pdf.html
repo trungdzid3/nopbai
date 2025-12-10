@@ -2287,31 +2287,12 @@
         
         /* Ensure buttons in mobile sidebar are clickable */
         body[data-view-mode="auto"] aside button,
-        body[data-view-mode="mobile"] aside button {
+        body[data-view-mode="mobile"] aside button,
+        body[data-view-mode="auto"] aside,
+        body[data-view-mode="mobile"] aside {
             position: relative;
             z-index: 1;
             pointer-events: auto;
-        }
-        
-        /* Mobile view enforcement - make mobile layout always visible in mobile */
-        @media (max-width: 1024px) {
-            body[data-view-mode="mobile"] .mobile-header {
-                display: block !important;
-            }
-            
-            body[data-view-mode="mobile"] .mobile-bottom-nav {
-                display: grid !important;
-            }
-            
-            body[data-view-mode="mobile"] .mobile-sidebar-overlay {
-                display: block !important;
-            }
-            
-            body[data-view-mode="mobile"] aside {
-                position: fixed !important;
-                top: 56px !important;
-                transform: translateX(-100%) !important;
-            }
         }
         
         .bg-primary {
@@ -3840,13 +3821,6 @@
                 </button>
                 <h1 class="text-lg font-medium text-on-surface">PDF Bài tập</h1>
             </div>
-            <button id="mobile_view_toggle" class="m3-button m3-button-icon-tonal" title="Chuyển sang giao diện máy tính">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-            </button>
         </div>
     </header>
 

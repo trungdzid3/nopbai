@@ -3758,8 +3758,8 @@ customColorInput.addEventListener('input', () => {
 
 function initMobileView() {
     const body = document.body;
-    const savedViewMode = localStorage.getItem('viewMode') || 'auto';
-    body.setAttribute('data-view-mode', savedViewMode);
+    // Always use 'auto' mode - responsive based on screen size
+    body.setAttribute('data-view-mode', 'auto');
     
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobile_menu_toggle');
@@ -3783,21 +3783,6 @@ function initMobileView() {
         });
     }
     
-    // Mobile view toggle (switch between mobile/desktop)
-    const mobileViewToggle = document.getElementById('mobile_view_toggle');
-    if (mobileViewToggle) {
-        // Update initial icon based on current mode
-        updateViewToggleIcon(savedViewMode);
-        
-        mobileViewToggle.addEventListener('click', () => {
-            const currentMode = body.getAttribute('data-view-mode');
-            const newMode = currentMode === 'desktop' ? 'auto' : 'desktop';
-            body.setAttribute('data-view-mode', newMode);
-            localStorage.setItem('viewMode', newMode);
-            updateViewToggleIcon(newMode);
-        });
-    }
-    
     // Mobile bottom navigation
     const bottomNavItems = document.querySelectorAll('.mobile-bottom-nav-item');
     if (bottomNavItems.length > 0) {
@@ -3814,26 +3799,6 @@ function initMobileView() {
                 handleMobileNavigation(nav);
             });
         });
-    }
-}
-
-function updateViewToggleIcon(mode) {
-    const mobileViewToggle = document.getElementById('mobile_view_toggle');
-    if (!mobileViewToggle) return;
-    
-    if (mode === 'desktop') {
-        mobileViewToggle.title = 'Chuyển sang giao diện điện thoại';
-        mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-        </svg>`;
-    } else {
-        mobileViewToggle.title = 'Chuyển sang giao diện máy tính';
-        mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="8" y1="21" x2="16" y2="21"></line>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
-        </svg>`;
     }
 }
 
