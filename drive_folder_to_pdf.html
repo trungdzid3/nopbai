@@ -1973,6 +1973,9 @@
                 inset -3px -3px 6px var(--clay-shadow-light);
         }
         
+        /* Active buttons (selected) */
+        body[data-design="clay"] #settings_modal .design-btn[data-active="true"],
+        body[data-design="clay"] #settings_modal .theme-btn[data-active="true"],
         body[data-design="clay"] #settings_modal .m3-button-filled {
             background: var(--clay-primary);
             box-shadow: 
@@ -1980,6 +1983,18 @@
                 -6px -6px 12px var(--clay-shadow-light);
             border: none;
             color: #ffffff;
+        }
+        
+        /* Brighter active state in dark mode */
+        body.dark[data-design="clay"] #settings_modal .design-btn[data-active="true"],
+        body.dark[data-design="clay"] #settings_modal .theme-btn[data-active="true"],
+        body.dark[data-design="clay"] #settings_modal .m3-button-filled {
+            background: var(--clay-primary);
+            box-shadow: 
+                6px 6px 12px var(--clay-shadow-dark),
+                -6px -6px 12px var(--clay-shadow-light),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            filter: brightness(1.3);
         }
         
         /* Prism Settings Modal */
