@@ -3766,78 +3766,106 @@ function initMobileView() {
     const sidebar = document.querySelector('aside');
     const overlay = document.getElementById('mobile_sidebar_overlay');
     
-    if (mobileMenuToggle) {
-        mobileMenuToggle.onclick = () => {
-            sidebar?.classList.toggle('mobile-open');
-            overlay?.classList.toggle('active');
-        };
+    if (mobileMenuToggle && sidebar && overlay) {
+        mobileMenuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        });
     }
     
-    if (overlay) {
-        overlay.onclick = () => {
-            sidebar?.classList.remove('mobile-open');
-            overlay?.classList.remove('active');
-        };
+    if (overlay && sidebar) {
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        });
     }
     
     // Mobile view toggle (switch between mobile/desktop)
     const mobileViewToggle = document.getElementById('mobile_view_toggle');
     if (mobileViewToggle) {
-        mobileViewToggle.onclick = () => {
+        // Update initial icon based on current mode
+        updateViewToggleIcon(savedViewMode);
+        
+        mobileViewToggle.addEventListener('click', () => {
             const currentMode = body.getAttribute('data-view-mode');
             const newMode = currentMode === 'desktop' ? 'auto' : 'desktop';
             body.setAttribute('data-view-mode', newMode);
             localStorage.setItem('viewMode', newMode);
-            
-            // Update button icon and title
-            if (newMode === 'desktop') {
-                mobileViewToggle.title = 'Chuyển sang giao diện điện thoại';
-                mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
-                </svg>`;
-            } else {
-                mobileViewToggle.title = 'Chuyển sang giao diện máy tính';
-                mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>`;
-            }
-        };
+            updateViewToggleIcon(newMode);
+        });
     }
     
     // Mobile bottom navigation
     const bottomNavItems = document.querySelectorAll('.mobile-bottom-nav-item');
-    bottomNavItems.forEach(item => {
-        item.onclick = () => {
-            const nav = item.dataset.nav;
-            
-            // Update active state
-            bottomNavItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            
-            // Handle navigation
-            switch(nav) {
-                case 'home':
-                    // Scroll to top of main content
-                    document.querySelector('main')?.scrollTo(0, 0);
-                    break;
-                case 'assignments':
-                    // Scroll to assignments section
-                    document.getElementById('assignment-buttons-container')?.scrollIntoView({ behavior: 'smooth' });
-                    break;
-                case 'status':
-                    // Scroll to status section
-                    document.getElementById('submission-status-list')?.scrollIntoView({ behavior: 'smooth' });
-                    break;
-                case 'settings':
-                    // Open settings modal
-                    document.getElementById('settings_modal')?.setAttribute('aria-hidden', 'false');
-                    break;
+    if (bottomNavItems.length > 0) {
+        bottomNavItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const nav = item.dataset.nav;
+                
+                // Update active state
+                bottomNavItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Handle navigation
+                handleMobileNavigation(nav);
+            });
+        });
+    }
+}
+
+function updateViewToggleIcon(mode) {
+    const mobileViewToggle = document.getElementById('mobile_view_toggle');
+    if (!mobileViewToggle) return;
+    
+    if (mode === 'desktop') {
+        mobileViewToggle.title = 'Chuyển sang giao diện điện thoại';
+        mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>`;
+    } else {
+        mobileViewToggle.title = 'Chuyển sang giao diện máy tính';
+        mobileViewToggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>`;
+    }
+}
+
+function handleMobileNavigation(nav) {
+    const mainContent = document.querySelector('main');
+    
+    switch(nav) {
+        case 'home':
+            // Scroll to top of main content
+            if (mainContent) {
+                mainContent.scrollTo({ top: 0, behavior: 'smooth' });
             }
-        };
-    });
+            break;
+        case 'assignments':
+            // Scroll to assignments section
+            const assignmentsContainer = document.getElementById('assignment-buttons-container');
+            if (assignmentsContainer) {
+                assignmentsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            break;
+        case 'status':
+            // Scroll to status section
+            const statusList = document.getElementById('submission-status-list');
+            if (statusList) {
+                statusList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            break;
+        case 'settings':
+            // Open settings modal
+            const settingsModal = document.getElementById('settings_modal');
+            if (settingsModal) {
+                settingsModal.setAttribute('aria-hidden', 'false');
+            }
+            break;
+    }
 }
 
 // ==================================================================
