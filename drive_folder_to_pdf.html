@@ -2295,6 +2295,22 @@
             pointer-events: auto;
         }
         
+        /* Responsive layout */
+        @media (max-width: 1024px) {
+            /* Hide flex layout on mobile */
+            body[data-view-mode="auto"] > div.flex {
+                display: block !important;
+            }
+        }
+        
+        /* Main content layout */
+        @media (min-width: 1025px) {
+            body[data-view-mode="auto"] > div.flex {
+                display: flex;
+                height: 100vh;
+            }
+        }
+        
         .bg-primary {
             background-color: var(--m3-primary);
         }
@@ -3827,7 +3843,8 @@
     <div class="flex h-screen" id="app_container">
         <!-- SIDEBAR (Giữ nguyên) -->
         <aside
-            class="w-80 bg-surface-container-highest p-4 flex flex-col space-y-4 overflow-y-auto min-h-screen sticky top-0 transition-colors duration-300">
+            class="bg-surface-container-highest p-4 flex flex-col space-y-4 overflow-y-auto transition-colors duration-300"
+            style="width: 320px; min-height: 100vh; position: sticky; top: 0;">
             <header class="p-2">
                 <h1 class="text-2xl font-medium text-on-surface">Chuyển đổi PDF bài tập</h1>
                 <p class="text-sm text-on-surface-variant">Tự động - Nhanh chóng - Tiện lợi</p>
@@ -3906,7 +3923,7 @@
         </aside>
 
         <!-- MAIN CONTENT (GIỮ NGUYÊN CẤU TRÚC, THÊM TOOLBAR LÊN TRÊN) -->
-        <main class="flex-1 p-4 md:p-6 overflow-y-auto h-screen">
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto" style="width: 100%;">
             <div class="max-w-7xl mx-auto flex flex-col h-full">
 
                 <!-- [MỚI] QUICK ACTIONS TOOLBAR (Chèn vào vị trí trên cùng) -->
