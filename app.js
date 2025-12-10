@@ -45,9 +45,10 @@ const authButton = document.getElementById('authorize_button');
 const signoutButton = document.getElementById('signout_button');
 const processButton = document.getElementById('process_button');
 const openSettingsButton = document.getElementById('open_settings_button');
-const autoRefreshButton = document.getElementById('auto_refresh_button');
-const autoRefreshIcon = document.getElementById('auto_refresh_icon');
-const autoRefreshText = document.getElementById('auto_refresh_text');
+// Auto refresh button removed - now always enabled
+// const autoRefreshButton = document.getElementById('auto_refresh_button');
+// const autoRefreshIcon = document.getElementById('auto_refresh_icon');
+// const autoRefreshText = document.getElementById('auto_refresh_text');
 
 const classProfileSelect = document.getElementById('class_profile_select');
 const editClassButton = document.getElementById('edit_class_button');
@@ -167,10 +168,8 @@ function initApp() {
     if (localStorage.getItem('root_folder_id') && inpRootFolderId) inpRootFolderId.value = localStorage.getItem('root_folder_id');
 
     // Set initial state of auto-refresh switch
-    if (localStorage.getItem('autoRefreshState') === 'on') {
-        isAutoRefreshOn = true;
-        updateAutoRefreshUI(true);
-    }
+    // Auto refresh always enabled on app start
+    startAutoRefresh();
 
     bindModalEvents();
     bindSettingsTabs();
@@ -610,7 +609,7 @@ function bindControlButtons() {
     authButton.onclick = handleAuthClick;
     signoutButton.onclick = handleSignoutClick;
     processButton.onclick = handleProcessClick;
-    autoRefreshButton.onclick = toggleAutoRefresh;
+    // autoRefreshButton removed - auto refresh always enabled
 }
 
 function loadClassProfiles() {
@@ -3295,28 +3294,18 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
     processButton.disabled = false;
 }
 
-// --- Auto Refresh ---
-function toggleAutoRefresh() {
-    if (isAutoRefreshOn) {
-        stopAutoRefresh();
-    } else {
-        startAutoRefresh();
-    }
-}
+// --- Auto Refresh (Always Enabled) ---
+// Toggle function removed - auto refresh always runs once a class/assignment is selected
 
 function startAutoRefresh() {
     if (isAutoRefreshOn && autoRefreshTimer) return;
     if (!classProfileSelect.value || !gapi.client.getToken() || !activeAssignment) {
-        updateStatus("✗ Không thể bật: Vui lòng chọn Lớp, Bài tập và Đăng nhập.", true);
+        updateStatus("⏸ Chưa quét: Vui lòng chọn Lớp, Bài tập và Đăng nhập.", true);
         isAutoRefreshOn = false;
-        localStorage.setItem('autoRefreshState', 'off');
-        updateAutoRefreshUI(false); // Ensure UI is off
         return;
     }
     isAutoRefreshOn = true;
-    localStorage.setItem('autoRefreshState', 'on');
-    updateAutoRefreshUI(true);
-    updateStatus("✓ Đã bật tự động quét nền (mỗi 5 phút).");
+    updateStatus("✓ Quét nền tự động được bật (mỗi 5 phút).");
 
     runAutoScan();
     autoRefreshTimer = setInterval(runAutoScan, REFRESH_INTERVAL);
@@ -3325,20 +3314,14 @@ function startAutoRefresh() {
 function stopAutoRefresh() {
     if (!isAutoRefreshOn) return;
     isAutoRefreshOn = false;
-    localStorage.setItem('autoRefreshState', 'off');
     if (autoRefreshTimer) {
         clearInterval(autoRefreshTimer);
         autoRefreshTimer = null;
     }
-    updateAutoRefreshUI(false);
-    updateStatus("✓ Đã tắt tự động quét nền.");
+    updateStatus("⏸ Quét nền tự động dừng.");
 }
 
-function updateAutoRefreshUI(isActive) {
-    if (autoRefreshButton) {
-        autoRefreshButton.setAttribute('aria-checked', isActive ? 'true' : 'false');
-    }
-}
+// updateAutoRefreshUI removed - not needed anymore
 
 async function runAutoScan() {
     if (!isAutoRefreshOn) return;
@@ -3572,7 +3555,7 @@ async function mergePdfs(pdfBuffers, folderName) {
         try {
             const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
             const firstPage = mergedPdf.getPages()[0];
-            firstPage.drawText(`Người nộp: ${folderName}`, { x: 30, y: firstPage.getHeight() - 30, font: embeddedFont, size: 12, color: rgb(1, 0, 0), strokeColor: rgb(0, 0, 0), strokeWidth: 0.5, renderMode: 'FillAndStroke' });
+            firstPage.drawText(`Người nộp: ${folderName}`, { x: 30, y: firstPage.getHeight() - 15, font: embeddedFont, size: 12, color: rgb(1, 0, 0), strokeColor: rgb(0, 0, 0), strokeWidth: 0.5, renderMode: 'FillAndStroke' });
         } catch (embedError) { }
     }
     return mergedPdf.save();

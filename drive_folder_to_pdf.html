@@ -3719,57 +3719,25 @@
                     </div>
                     <!-- [MỚI] PANEL AUTOMATION -->
                     <div id="settings-panel-automation" class="m3-settings-panel space-y-6 hidden">
-                        <!-- 2 Cards Nằm Cạnh Nhau -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- Tự động Quét Nền + Hướng dẫn -->
-                            <div class="flex flex-col gap-3">
-                                <!-- Tự động Quét Nền -->
-                                <section class="m3-setting-card rounded-[28px] overflow-hidden">
-                                    <div class="p-4">
-                                        <div class="flex items-center justify-between mb-3">
-                                            <div class="flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
-                                                    <circle cx="12" cy="12" r="9"></circle>
-                                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                                </svg>
-                                                <div>
-                                                    <h2 class="text-base font-medium text-on-surface">Tự động Quét Nền
-                                                    </h2>
-                                                    <p class="text-xs text-on-surface-variant">Cập nhật định kỳ</p>
-                                                </div>
-                                            </div>
-                                            <button id="auto_refresh_button" class="m3-switch" aria-checked="false"
-                                                role="switch" aria-label="Toggle auto refresh"></button>
-                                        </div>
-                                        <p class="text-xs text-on-surface-variant">Làm mới danh sách mỗi 5 phút.</p>
-                                    </div>
-                                </section>
-
-                                <!-- Ghi chú Hướng dẫn -->
-                                <div class="bg-secondary-container/10 rounded-[24px] p-3 border border-secondary/20">
-                                    <div class="flex gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                        </svg>
-                                        <div class="text-xs text-on-surface-variant space-y-1">
-                                            <p class="font-medium text-on-surface">Hướng dẫn:</p>
-                                            <ul class="list-disc list-inside space-y-0.5">
-                                                <li>Nhập Folder ID thư mục Drive chứa để tạo lớp tự động</li>
-                                                <li>Bật Quét Nền để cập nhật danh sách</li>
-                                            </ul>
-                                        </div>
-                                    </div>
+                        <!-- Info Banner -->
+                        <div class="bg-secondary-container/10 rounded-[24px] p-4 border border-secondary/20 space-y-2">
+                            <div class="flex items-start gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5 text-secondary">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <div class="text-sm text-on-surface-variant space-y-1">
+                                    <p class="font-medium text-on-surface">Tự động Quét Nền</p>
+                                    <p class="text-xs">Hệ thống tự động quét danh sách bài tập mỗi 5 phút khi bạn chọn lớp và bài tập. Không cần bật/tắt.</p>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Cấu hình Thư mục Gốc -->
-                            <section class="m3-setting-card rounded-[28px] overflow-hidden" id="root-config-section">
+                        <!-- Cấu hình Thư mục Gốc -->
+                        <section class="m3-setting-card rounded-[28px] overflow-hidden" id="root-config-section">
                                 <div class="p-4">
                                     <div class="flex items-center gap-2 mb-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
@@ -3804,7 +3772,6 @@
                                     </div>
                                 </div>
                             </section>
-                        </div>
                     </div>
                 </div>
             </div>
