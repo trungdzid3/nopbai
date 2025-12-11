@@ -2171,6 +2171,7 @@
             box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
             height: 72px;
             width: 100%;
+            pointer-events: auto;
         }
         
         .mobile-bottom-nav-item {
@@ -2187,6 +2188,9 @@
             border: none;
             cursor: pointer;
             width: 100%;
+            pointer-events: auto;
+            position: relative;
+            z-index: 1001;
         }
         
         .mobile-bottom-nav-item:active {
@@ -2207,7 +2211,10 @@
         .mobile-sidebar-overlay {
             display: none;
             position: fixed;
-            inset: 0;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 72px;
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
             opacity: 0;
