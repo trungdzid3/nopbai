@@ -3775,8 +3775,9 @@ function initMobileView() {
     
     if (overlay && sidebar) {
         overlay.addEventListener('click', (e) => {
-            // Chỉ đóng sidebar nếu click vào overlay, không phải vào sidebar
-            if (e.target === overlay) {
+            // Only close sidebar if clicking on overlay background, not on sidebar itself
+            const isClickInsideSidebar = sidebar.contains(e.target);
+            if (e.target === overlay && !isClickInsideSidebar) {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
             }

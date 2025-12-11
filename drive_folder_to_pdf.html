@@ -2255,7 +2255,7 @@
                 top: 56px;
                 left: 0;
                 bottom: 72px;
-                z-index: 998;
+                z-index: 1001;
                 transform: translateX(-100%);
                 transition: transform 0.3s;
                 width: 85vw;
@@ -2321,7 +2321,7 @@
                 max-width: 320px !important;
                 transform: translateX(-100%) !important;
                 transition: transform 0.3s !important;
-                z-index: 998 !important;
+                z-index: 1001 !important;
                 background: var(--m3-surface-container-highest) !important;
             }
             
@@ -2494,6 +2494,14 @@
 
         body:not([data-design="apple"]) .elevation-1 {
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Ensure sidebar buttons are always fully opaque and clickable on mobile */
+        @media (max-width: 1024px) {
+            aside button {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
         }
 
         body:not([data-design="apple"]) .elevation-2 {
@@ -4116,7 +4124,7 @@
         <button class="mobile-bottom-nav-item" data-nav="settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
-                <path d="M12 1v6M12 13v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M13 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"></path>
+                <path d="M12 1v6m0 6v6m4.22-15.78l-4.24 4.24m4.24 4.24l-4.24 4.24m3.56-10.78h6m-6 0H1m10.78 4.22l4.24-4.24m-4.24 4.24l4.24 4.24"></path>
             </svg>
             <span class="mobile-bottom-nav-text">Cài đặt</span>
         </button>
