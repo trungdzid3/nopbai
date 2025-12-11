@@ -3803,6 +3803,15 @@ function initMobileView() {
 }
 
 function handleMobileNavigation(nav) {
+    const sidebar = document.querySelector('aside');
+    const overlay = document.getElementById('mobile_sidebar_overlay');
+    
+    // Close sidebar when navigating
+    if (sidebar && overlay) {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    }
+    
     const mainContent = document.querySelector('main');
     
     switch(nav) {
@@ -3810,20 +3819,6 @@ function handleMobileNavigation(nav) {
             // Scroll to top of main content
             if (mainContent) {
                 mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-            break;
-        case 'assignments':
-            // Scroll to assignments section
-            const assignmentsContainer = document.getElementById('assignment-buttons-container');
-            if (assignmentsContainer) {
-                assignmentsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            break;
-        case 'status':
-            // Scroll to status section
-            const statusList = document.getElementById('submission-status-list');
-            if (statusList) {
-                statusList.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             break;
         case 'settings':

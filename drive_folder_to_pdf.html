@@ -2211,10 +2211,10 @@
         .mobile-sidebar-overlay {
             display: none;
             position: fixed;
-            top: 56px;
+            top: 0;
             left: 0;
             right: 0;
-            bottom: 72px;
+            bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
             opacity: 0;
@@ -2227,6 +2227,14 @@
             pointer-events: auto;
         }
         
+        /* Mobile settings modal sizing */
+        @media (max-width: 1024px) {
+            #settings-modal-wrapper {
+                max-width: calc(100vw - 16px) !important;
+                max-height: calc(100vh - 120px) !important;
+            }
+        }
+
         /* Auto-detect mobile or force desktop */
         @media (max-width: 1024px) {
             body[data-view-mode="auto"] .mobile-header,
@@ -2237,7 +2245,7 @@
             body[data-view-mode="auto"] .mobile-bottom-nav,
             body[data-view-mode="mobile"] .mobile-bottom-nav {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(2, 1fr);
                 gap: 0;
             }
             
@@ -4105,22 +4113,10 @@
             </svg>
             <span class="mobile-bottom-nav-text">Trang chủ</span>
         </button>
-        <button class="mobile-bottom-nav-item" data-nav="assignments">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-            <span class="mobile-bottom-nav-text">Bài tập</span>
-        </button>
-        <button class="mobile-bottom-nav-item" data-nav="status">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-            <span class="mobile-bottom-nav-text">Trạng thái</span>
-        </button>
         <button class="mobile-bottom-nav-item" data-nav="settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
-                <path d="M12 1v6m0 6v6m0-6h6m-6 0H6"></path>
+                <path d="M12 1v6M12 13v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M13 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"></path>
             </svg>
             <span class="mobile-bottom-nav-text">Cài đặt</span>
         </button>
@@ -4293,7 +4289,7 @@
     <!-- SETTINGS MODAL -->
     <div id="settings_modal" aria-hidden="true"
         class="m3-modal fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="m3-modal-content bg-surface-container rounded-3xl elevation-2 flex flex-col max-h-[90vh] w-full" style="max-width: 640px;">
+        <div class="m3-modal-content bg-surface-container rounded-3xl elevation-2 flex flex-col max-h-[90vh] w-full" style="max-width: 640px;" id="settings-modal-wrapper">
             <header class="px-6 py-4 flex items-center justify-between border-b border-outline-variant flex-shrink-0 rounded-t-3xl">
                 <h2 class="text-lg font-semibold text-on-surface">Cài đặt</h2>
                 <button id="close_settings_button" class="m3-button m3-button-icon rounded-full" title="Đóng"><svg
