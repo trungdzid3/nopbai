@@ -3744,14 +3744,6 @@ async function createPdfFromImages(imageFiles, folderName) {
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // [NEW] Xoay trang nếu AI phát hiện góc
-        // Tesseract trả về góc văn bản HIỆN TẠI, cần xoay NGƯỢC lại để thẳng
-        if (rotation !== 0) {
-            const correctRotation = (360 - rotation) % 360; // Đảo ngược góc
-            page.setRotation(degrees(correctRotation));
-            console.log(`[AI] Phát hiện văn bản nghiêng ${rotation}° → Xoay trang ${correctRotation}°`);
-        }
-        
         // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
             try {
@@ -3781,12 +3773,20 @@ async function createPdfFromImages(imageFiles, folderName) {
         }
         
         // [IMPROVED] Vẽ ảnh ở phía dưới header
-        page.drawImage(image, {
+        const drawOptions = {
             x: (pageWidth - scaledWidth) / 2,
             y: (availableHeight - scaledHeight) / 2,
             width: scaledWidth,
             height: scaledHeight
-        });
+        };
+        
+        // [AI] Áp dụng xoay nếu phát hiện (chỉ xoay 90, 180, 270)
+        if (rotation === 90 || rotation === 180 || rotation === 270) {
+            drawOptions.rotate = degrees(rotation);
+            console.log(`[AI] Xoay ảnh ${rotation}°`);
+        }
+        
+        page.drawImage(image, drawOptions);
     }
     return pdfDoc.save();
 }
@@ -4711,17 +4711,18 @@ async function detectTextOrientation(imageBlob) {
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
+        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(2)}, script=${data.script || 'unknown'}`);
         
         await worker.terminate();
         
-        // Ngưỡng tin cậy
-        if (confidence > 2) {
-            console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
+        // Ngưỡng tin cậy - hạ xuống 1.5 cho chữ viết tay
+        // Chỉ áp dụng xoay 90, 180, 270 (không xoay nếu AI nói 0)
+        if (confidence > 1.5 && detectedAngle !== 0) {
+            console.log(`[AI] ✓ Tin cậy ${confidence.toFixed(2)} → Áp dụng xoay ${detectedAngle}°`);
             return detectedAngle;
         }
         
-        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Bỏ qua`);
+        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence.toFixed(2)}) hoặc góc=0 → Bỏ qua`);
         return 0;
         
     } catch (err) {
