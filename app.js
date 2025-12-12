@@ -3751,8 +3751,8 @@ async function createPdfFromImages(imageFiles, folderName) {
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
         
-        // [NEW] Dự trữ 50px ở trên cho header (tên người nộp)
-        const headerHeight = 50;
+        // [NEW] Chừa 25px ở trên cho header (tên người nộp)
+        const headerHeight = 25;
         const availableHeight = pageHeight - headerHeight;
         
         // Thu nhỏ ảnh vừa vào không gian còn lại
@@ -3764,36 +3764,18 @@ async function createPdfFromImages(imageFiles, folderName) {
         
         // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
-            try {
-                // Vẽ text tên người nộp ở đầu trang (từ trên xuống)
-                // Y coordinate: pageHeight - 30 (vì PDF tính từ dưới lên)
-                page.drawText(`Người nộp: ${folderName}`, {
-                    x: 20,
-                    y: pageHeight - 30,
-                    size: 14,
-                    color: rgb(0, 0, 0),  // Màu đen để dễ nhìn
-                });
-                console.log(`[PDF] Vẽ header: "Người nộp: ${folderName}" tại y=${pageHeight - 30}`);
-            } catch (e) {
-                console.error('Lỗi vẽ header:', e);
-                // Fallback - vẽ chỉ tên
-                try {
-                    page.drawText(folderName, {
-                        x: 20,
-                        y: pageHeight - 30,
-                        size: 12,
-                        color: rgb(0, 0, 0),
-                    });
-                } catch (e2) {
-                    console.error('Fallback header cũng thất bại:', e2);
-                }
-            }
+            page.drawText(`${folderName}`, {
+                x: 15,
+                y: pageHeight - 18,
+                size: 11,
+                color: rgb(0, 0, 0),
+            });
         }
         
-        // [IMPROVED] Vẽ ảnh ở phía dưới header (center vertical trong available space)
+        // [IMPROVED] Vẽ ảnh ở phía dưới header
         page.drawImage(image, {
             x: (pageWidth - scaledWidth) / 2,
-            y: headerHeight + (availableHeight - scaledHeight) / 2,
+            y: (availableHeight - scaledHeight) / 2,
             width: scaledWidth,
             height: scaledHeight
         });
@@ -3813,32 +3795,19 @@ async function mergePdfs(pdfBuffers, folderName) {
             
             // [NEW] Thêm header vào mỗi trang
             for (const page of copiedPages) {
-                try {
-                    if (folderName) {
-                        const pageHeight = page.getHeight();
-                        
-                        // Vẽ header tên người nộp ở đầu trang
-                        page.drawText(`Người nộp: ${folderName}`, {
-                            x: 20,
-                            y: pageHeight - 30,
-                            size: 14,
-                            color: rgb(0, 0, 0),  // Màu đen để dễ nhìn
-                        });
-                        console.log(`[PDF] Vẽ header PDF gộp: "Người nộp: ${folderName}"`);
-                    }
-                } catch (headerErr) {
-                    console.error('Lỗi vẽ header trang:', headerErr);
-                    // Fallback - cố gắng vẽ lại với chỉ tên
+                if (folderName) {
                     try {
                         const pageHeight = page.getHeight();
-                        page.drawText(folderName, {
-                            x: 20,
-                            y: pageHeight - 30,
-                            size: 12,
+                        
+                        // Vẽ header tên người nộp ở đầu trang - đơn giản
+                        page.drawText(`${folderName}`, {
+                            x: 15,
+                            y: pageHeight - 18,
+                            size: 11,
                             color: rgb(0, 0, 0),
                         });
-                    } catch (e) {
-                        console.error('Fallback header thất bại:', e);
+                    } catch (headerErr) {
+                        console.error('Lỗi vẽ header:', headerErr);
                     }
                 }
                 
