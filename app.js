@@ -2312,11 +2312,25 @@ async function handleProcessClick() {
             else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'submitted';
             else currentStatus = 'submitted';
 
-            syncedStatusList.push({ id: folder.id, name: cleanName, status: currentStatus });
+            syncedStatusList.push({ 
+                id: folder.id, 
+                name: cleanName, 
+                status: currentStatus,
+                createdTime: folder.createdTime || new Date().toISOString()
+            });
         });
 
         updateStatus("→ Đồng bộ hóa danh sách...");
-        syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Sắp xếp theo: 1) status group, 2) thời gian tạo (mới nhất trước)
+        const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
+        syncedStatusList.sort((a, b) => {
+            const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+            if (statusDiff !== 0) return statusDiff;
+            // Trong cùng group, sắp xếp theo thời gian (mới nhất trước)
+            return new Date(b.createdTime) - new Date(a.createdTime);
+        });
+        
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
 
@@ -2381,8 +2395,27 @@ function displaySubmissionStatus(statusList) {
 
     const list = document.createElement('ul');
     list.className = 'space-y-2';
+    
+    // Group items by status
+    const statusLabels = {
+        'submitted': '📝 Chưa xử lý',
+        'processed': '✅ Đã xử lý',
+        'overdue': '⏰ Quá hạn',
+        'error': '❌ Lỗi'
+    };
+    
+    let lastStatus = null;
 
     statusList.forEach(itemData => {
+        // Add group header if status changed
+        if (lastStatus !== itemData.status) {
+            const header = document.createElement('li');
+            header.className = 'text-xs font-bold text-on-surface-variant uppercase tracking-wide pt-3 pb-1 px-2 border-b border-outline-variant';
+            header.textContent = statusLabels[itemData.status] || itemData.status;
+            list.appendChild(header);
+            lastStatus = itemData.status;
+        }
+        
         const item = document.createElement('li');
         const sanitizedName = itemData.name.replace(/[^a-zA-Z0-9]/g, '-');
         item.id = `status-${sanitizedName}`;
@@ -4772,20 +4805,30 @@ async function updateSubmissionStats() {
         // 3. Đếm tổng số học sinh từ sheet
         const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
-        // 4. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        // 4. Đếm số người nộp theo trạng thái
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
-        let submittedCount = 0;
+        let totalSubmitted = 0;
+        let overdueCount = 0;
+        let onTimeCount = 0;
+        
         submissionItems.forEach(item => {
             const status = item.dataset.status;
-            if (status && status !== 'overdue') {
-                submittedCount++;
+            if (status) {
+                totalSubmitted++;
+                if (status === 'overdue') {
+                    overdueCount++;
+                } else if (status !== 'error') {
+                    onTimeCount++;
+                }
             }
         });
         
-        // 5. Cập nhật UI
-        if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
-        if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
-        if (statsDiv) statsDiv.classList.remove('hidden');
+        // 5. Cập nhật UI với thống kê chi tiết
+        const statsText = `${totalSubmitted}/${totalStudents} nộp | ${onTimeCount} đúng hạn | ${overdueCount} quá hạn`;
+        if (statsDiv) {
+            statsDiv.innerHTML = `<span class="text-xs font-medium">${statsText}</span>`;
+            statsDiv.classList.remove('hidden');
+        }
         
         console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
     } catch (err) {
