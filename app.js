@@ -4692,11 +4692,14 @@ async function detectTextOrientation(imageBlob) {
     try {
         console.log('[AI] Bắt đầu phân tích hướng văn bản...');
         
+        // Resize ảnh xuống 800px để AI xử lý nhanh hơn
+        const resizedBlob = await resizeImageBlob(imageBlob, 800);
+        
         // 1. Tạo worker Tesseract
         const worker = await Tesseract.createWorker('osd');
         
         // 2. Nhận diện orientation
-        const { data } = await worker.recognize(imageBlob);
+        const { data } = await worker.recognize(resizedBlob);
         
         // 3. Kết quả
         const detectedAngle = data.orientation_degrees || 0;
@@ -4706,9 +4709,9 @@ async function detectTextOrientation(imageBlob) {
         
         await worker.terminate();
         
-        // Chỉ tin AI nếu confidence > 2
-        if (confidence > 2) {
-            console.log(`[AI] ✓ Tin cậy cao → Áp dụng xoay ${detectedAngle}°`);
+        // Hạ ngưỡng confidence xuống 0.5 để xử lý được chữ viết tay
+        if (confidence > 0.5) {
+            console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
             return detectedAngle;
         }
         
@@ -4719,6 +4722,40 @@ async function detectTextOrientation(imageBlob) {
         console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
         return 0; // Fallback: không xoay
     }
+}
+
+/**
+ * Resize ảnh để giảm kích thước (tăng tốc độ AI)
+ */
+async function resizeImageBlob(blob, maxWidth) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            
+            // Chỉ resize nếu ảnh lớn hơn maxWidth
+            if (width > maxWidth) {
+                const ratio = maxWidth / width;
+                width = maxWidth;
+                height = height * ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob((resizedBlob) => {
+                resolve(resizedBlob || blob);
+            }, blob.type || 'image/jpeg', 0.9);
+        };
+        
+        img.onerror = () => resolve(blob); // Fallback: dùng ảnh gốc
+        img.src = URL.createObjectURL(blob);
+    });
 }
 
 /**
