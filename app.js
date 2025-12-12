@@ -2490,7 +2490,8 @@ async function changeSubmissionStatus(folderId, folderName, newStatus) {
                 await updateSubmissionStatusOnSheet(profile.sheetId, folderId, newStatus);
                 updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus}`);
             } catch (error) {
-                updateStatus(`⚠️ Cập nhật local thành công nhưng lỗi Drive: ${error.message}`, true);
+                const errorMsg = error?.message || error?.toString?.() || 'Lỗi không xác định';
+                updateStatus(`⚠️ Cập nhật local thành công nhưng lỗi Drive: ${errorMsg}`, true);
             }
         } else {
             updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus} (local)`);
@@ -2507,31 +2508,66 @@ async function updateSubmissionStatusOnSheet(sheetId, folderId, newStatus) {
             range: 'Cấu Hình!A:H'
         });
         
+        if (!response || !response.result) {
+            throw new Error('Không thể đọc dữ liệu từ Sheet');
+        }
+        
         const rows = response.result.values || [];
         
-        // Tìm hàng có folder ID (cột G) hoặc folder Name (cột A)
+        if (rows.length === 0) {
+            console.warn('[SHEET] Sheet trống, không thể cập nhật');
+            return;
+        }
+        
+        // Tìm hàng có folder ID (cột G - index 6) hoặc folder Name (cột A - index 0)
+        let foundRow = -1;
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i] && (rows[i][6] === folderId || rows[i][0] === folderId)) {
-                // Cột H (index 7) để lưu status
-                rows[i][7] = newStatus;
-                
-                // Cập nhật hàng đó
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: sheetId,
-                    range: `Cấu Hình!A${i + 1}:H${i + 1}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [rows[i]] }
-                });
-                
-                console.log(`[SHEET] Cập nhật status hàng ${i + 1}: ${newStatus}`);
-                return;
+            if (!rows[i]) continue;
+            
+            // So sánh cột G (index 6) với folderId
+            if (rows[i][6] && rows[i][6].toString().trim() === folderId.toString().trim()) {
+                foundRow = i;
+                break;
+            }
+            
+            // Fallback: so sánh cột A (index 0) nếu là folder name
+            if (rows[i][0] && rows[i][0].toString().trim() === folderId.toString().trim()) {
+                foundRow = i;
+                break;
             }
         }
         
-        console.warn(`[SHEET] Không tìm thấy folder ${folderId} để cập nhật status`);
+        if (foundRow === -1) {
+            console.warn(`[SHEET] Không tìm thấy folder ${folderId} trong sheet để cập nhật status`);
+            // Không throw error - có thể status chưa được ghi vào sheet
+            return;
+        }
+        
+        // Cập nhật cột H (index 7) với newStatus
+        if (!rows[foundRow][7]) {
+            rows[foundRow][7] = '';
+        }
+        rows[foundRow][7] = newStatus;
+        
+        // Ghi dữ liệu cập nhật
+        const updateResponse = await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `Cấu Hình!A${foundRow + 1}:H${foundRow + 1}`,
+            valueInputOption: 'RAW',
+            resource: { values: [rows[foundRow]] }
+        });
+        
+        if (!updateResponse || !updateResponse.result) {
+            throw new Error('Cập nhật không thành công');
+        }
+        
+        console.log(`[SHEET] ✓ Cập nhật status hàng ${foundRow + 1}: ${newStatus}`);
+        return updateResponse.result;
+        
     } catch (error) {
-        console.error('[SHEET] Lỗi cập nhật status:', error);
-        throw error;
+        const errorMsg = error?.message || error?.toString?.() || 'Lỗi không xác định';
+        console.error('[SHEET] Lỗi cập nhật status:', errorMsg, error);
+        throw new Error(`[Sheet] ${errorMsg}`);
     }
 }
 
@@ -3726,28 +3762,30 @@ async function createPdfFromImages(imageFiles, folderName) {
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // [IMPROVED] Vẽ header (tên người nộp) trên mỗi trang
+        // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
             try {
-                // Cố gắng vẽ text - không cần custom font
+                // Vẽ text tên người nộp ở đầu trang (từ trên xuống)
+                // Y coordinate: pageHeight - 30 (vì PDF tính từ dưới lên)
                 page.drawText(`Người nộp: ${folderName}`, {
                     x: 20,
-                    y: pageHeight - 25,
-                    size: 13,
-                    color: rgb(0, 97, 164),
+                    y: pageHeight - 30,
+                    size: 14,
+                    color: rgb(0, 0, 0),  // Màu đen để dễ nhìn
                 });
+                console.log(`[PDF] Vẽ header: "Người nộp: ${folderName}" tại y=${pageHeight - 30}`);
             } catch (e) {
-                console.warn('Lỗi vẽ header:', e);
-                // Fallback - vẽ lại ngay lập tức
+                console.error('Lỗi vẽ header:', e);
+                // Fallback - vẽ chỉ tên
                 try {
                     page.drawText(folderName, {
                         x: 20,
-                        y: pageHeight - 25,
+                        y: pageHeight - 30,
                         size: 12,
-                        color: rgb(0, 97, 164),
+                        color: rgb(0, 0, 0),
                     });
                 } catch (e2) {
-                    console.warn('Fallback header cũng thất bại:', e2);
+                    console.error('Fallback header cũng thất bại:', e2);
                 }
             }
         }
@@ -3779,27 +3817,28 @@ async function mergePdfs(pdfBuffers, folderName) {
                     if (folderName) {
                         const pageHeight = page.getHeight();
                         
-                        // Vẽ header tên người nộp
+                        // Vẽ header tên người nộp ở đầu trang
                         page.drawText(`Người nộp: ${folderName}`, {
                             x: 20,
-                            y: pageHeight - 25,
-                            size: 13,
-                            color: rgb(0, 97, 164),
+                            y: pageHeight - 30,
+                            size: 14,
+                            color: rgb(0, 0, 0),  // Màu đen để dễ nhìn
                         });
+                        console.log(`[PDF] Vẽ header PDF gộp: "Người nộp: ${folderName}"`);
                     }
                 } catch (headerErr) {
-                    console.warn('Lỗi vẽ header trang:', headerErr);
+                    console.error('Lỗi vẽ header trang:', headerErr);
                     // Fallback - cố gắng vẽ lại với chỉ tên
                     try {
                         const pageHeight = page.getHeight();
                         page.drawText(folderName, {
                             x: 20,
-                            y: pageHeight - 25,
+                            y: pageHeight - 30,
                             size: 12,
-                            color: rgb(0, 97, 164),
+                            color: rgb(0, 0, 0),
                         });
                     } catch (e) {
-                        console.warn('Fallback header thất bại:', e);
+                        console.error('Fallback header thất bại:', e);
                     }
                 }
                 
