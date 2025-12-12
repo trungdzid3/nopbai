@@ -23,6 +23,9 @@
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/downloadjs@1.4.7/download.min.js"></script>
+    
+    <!-- Tesseract.js for OCR orientation detection -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -4421,6 +4424,37 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- AI Auto-Rotate Images -->
+                    <section class="m3-setting-card rounded-2xl overflow-hidden">
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3 flex-1">
+                                    <div class="w-10 h-10 rounded-full bg-tertiary-container flex items-center justify-center flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="text-on-tertiary-container">
+                                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 space-y-1">
+                                        <h3 class="text-sm font-medium text-on-surface">AI Tự động xoay ảnh</h3>
+                                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                                            Dùng OCR phát hiện hướng văn bản để xoay ảnh đúng chiều. 
+                                            <span class="text-tertiary font-medium">Chậm hơn ~1-2s/ảnh</span>.
+                                        </p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                    <input type="checkbox" id="ai_auto_rotate_enabled" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-surface-variant rounded-full peer peer-checked:bg-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30 transition-all">
+                                        <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition-transform peer-checked:translate-x-5 translate-x-0.5 translate-y-0.5"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
 
                     <!-- Root Folder Config -->
                     <section class="m3-setting-card rounded-2xl overflow-hidden" id="root-config-section">

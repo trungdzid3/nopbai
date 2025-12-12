@@ -3672,6 +3672,15 @@ async function createPdfFromImages(imageFiles, folderName) {
             const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
             if (!res.ok) throw new Error(`Tải thất bại`);
             const originalBuffer = await res.arrayBuffer();
+            
+            // [NEW] Phát hiện góc xoay bằng AI (nếu bật)
+            let rotationAngle = 0;
+            if (isAIAutoRotateEnabled() && (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png')) {
+                updateStatus(`  🤖 AI kiểm tra chiều "${file.name}"...`);
+                const blob = new Blob([originalBuffer], { type: file.mimeType });
+                rotationAngle = await detectTextOrientation(blob);
+            }
+            
             let image;
             if (file.mimeType === 'image/jpeg') {
                 const strippedBuffer = await stripExif(originalBuffer, file.mimeType);
@@ -3684,16 +3693,18 @@ async function createPdfFromImages(imageFiles, folderName) {
                     image = await pdfDoc.embedPng(pngBuffer);
                 } catch (e) { throw new Error(`Chuyển đổi thất bại`); }
             }
-            processedImages[index] = image;
+            processedImages[index] = { image, rotation: rotationAngle };
         } catch (error) { updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true); }
     };
     const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; await processImage(task.file, task.index); } };
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(null).map(worker));
     updateStatus(`✓ Xử lý ảnh xong, đang gộp PDF...`);
     
-    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh
-    for (const image of processedImages) {
-        if (!image) continue;
+    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh + xoay nếu cần
+    for (const imageData of processedImages) {
+        if (!imageData) continue;
+        const { image, rotation } = imageData;
+        
         const A4_SHORT = 595.28, A4_LONG = 841.89;
         const isLandscape = image.width > image.height;
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
@@ -3707,8 +3718,15 @@ async function createPdfFromImages(imageFiles, folderName) {
         const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
+        }
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
+        
+        // [NEW] Xoay trang nếu AI phát hiện góc
+        if (rotation !== 0) {
+            page.setRotation(PDFLib.degrees(rotation));
+            console.log(`[PDF] Xoay trang ${rotation}°`);
+        }
         
         // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
@@ -4621,3 +4639,81 @@ Bạn có muốn tải về ngay không?
         window.open(downloadUrl, '_blank');
     }
 }
+
+// ==================================================================
+// AI AUTO-ROTATE: Phát hiện hướng văn bản bằng Tesseract.js OCR
+// ==================================================================
+
+/**
+ * Lấy cài đặt AI auto-rotate từ localStorage
+ */
+function isAIAutoRotateEnabled() {
+    const setting = localStorage.getItem('ai_auto_rotate_enabled');
+    return setting === 'true'; // Mặc định false nếu chưa set
+}
+
+/**
+ * Lưu cài đặt AI auto-rotate vào localStorage
+ */
+function saveAIAutoRotateSetting(enabled) {
+    localStorage.setItem('ai_auto_rotate_enabled', enabled ? 'true' : 'false');
+}
+
+/**
+ * Phát hiện góc xoay của ảnh bằng AI OCR (Tesseract.js)
+ * @param {Blob} imageBlob - Ảnh cần kiểm tra
+ * @returns {Promise<number>} - Góc cần xoay: 0, 90, 180, 270
+ */
+async function detectTextOrientation(imageBlob) {
+    try {
+        // 1. Tạo worker Tesseract
+        const worker = await Tesseract.createWorker('osd');
+        
+        // 2. Nhận diện orientation
+        const { data } = await worker.recognize(imageBlob);
+        
+        // 3. Kết quả
+        const detectedAngle = data.orientation_degrees || 0;
+        const confidence = data.orientation_confidence || 0;
+        
+        await worker.terminate();
+        
+        // Chỉ tin AI nếu confidence > 2
+        if (confidence > 2) {
+            console.log(`[AI] Phát hiện góc: ${detectedAngle}°, Độ tin cậy: ${confidence.toFixed(1)}`);
+            return detectedAngle;
+        }
+        
+        console.log(`[AI] Độ tin cậy thấp (${confidence.toFixed(1)}), giữ nguyên góc`);
+        return 0;
+        
+    } catch (err) {
+        console.error('[AI] Lỗi phát hiện hướng:', err);
+        return 0; // Fallback: không xoay
+    }
+}
+
+/**
+ * Init AI auto-rotate checkbox event listener
+ */
+function initAIAutoRotateCheckbox() {
+    const checkbox = document.getElementById('ai_auto_rotate_enabled');
+    if (!checkbox) return;
+    
+    // Load setting
+    checkbox.checked = isAIAutoRotateEnabled();
+    
+    // Save on change
+    checkbox.addEventListener('change', (e) => {
+        saveAIAutoRotateSetting(e.target.checked);
+        updateStatus(`✓ ${e.target.checked ? 'Bật' : 'Tắt'} AI tự động xoay ảnh`);
+    });
+}
+
+// Gọi init khi DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAIAutoRotateCheckbox);
+} else {
+    initAIAutoRotateCheckbox();
+}
+
