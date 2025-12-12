@@ -1,19 +1,19 @@
-﻿// ==================================================================
-// APP.JS - PHIÊN BẢN TÍCH HỢP ĐẦY ĐỦ (HARDCODED TEMPLATES)
+// ==================================================================
+// APP.JS - PHI�N B?N T�CH H?P �?Y �? (HARDCODED TEMPLATES)
 // ==================================================================
 
 const { jsPDF } = window.jspdf;
 const { PDFDocument, rgb, degrees } = window.PDFLib;
 
-const API_KEY = ""; // Để trống
+const API_KEY = ""; // �? tr?ng
 const CLIENT_ID = "537125658544-f5j4rh872q8412rkfoffrs7nt7fahjun.apps.googleusercontent.com";
 
-// --- CẤU HÌNH ID MẪU (HARDCODED) ---
+// --- C?U H�NH ID M?U (HARDCODED) ---
 const TEMPLATE_FORM_ID = "1I9u9P3MlP4623JPnRpjuiySHxGl0z6mSOOGCxbCI3Pg";
 const TEMPLATE_SHEET_ID = "1J18DezSL6Y-doQw7NMox8o14qzQeixsTM1AI1-9LnQg";
 
-// --- CẤU HÌNH AUTO-UPDATE ---
-const CURRENT_VERSION = "1.1.1"; // Phiên bản hiện tại
+// --- C?U H�NH AUTO-UPDATE ---
+const CURRENT_VERSION = "1.1.1"; // Phi�n b?n hi?n t?i
 const VERSION_CHECK_URL = ""; // Disabled - CORS issue with GitHub Pages
 
 let activeAssignment = null;
@@ -40,7 +40,7 @@ let tokenClient;
 let gapiInited = false;
 let gisInited = false;
 
-// --- DOM Elements Cũ ---
+// --- DOM Elements Cu ---
 const authButton = document.getElementById('authorize_button');
 const signoutButton = document.getElementById('signout_button');
 const processButton = document.getElementById('process_button');
@@ -75,7 +75,7 @@ const submissionStatusList = document.getElementById('submission-status-list');
 const submissionStatusPlaceholder = document.getElementById('submission-status-placeholder');
 const assignmentButtonsContainer = document.getElementById('assignment-buttons-container');
 
-// --- [NEW] DOM Elements Mới ---
+// --- [NEW] DOM Elements M?i ---
 const btnOpenDrive = document.getElementById('btn_open_drive');
 const btnOpenSheet = document.getElementById('btn_open_sheet');
 const btnOpenForm = document.getElementById('btn_open_form');
@@ -123,7 +123,7 @@ function closeDropdown() {
 function selectClass(id, name) {
     classProfileSelectValue.value = id;
     classProfileSelect.value = id; // Sync old select
-    classProfileText.textContent = name || '-- Chọn lớp --';
+    classProfileText.textContent = name || '-- Ch?n l?p --';
 
     // Update selection state in dropdown items
     updateDropdownSelection(id);
@@ -148,7 +148,7 @@ document.addEventListener('click', (e) => {
 });
 
 clearLogButton.onclick = () => {
-    statusLog.innerHTML = '<div class="log-entry text-outline">Đã xóa nhật ký.</div>';
+    statusLog.innerHTML = '<div class="log-entry text-outline">�� x�a nh?t k�.</div>';
 };
 
 window.onload = function () {
@@ -156,7 +156,7 @@ window.onload = function () {
 };
 
 function initApp() {
-    statusLog.innerHTML = '<div class="log-entry text-outline">Khởi tạo ứng dụng...</div>';
+    statusLog.innerHTML = '<div class="log-entry text-outline">Kh?i t?o ?ng d?ng...</div>';
 
     initTheme();
     initMobileView(); // Initialize mobile view
@@ -165,7 +165,7 @@ function initApp() {
     loadSubmissionStatusFromCache();
     loadLoginHint();
 
-    // [NEW] Load System Config (Chỉ load Root Folder)
+    // [NEW] Load System Config (Ch? load Root Folder)
     if (localStorage.getItem('root_folder_id') && inpRootFolderId) inpRootFolderId.value = localStorage.getItem('root_folder_id');
 
     bindModalEvents();
@@ -192,7 +192,7 @@ function initApp() {
     // [DISABLED] Auto-update check - CORS issue on GitHub Pages
     // setTimeout(checkForUpdates, 3000);
 
-    updateStatus("✓ Sẵn sàng. Chọn Lớp & Đăng nhập.");
+    updateStatus("? S?n s�ng. Ch?n L?p & �ang nh?p.");
     checkSystemReady();
 }
 
@@ -200,7 +200,7 @@ function loadLoginHint() {
     const savedEmail = localStorage.getItem('login_hint_email');
     if (savedEmail) {
         LOGIN_HINT = savedEmail;
-        updateStatus(`✓ Gợi ý đăng nhập: ${savedEmail}`);
+        updateStatus(`? G?i � dang nh?p: ${savedEmail}`);
     }
 }
 
@@ -232,19 +232,19 @@ function bindQuickActions() {
     if (btnOpenSheet) btnOpenSheet.onclick = async () => {
         const profile = getClassProfile(classProfileSelect.value);
         if (!profile) {
-            updateStatus("⚠ Vui lòng chọn một lớp.", true);
+            updateStatus("? Vui l�ng ch?n m?t l?p.", true);
             return;
         }
         
-        // Luôn tìm kiếm động trong folder (không dùng link cũ)
-        updateStatus("🔍 Đang tìm kiếm Sheet...");
+        // Lu�n t�m ki?m d?ng trong folder (kh�ng d�ng link cu)
+        updateStatus("?? �ang t�m ki?m Sheet...");
         const classFolderId = profile.classFolderId || profile.id;
         const sheet = await findSheetInFolder(classFolderId);
         if (sheet && sheet.webViewLink) {
             window.open(sheet.webViewLink, '_blank');
-            updateStatus("✓ Mở Sheet thành công.");
+            updateStatus("? M? Sheet th�nh c�ng.");
         } else {
-            updateStatus("⚠ Không tìm thấy Sheet trong folder lớp. Vui lòng kiểm tra lại.", true);
+            updateStatus("? Kh�ng t�m th?y Sheet trong folder l?p. Vui l�ng ki?m tra l?i.", true);
         }
     };
 
@@ -252,19 +252,19 @@ function bindQuickActions() {
         btnOpenForm.onclick = async () => {
             const profile = getClassProfile(classProfileSelect.value);
             if (!profile) {
-                updateStatus("⚠ Vui lòng chọn một lớp.", true);
+                updateStatus("? Vui l�ng ch?n m?t l?p.", true);
                 return;
             }
             
-            // Luôn tìm kiếm động trong folder (không dùng link cũ)
-            updateStatus("🔍 Đang tìm kiếm Form...");
+            // Lu�n t�m ki?m d?ng trong folder (kh�ng d�ng link cu)
+            updateStatus("?? �ang t�m ki?m Form...");
             const classFolderId = profile.classFolderId || profile.id;
             const form = await findFormInFolder(classFolderId);
             if (form && form.shortLink) {
                 window.open(form.shortLink, '_blank');
-                updateStatus("✓ Mở Form thành công.");
+                updateStatus("? M? Form th�nh c�ng.");
             } else {
-                updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
+                updateStatus("? Kh�ng t�m th?y Form trong folder l?p. Vui l�ng ki?m tra l?i.", true);
             }
         };
         
@@ -272,16 +272,16 @@ function bindQuickActions() {
             e.preventDefault();
             const profile = getClassProfile(classProfileSelect.value);
             if (!profile) {
-                updateStatus("⚠ Vui lòng chọn một lớp.", true);
+                updateStatus("? Vui l�ng ch?n m?t l?p.", true);
                 return;
             }
             
-            // Luôn tìm kiếm động trong folder
-            updateStatus("🔍 Đang tìm kiếm Form...");
+            // Lu�n t�m ki?m d?ng trong folder
+            updateStatus("?? �ang t�m ki?m Form...");
             const classFolderId = profile.classFolderId || profile.id;
             const form = await findFormInFolder(classFolderId);
             if (!form) {
-                updateStatus("⚠ Không tìm thấy Form trong folder lớp. Vui lòng kiểm tra lại.", true);
+                updateStatus("? Kh�ng t�m th?y Form trong folder l?p. Vui l�ng ki?m tra l?i.", true);
                 return;
             }
             
@@ -291,7 +291,7 @@ function bindQuickActions() {
 
     if (btnSaveSystemConfig) btnSaveSystemConfig.onclick = () => {
         localStorage.setItem('root_folder_id', inpRootFolderId.value);
-        updateStatus("✓ Đã lưu ID Thư mục cha.");
+        updateStatus("? �� luu ID Thu m?c cha.");
     }
     
     // [NEW] Sync & Link button
@@ -306,10 +306,10 @@ function updateQuickActionsState() {
     
     if (profile) {
         btnOpenDrive.disabled = !(profile.id || profile.folderLink);
-        btnOpenSheet.disabled = false; // Luôn enable vì có tìm kiếm động
-        btnOpenForm.disabled = false; // Luôn enable vì có tìm kiếm động
+        btnOpenSheet.disabled = false; // Lu�n enable v� c� t�m ki?m d?ng
+        btnOpenForm.disabled = false; // Lu�n enable v� c� t�m ki?m d?ng
         
-        // Ẩn text "Sẵn sàng", hiện nút "Đồng bộ"
+        // ?n text "S?n s�ng", hi?n n�t "�?ng b?"
         if (statusText) statusText.classList.add('hidden');
         if (btnSyncLink) btnSyncLink.classList.remove('hidden');
     } else {
@@ -317,9 +317,9 @@ function updateQuickActionsState() {
         btnOpenSheet.disabled = true;
         btnOpenForm.disabled = true;
         
-        // Hiện text "Chưa chọn lớp", ẩn nút "Đồng bộ"
+        // Hi?n text "Chua ch?n l?p", ?n n�t "�?ng b?"
         if (statusText) {
-            statusText.textContent = "Chờ chọn lớp...";
+            statusText.textContent = "Ch? ch?n l?p...";
             statusText.classList.remove('hidden');
         }
         if (btnSyncLink) btnSyncLink.classList.add('hidden');
@@ -331,7 +331,7 @@ function getClassProfile(id) {
 }
 
 // ==================================================================
-// PHẦN QUẢN LÝ CÀI ĐẶT CHUNG & MODAL
+// PH?N QU?N L� C�I �?T CHUNG & MODAL
 // ==================================================================
 
 function bindClassManagementEvents() {
@@ -339,7 +339,7 @@ function bindClassManagementEvents() {
 
     addClassButton.onclick = () => {
         clearClassForm();
-        classModalTitle.textContent = "Tạo Lớp Mới";
+        classModalTitle.textContent = "T?o L?p M?i";
         classFormModal.setAttribute('aria-hidden', 'false');
         // [NEW] Show Auto Create option
         if (divAutoCreateSection) divAutoCreateSection.classList.remove('hidden');
@@ -366,7 +366,7 @@ function bindClassManagementEvents() {
 
     deleteClassProfileButton.onclick = () => {
         const className = formClassName.value;
-        if (confirm(`Bạn có chắc chắn muốn xóa lớp "${className}" không? Hành động này không thể hoàn tác.`)) {
+        if (confirm(`B?n c� ch?c ch?n mu?n x�a l?p "${className}" kh�ng? H�nh d?ng n�y kh�ng th? ho�n t�c.`)) {
             deleteClassProfile();
         }
     };
@@ -447,11 +447,11 @@ function bindSettingsTabs() {
 
 function handleAssignmentTypeChange(name, folderId) {
     if (activeAssignment && activeAssignment.folderId === folderId) return;
-    activeAssignment = { name, folderId, sheetName: name }; // sheetName = name của assignment
+    activeAssignment = { name, folderId, sheetName: name }; // sheetName = name c?a assignment
     updateAssignmentSelectionUI();
-    updateStatus(`→ Đổi sang loại bài tập: ${name}`);
+    updateStatus(`? �?i sang lo?i b�i t?p: ${name}`);
     loadSubmissionStatusFromCache();
-    // Cập nhật thống kê số lượng nộp bài
+    // C?p nh?t th?ng k� s? lu?ng n?p b�i
     updateSubmissionStats();
     // Removed runAutoScan() - no longer scan on assignment change
     if (isAutoRefreshOn) stopAutoRefresh();
@@ -473,7 +473,7 @@ function updateAssignmentSelectionUI() {
     const currentProfile = classProfiles.find(p => p.id === selectedId);
 
     if (!currentProfile || !currentProfile.assignments || currentProfile.assignments.length === 0) {
-        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">Lớp này chưa có loại bài tập nào được cấu hình.</p>';
+        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">L?p n�y chua c� lo?i b�i t?p n�o du?c c?u h�nh.</p>';
         return;
     }
 
@@ -483,7 +483,7 @@ function updateAssignmentSelectionUI() {
     );
 
     if (validAssignments.length === 0) {
-        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">Lớp này chưa có loại bài tập hợp lệ.</p>';
+        assignmentButtonsContainer.innerHTML = '<p class="text-sm text-outline px-2">L?p n�y chua c� lo?i b�i t?p h?p l?.</p>';
         return;
     }
 
@@ -550,7 +550,7 @@ function handleStatusItemContextMenu(e) {
         const folderName = item.dataset.folderName;
         if (folderId) {
             const driveUrl = `https://drive.google.com/drive/folders/${folderId}`;
-            updateStatus(`→ Mở thư mục: "${folderName || folderId}"`);
+            updateStatus(`? M? thu m?c: "${folderName || folderId}"`);
             window.open(driveUrl, '_blank');
         }
     }
@@ -560,13 +560,13 @@ function handleAssignmentContextMenu(e, folderId, folderName) {
     e.preventDefault();
     if (folderId) {
         const driveUrl = `https://drive.google.com/drive/folders/${folderId}`;
-        updateStatus(`→ Mở thư mục bài tập: "${folderName}"`);
+        updateStatus(`? M? thu m?c b�i t?p: "${folderName}"`);
         window.open(driveUrl, '_blank');
     }
 }
 
 async function reprocessAndDownload(folderId, folderName) {
-    updateStatus(`→ Tải lại: "${folderName}"`);
+    updateStatus(`? T?i l?i: "${folderName}"`);
     processButton.disabled = true;
 
     const sanitizedName = folderName.replace(/[^a-zA-Z0-9]/g, '-');
@@ -577,21 +577,21 @@ async function reprocessAndDownload(folderId, folderName) {
         originalText = statusElement.querySelector('span:last-child').textContent;
         statusElement.classList.remove('bg-primary-container', 'text-on-primary-container', 'bg-purple-100', 'text-purple-900', 'dark:bg-purple-900/30', 'dark:text-purple-200', 'submission-item-processed');
         statusElement.classList.add('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
-        statusElement.querySelector('span:last-child').textContent = 'Đang tải lại...';
+        statusElement.querySelector('span:last-child').textContent = '�ang t?i l?i...';
     }
 
     try {
-        const folderTypeName = activeAssignment ? activeAssignment.name : "Bài tập";
+        const folderTypeName = activeAssignment ? activeAssignment.name : "B�i t?p";
         const wasSuccessful = await processSingleFolder(folderId, folderName, folderTypeName);
 
         if (wasSuccessful) {
-            updateStatus(`✓ Tải lại thành công: "${folderName}"`);
+            updateStatus(`? T?i l?i th�nh c�ng: "${folderName}"`);
         } else {
-            updateStatus(`✗ Tải lại thất bại: "${folderName}".`, true);
+            updateStatus(`? T?i l?i th?t b?i: "${folderName}".`, true);
         }
     } catch (error) {
-        const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
-        updateStatus(`✗ Lỗi nghiêm trọng khi tải lại "${folderName}": ${errorMessage}`, true);
+        const errorMessage = error.message || (error.result ? error.result.error.message : 'L?i kh�ng x�c d?nh');
+        updateStatus(`? L?i nghi�m tr?ng khi t?i l?i "${folderName}": ${errorMessage}`, true);
     } finally {
         if (statusElement) {
             statusElement.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'animate-pulse');
@@ -635,18 +635,18 @@ function loadClassProfiles() {
 
     if (classProfiles.length === 0) {
         if (classProfileSelect) {
-            classProfileSelect.innerHTML = '<option value="">-- Chưa có lớp nào --</option>';
+            classProfileSelect.innerHTML = '<option value="">-- Chua c� l?p n�o --</option>';
         }
         if (classProfileList) {
             const li = document.createElement('li');
             li.className = 'custom-dropdown-item';
             li.dataset.value = '';
-            li.textContent = '-- Chưa có lớp nào --';
-            li.onclick = () => selectClass('', '-- Chưa có lớp nào --');
+            li.textContent = '-- Chua c� l?p n�o --';
+            li.onclick = () => selectClass('', '-- Chua c� l?p n�o --');
             classProfileList.appendChild(li);
         }
         if (classProfileText) {
-            classProfileText.textContent = '-- Chưa có lớp nào --';
+            classProfileText.textContent = '-- Chua c� l?p n�o --';
         }
         return;
     }
@@ -655,7 +655,7 @@ function loadClassProfiles() {
     if (classProfileSelect) {
         const defaultOption = document.createElement('option');
         defaultOption.value = "";
-        defaultOption.textContent = "-- Chọn một lớp --";
+        defaultOption.textContent = "-- Ch?n m?t l?p --";
         classProfileSelect.appendChild(defaultOption);
     }
 
@@ -715,10 +715,10 @@ function handleClassSelectChange() {
 
     if (!selectedId) {
         localStorage.removeItem('activeClassProfileId');
-        updateStatus("⚠ Vui lòng chọn một lớp.");
+        updateStatus("? Vui l�ng ch?n m?t l?p.");
         clearClassForm();
         editClassButton.disabled = true;
-        submissionStatusList.innerHTML = '<div class="text-outline">Chọn lớp và bắt đầu xử lý để xem tình trạng...</div>';
+        submissionStatusList.innerHTML = '<div class="text-outline">Ch?n l?p v� b?t d?u x? l� d? xem t�nh tr?ng...</div>';
         activeAssignment = null;
         updateAssignmentSelectionUI();
         if (isAutoRefreshOn) stopAutoRefresh();
@@ -741,7 +741,7 @@ function handleClassSelectChange() {
         }
     }
     
-    updateStatus(`✓ Lớp đang hoạt động: ${selectedProfile.name}`);
+    updateStatus(`? L?p dang ho?t d?ng: ${selectedProfile.name}`);
 
     if (selectedProfile.assignments && selectedProfile.assignments.length > 0) {
         activeAssignment = selectedProfile.assignments[0];
@@ -778,7 +778,7 @@ function loadActiveClass() {
         }
         
         classProfileSelect.value = activeId;
-        updateStatus(`✓ Lớp đang hoạt động: ${profile.name}`);
+        updateStatus(`? L?p dang ho?t d?ng: ${profile.name}`);
         if (profile.assignments && profile.assignments.length > 0) {
             activeAssignment = profile.assignments[0];
         } else {
@@ -801,7 +801,7 @@ function displaySelectedClassForEdit() {
     const profile = classProfiles.find(p => p.id === selectedId);
     if (!profile) return;
 
-    classModalTitle.textContent = "Sửa Lớp: " + profile.name;
+    classModalTitle.textContent = "S?a L?p: " + profile.name;
     formClassId.value = profile.id;
     formClassName.value = profile.name;
 
@@ -843,31 +843,31 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     chip.appendChild(icon);
     chip.appendChild(label);
 
-    // Nút tạo lại Sheet và Form (chỉ hiển thị nếu bài tập đã tồn tại)
+    // N�t t?o l?i Sheet v� Form (ch? hi?n th? n?u b�i t?p d� t?n t?i)
     if (assignment.folderId) {
         const recreateSheetBtn = document.createElement('button');
         recreateSheetBtn.type = 'button';
         recreateSheetBtn.className = 'm3-button m3-button-icon p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-secondary-container/20';
-        recreateSheetBtn.title = 'Tạo lại Sheet';
+        recreateSheetBtn.title = 'T?o l?i Sheet';
         recreateSheetBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
         recreateSheetBtn.onclick = async (e) => {
             e.stopPropagation();
-            const confirmMsg = `Bạn có chắc muốn tạo lại Sheet cho bài tập "${assignment.name}" không?\n\nSheet cũ sẽ bị xóa.`;
+            const confirmMsg = `B?n c� ch?c mu?n t?o l?i Sheet cho b�i t?p "${assignment.name}" kh�ng?\n\nSheet cu s? b? x�a.`;
             if (confirm(confirmMsg)) {
                 await recreateAssignmentSheet(assignment.folderId, assignment.name);
             }
         };
         chip.appendChild(recreateSheetBtn);
 
-        // Nút tạo lại Form (chỉ hiển thị nếu bài tập đã tồn tại)
+        // N�t t?o l?i Form (ch? hi?n th? n?u b�i t?p d� t?n t?i)
         const recreateFormBtn = document.createElement('button');
         recreateFormBtn.type = 'button';
         recreateFormBtn.className = 'm3-button m3-button-icon p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-tertiary-container/20';
-        recreateFormBtn.title = 'Tạo lại Form';
+        recreateFormBtn.title = 'T?o l?i Form';
         recreateFormBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
         recreateFormBtn.onclick = async (e) => {
             e.stopPropagation();
-            const confirmMsg = `Bạn có chắc muốn tạo lại Form cho bài tập "${assignment.name}" không?\n\nForm cũ sẽ bị xóa.`;
+            const confirmMsg = `B?n c� ch?c mu?n t?o l?i Form cho b�i t?p "${assignment.name}" kh�ng?\n\nForm cu s? b? x�a.`;
             if (confirm(confirmMsg)) {
                 await recreateAssignmentForm(assignment.folderId, assignment.name);
             }
@@ -878,7 +878,7 @@ function createAssignmentChip(assignment = { name: '', folderId: '' }) {
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'm3-button m3-button-icon remove-chip-btn p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error/10';
-    removeBtn.title = 'Xóa';
+    removeBtn.title = 'X�a';
     removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
     removeBtn.onclick = () => chip.remove();
     chip.appendChild(removeBtn);
@@ -891,7 +891,7 @@ function createAssignmentInputRow() {
     chip.className = 'assignment-chip';
     chip.dataset.isNew = "true";
 
-    // Icon cho chip mới
+    // Icon cho chip m?i
     const icon = document.createElement('span');
     icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
     icon.className = 'opacity-70 flex items-center justify-center';
@@ -900,7 +900,7 @@ function createAssignmentInputRow() {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'm3-input flex-1';
-    input.placeholder = 'Nhập tên bài tập...';
+    input.placeholder = 'Nh?p t�n b�i t?p...';
     input.dataset.name = '';
 
     // Handle input changes
@@ -911,7 +911,7 @@ function createAssignmentInputRow() {
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'm3-button m3-button-icon remove-chip-btn p-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error/10';
-    removeBtn.title = 'Xóa';
+    removeBtn.title = 'X�a';
     removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
     removeBtn.onclick = () => chip.remove();
 
@@ -932,7 +932,7 @@ async function handleSaveClassProfile() {
 async function saveClassProfileManual() {
     const name = formClassName.value.trim();
     if (!name) {
-        updateStatus("✗ Lỗi: Tên Lớp là bắt buộc.", true);
+        updateStatus("? L?i: T�n L?p l� b?t bu?c.", true);
         formClassName.focus();
         return;
     }
@@ -951,8 +951,8 @@ async function saveClassProfileManual() {
         if (needsFolder) {
             const rootId = inpRootFolderId.value.trim();
             if (!rootId) {
-                updateStatus("✗ Lỗi: Cần ID Thư mục cha để tạo lớp mới. Vui lòng vào Cài đặt > Tự động hóa.", true);
-                alert("Vui lòng vào Cài đặt -> Tự động hóa để nhập ID Thư mục cha (Root) trước.");
+                updateStatus("? L?i: C?n ID Thu m?c cha d? t?o l?p m?i. Vui l�ng v�o C�i d?t > T? d?ng h�a.", true);
+                alert("Vui l�ng v�o C�i d?t -> T? d?ng h�a d? nh?p ID Thu m?c cha (Root) tru?c.");
                 throw new Error("Missing Root Folder ID");
             }
             const folder = await apiCreateFolder(name, rootId);
@@ -985,7 +985,7 @@ async function saveClassProfileManual() {
                     });
                 }
             } else {
-                updateStatus(`⚠ Cảnh báo: Bỏ qua loại bài tập không có tên.`, true);
+                updateStatus(`? C?nh b�o: B? qua lo?i b�i t?p kh�ng c� t�n.`, true);
             }
         }
 
@@ -1015,10 +1015,10 @@ async function saveClassProfileManual() {
             if (profileIndex > -1) classProfiles[profileIndex] = newProfile;
         }
 
-        // [NEW] Nếu có sheetId và có assignments, ghi vào config và tạo sheets
+        // [NEW] N?u c� sheetId v� c� assignments, ghi v�o config v� t?o sheets
         if (newProfile.sheetId && assignments.length > 0) {
             try {
-                // 1. Tạo folder cho assignments mới (nếu chưa có)
+                // 1. T?o folder cho assignments m?i (n?u chua c�)
                 for (const assignment of assignments) {
                     if (!assignment.folderId) {
                         const assignmentFolder = await apiCreateFolder(assignment.name, newProfile.id);
@@ -1026,7 +1026,7 @@ async function saveClassProfileManual() {
                     }
                 }
                 
-                // 2. Ghi vào Config sheet
+                // 2. Ghi v�o Config sheet
                 await apiWriteAssignmentsToConfig(newProfile.sheetId, assignments);
                 
                 // 3. Update Form choices
@@ -1034,8 +1034,8 @@ async function saveClassProfileManual() {
                     await apiUpdateFormChoices(newProfile.formId, assignments);
                 }
             } catch (error) {
-                console.error('Lỗi khi ghi config:', error);
-                updateStatus(`✗ Lỗi khi lưu lớp: ${error.message}`, true);
+                console.error('L?i khi ghi config:', error);
+                updateStatus(`? L?i khi luu l?p: ${error.message}`, true);
             }
         }
 
@@ -1055,8 +1055,8 @@ async function saveClassProfileManual() {
         
         editClassButton.disabled = false;
     } catch (error) {
-        const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
-        updateStatus(`✗ Lỗi nghiêm trọng khi lưu lớp: ${errorMessage}`, true);
+        const errorMessage = error.message || (error.result ? error.result.error.message : 'L?i kh�ng x�c d?nh');
+        updateStatus(`? L?i nghi�m tr?ng khi luu l?p: ${errorMessage}`, true);
         console.error(error);
     } finally {
         saveClassProfileButton.disabled = false;
@@ -1068,25 +1068,25 @@ async function createClassSystemAutomatic() {
     const name = formClassName.value.trim();
     const rootId = inpRootFolderId.value.trim();
 
-    // Sử dụng hằng số thay vì lấy từ input
+    // S? d?ng h?ng s? thay v� l?y t? input
     const tmplSheetId = TEMPLATE_SHEET_ID;
     const tmplFormId = TEMPLATE_FORM_ID;
 
     if (!name || !rootId) {
-        updateStatus("✗ Lỗi: Thiếu tên lớp hoặc cấu hình Thư mục cha.", true);
+        updateStatus("? L?i: Thi?u t�n l?p ho?c c?u h�nh Thu m?c cha.", true);
         if (!rootId) {
-            alert("Vui lòng vào Cài đặt -> Tự động hóa để nhập ID Thư mục cha (Root) trước.");
+            alert("Vui l�ng v�o C�i d?t -> T? d?ng h�a d? nh?p ID Thu m?c cha (Root) tru?c.");
         }
         return;
     }
 
-    updateStatus(`🚀 Đang tạo hệ thống cho "${name}"... Vui lòng chờ.`);
+    updateStatus(`?? �ang t?o h? th?ng cho "${name}"... Vui l�ng ch?.`);
     saveClassProfileButton.disabled = true;
     
-    // Đóng modal ngay khi bắt đầu tạo
+    // ��ng modal ngay khi b?t d?u t?o
     classFormModal.setAttribute('aria-hidden', 'true');
     
-    // Scroll to status log để user theo dõi tiến trình
+    // Scroll to status log d? user theo d�i ti?n tr�nh
     setTimeout(() => {
         const statusLog = document.getElementById('status-log');
         if (statusLog) {
@@ -1095,28 +1095,28 @@ async function createClassSystemAutomatic() {
     }, 300);
 
     try {
-        // 1. Tạo Folder Lớp
+        // 1. T?o Folder L?p
         const folder = await apiCreateFolder(name, rootId);
 
         // 2. Copy Form
-        const form = await apiCopyFile(tmplFormId, `Biểu mẫu nộp bài - ${name}`, folder.id);
+        const form = await apiCopyFile(tmplFormId, `Bi?u m?u n?p b�i - ${name}`, folder.id);
         
-        // 2.0. LƯU Ý: FORM CẦN PUBLISH THỦ CÔNG
-        // Forms API không hỗ trợ publish form từ client-side
-        // Form mới tạo luôn ở trạng thái DRAFT (chưa xuất bản)
-        updateStatus("⚠ Form cần PUBLISH THỦ CÔNG: https://docs.google.com/forms/d/" + form.id + "/edit");
+        // 2.0. LUU �: FORM C?N PUBLISH TH? C�NG
+        // Forms API kh�ng h? tr? publish form t? client-side
+        // Form m?i t?o lu�n ? tr?ng th�i DRAFT (chua xu?t b?n)
+        updateStatus("? Form c?n PUBLISH TH? C�NG: https://docs.google.com/forms/d/" + form.id + "/edit");
         
         // 2.1. [DISABLED] Rename Form's script project - use quickSetupForm() instead
 
         // 3. Copy Sheet
-        const sheet = await apiCopyFile(tmplSheetId, `Bảng nhận xét - ${name}`, folder.id);
+        const sheet = await apiCopyFile(tmplSheetId, `B?ng nh?n x�t - ${name}`, folder.id);
         
         // 3.1. [DISABLED] Rename Sheet's script project - use quickSetupSheet() instead
 
-        // 4. Ghi Config vào Sheet
+        // 4. Ghi Config v�o Sheet
         await apiUpdateSheetConfig(sheet.id, name, folder.id, form.id);
         
-        // 4.1. Ghi email người dùng vào config
+        // 4.1. Ghi email ngu?i d�ng v�o config
         const userEmail = LOGIN_HINT || (gapi.client.getToken() ? await getUserEmail() : null);
         if (userEmail) {
             await apiWriteUserEmailToConfig(sheet.id, userEmail);
@@ -1138,7 +1138,7 @@ async function createClassSystemAutomatic() {
                 }
             }
             
-            // Ghi vào sheet Cấu Hình
+            // Ghi v�o sheet C?u H�nh
             if (assignments.length > 0) {
                 await apiWriteAssignmentsToConfig(sheet.id, assignments);
                 
@@ -1160,7 +1160,7 @@ async function createClassSystemAutomatic() {
         window.open(formEditLink, '_blank');
         window.open(sheet.webViewLink, '_blank');
         
-        updateStatus(`📌 Liên kết Form với Sheet thủ công: Form → Responses → Select response destination → Chọn sheet`);
+        updateStatus(`?? Li�n k?t Form v?i Sheet th? c�ng: Form ? Responses ? Select response destination ? Ch?n sheet`);
 
         // 11. Save Profile
         const newProfile = {
@@ -1200,40 +1200,40 @@ async function createClassSystemAutomatic() {
         
         handleClassSelectChange();
 
-        updateStatus(`🎉 Hoàn tất! Đã tạo lớp "${name}" với ${assignments.length} loại bài tập.`);
-        updateStatus(`\n📌 SETUP QUY TRÌNH (3 bước dưới đây):`);
-        updateStatus(`\n📌 STEP 1: Setup Form Script`);
+        updateStatus(`?? Ho�n t?t! �� t?o l?p "${name}" v?i ${assignments.length} lo?i b�i t?p.`);
+        updateStatus(`\n?? SETUP QUY TR�NH (3 bu?c du?i d�y):`);
+        updateStatus(`\n?? STEP 1: Setup Form Script`);
         
         // Auto-open Form Apps Script editor with instructions
         const formScriptUrl = `https://script.google.com/home/projects/${form.id}/edit`;
-        updateStatus(`⚙️ Đang mở Apps Script editor...`);
+        updateStatus(`?? �ang m? Apps Script editor...`);
         
         // Wait a bit then show confirmation
         setTimeout(() => {
             const shouldOpen = confirm(
-                `✅ Lớp "${name}" đã được tạo!\n\n` +
-                `📌 STEP 1: Setup Form Script (tự động - 1 phút)\n\n` +
-                `Bước 1: Click OK để mở Form Apps Script editor\n` +
-                `Bước 2: Chọn Run → quickSetupForm\n` +
-                `Bước 3: Click Run ▶️ và authorize\n` +
-                `Bước 4: Chờ xong, close tab này\n\n` +
-                `Form sẽ tự động:\n` +
-                `✓ Đổi tên Project\n` +
-                `✓ Kích hoạt triggers\n` +
-                `✓ Sẵn sàng nhận bài nộp!`
+                `? L?p "${name}" d� du?c t?o!\n\n` +
+                `?? STEP 1: Setup Form Script (t? d?ng - 1 ph�t)\n\n` +
+                `Bu?c 1: Click OK d? m? Form Apps Script editor\n` +
+                `Bu?c 2: Ch?n Run ? quickSetupForm\n` +
+                `Bu?c 3: Click Run ?? v� authorize\n` +
+                `Bu?c 4: Ch? xong, close tab n�y\n\n` +
+                `Form s? t? d?ng:\n` +
+                `? �?i t�n Project\n` +
+                `? K�ch ho?t triggers\n` +
+                `? S?n s�ng nh?n b�i n?p!`
             );
             
             if (shouldOpen) {
                 window.open(formScriptUrl, '_blank');
-                updateStatus(`📖 Đã mở Form Apps Script. Run → quickSetupForm → ▶️ Authorize`);
-                updateStatus(`💡 Sau khi xong: Quay lại tab này để làm STEP 2`);
+                updateStatus(`?? �� m? Form Apps Script. Run ? quickSetupForm ? ?? Authorize`);
+                updateStatus(`?? Sau khi xong: Quay l?i tab n�y d? l�m STEP 2`);
             } else {
-                updateStatus(`⚠️ Nhớ setup Form script sau: ${formScriptUrl}`);
+                updateStatus(`?? Nh? setup Form script sau: ${formScriptUrl}`);
             }
         }, 500);
         
     } catch (e) {
-        updateStatus(`✗ Lỗi tạo tự động: ${e.message || e.result?.error?.message}`, true);
+        updateStatus(`? L?i t?o t? d?ng: ${e.message || e.result?.error?.message}`, true);
         console.error(e);
     } finally {
         saveClassProfileButton.disabled = false;
@@ -1257,26 +1257,26 @@ async function apiCopyFile(fileId, name, parentId) {
 }
 
 async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) {
-    // Ghi vào cột I:
-    // I1: Tên lớp
+    // Ghi v�o c?t I:
+    // I1: T�n l?p
     // I3: Folder ID
     // I4: Sheet ID
     // I5: Form ID
     const updates = [
         {
-            range: 'Cấu Hình!I1',
+            range: 'C?u H�nh!I1',
             values: [[className]]
         },
         {
-            range: 'Cấu Hình!I3',
+            range: 'C?u H�nh!I3',
             values: [[folderId]]
         },
         {
-            range: 'Cấu Hình!I4',
+            range: 'C?u H�nh!I4',
             values: [[spreadsheetId]]
         },
         {
-            range: 'Cấu Hình!I5',
+            range: 'C?u H�nh!I5',
             values: [[formId]]
         }
     ];
@@ -1291,14 +1291,14 @@ async function apiUpdateSheetConfig(spreadsheetId, className, folderId, formId) 
 }
 
 async function apiLinkFormToSheet(formId, sheetId) {
-    // Google Forms API không hỗ trợ set destination sau khi form đã được tạo
-    // Phương pháp duy nhất: Dùng responderUri để form tự động link khi có response đầu tiên
-    // HOẶC user phải link thủ công trong Form UI
+    // Google Forms API kh�ng h? tr? set destination sau khi form d� du?c t?o
+    // Phuong ph�p duy nh?t: D�ng responderUri d? form t? d?ng link khi c� response d?u ti�n
+    // HO?C user ph?i link th? c�ng trong Form UI
     
     try {
-        console.log('[FORM-SHEET] Đang cố gắng link form với sheet...');
+        console.log('[FORM-SHEET] �ang c? g?ng link form v?i sheet...');
         
-        // Thử dùng Forms API để update linkedSheetId
+        // Th? d�ng Forms API d? update linkedSheetId
         const updateResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${formId}`,
             method: 'PATCH',
@@ -1310,21 +1310,21 @@ async function apiLinkFormToSheet(formId, sheetId) {
             }
         });
         
-        console.log('[FORM-SHEET] ✓ Đã link form với sheet qua API!');
+        console.log('[FORM-SHEET] ? �� link form v?i sheet qua API!');
         return updateResponse;
         
     } catch (e) {
-        console.warn('[FORM-SHEET] API không cho phép link:', e);
-        console.log('[FORM-SHEET] ℹ Hướng dẫn link thủ công: Form → Responses → Select response destination → Chọn sheet đã tạo');
+        console.warn('[FORM-SHEET] API kh�ng cho ph�p link:', e);
+        console.log('[FORM-SHEET] ? Hu?ng d?n link th? c�ng: Form ? Responses ? Select response destination ? Ch?n sheet d� t?o');
         
-        // Return null để caller biết cần hướng dẫn user
+        // Return null d? caller bi?t c?n hu?ng d?n user
         return null;
     }
 }
 
 async function apiUpdateFormChoices(formId, assignments) {
     try {
-        console.log('[FORM] Bắt đầu cập nhật form choices:', formId);
+        console.log('[FORM] B?t d?u c?p nh?t form choices:', formId);
         console.log('[FORM] Assignments:', assignments);
         
         // 1. Get form structure to find the question item
@@ -1338,7 +1338,7 @@ async function apiUpdateFormChoices(formId, assignments) {
         
         // 2. Find the question with title containing assignment/homework keywords
         let questionItemId = null;
-        const keywords = ['loại bài tập', 'bài tập', 'chọn bài', 'assignment', 'homework'];
+        const keywords = ['lo?i b�i t?p', 'b�i t?p', 'ch?n b�i', 'assignment', 'homework'];
         
         if (form.items) {
             for (const item of form.items) {
@@ -1347,7 +1347,7 @@ async function apiUpdateFormChoices(formId, assignments) {
                     for (const keyword of keywords) {
                         if (titleLower.includes(keyword)) {
                             questionItemId = item.itemId;
-                            console.log(`[FORM] Tìm thấy câu hỏi: "${item.title}" (ID: ${questionItemId})`);
+                            console.log(`[FORM] T�m th?y c�u h?i: "${item.title}" (ID: ${questionItemId})`);
                             break;
                         }
                     }
@@ -1357,9 +1357,9 @@ async function apiUpdateFormChoices(formId, assignments) {
         }
         
         if (!questionItemId) {
-            console.warn('[FORM] Không tìm thấy câu hỏi loại bài tập trong form');
-            console.log('[FORM] Danh sách câu hỏi:', form.items?.map(i => i.title));
-            updateStatus(`⚠️ Không tìm thấy câu hỏi "Loại bài tập" - cần update thủ công`);
+            console.warn('[FORM] Kh�ng t�m th?y c�u h?i lo?i b�i t?p trong form');
+            console.log('[FORM] Danh s�ch c�u h?i:', form.items?.map(i => i.title));
+            updateStatus(`?? Kh�ng t�m th?y c�u h?i "Lo?i b�i t?p" - c?n update th? c�ng`);
             return;
         }
         
@@ -1404,19 +1404,19 @@ async function apiUpdateFormChoices(formId, assignments) {
         });
         
         console.log('[FORM] Update response:', updateResponse);
-        console.log(`[FORM] ✓ Đã cập nhật ${choices.length} lựa chọn cho câu hỏi`);
+        console.log(`[FORM] ? �� c?p nh?t ${choices.length} l?a ch?n cho c�u h?i`);
     } catch (e) {
-        console.error('[FORM] Lỗi cập nhật form choices:', e);
-        updateStatus(`⚠️ Lỗi cập nhật Form: ${e.result?.error?.message || e.message}`);
+        console.error('[FORM] L?i c?p nh?t form choices:', e);
+        updateStatus(`?? L?i c?p nh?t Form: ${e.result?.error?.message || e.message}`);
         // Don't throw - form still usable, just needs manual update
     }
 }
 
 async function apiSetFormScriptProperty(formId, recipientEmail) {
-    // Sử dụng Apps Script API để set Script Properties cho Form
-    // Cần Script ID từ Form, nhưng không có API trực tiếp
-    // Giải pháp: Ghi email vào Sheet Config thay vì Form Script Properties
-    console.log(`[CONFIG] Sẽ ghi email ${recipientEmail} vào Sheet config`);
+    // S? d?ng Apps Script API d? set Script Properties cho Form
+    // C?n Script ID t? Form, nhung kh�ng c� API tr?c ti?p
+    // Gi?i ph�p: Ghi email v�o Sheet Config thay v� Form Script Properties
+    console.log(`[CONFIG] S? ghi email ${recipientEmail} v�o Sheet config`);
 }
 
 async function getUserEmail() {
@@ -1430,16 +1430,16 @@ async function getUserEmail() {
         const userInfo = await response.json();
         return userInfo.email || null;
     } catch (e) {
-        console.error('[EMAIL] Không thể lấy email:', e);
+        console.error('[EMAIL] Kh�ng th? l?y email:', e);
         return null;
     }
 }
 
 async function apiWriteUserEmailToConfig(spreadsheetId, email) {
-    // Ghi email vào cell H6 của sheet Cấu Hình
+    // Ghi email v�o cell H6 c?a sheet C?u H�nh
     return gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Cấu Hình!I6',
+        range: 'C?u H�nh!I6',
         valueInputOption: 'RAW',
         resource: { values: [[email]] }
     });
@@ -1447,26 +1447,26 @@ async function apiWriteUserEmailToConfig(spreadsheetId, email) {
 
 async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
     try {
-        // 1. Get template sheet "(Mẫu) Bảng nhận xét"
+        // 1. Get template sheet "(M?u) B?ng nh?n x�t"
         const sheetData = await gapi.client.sheets.spreadsheets.get({
             spreadsheetId: spreadsheetId
         });
         
         const sheets = sheetData.result.sheets;
-        const templateSheet = sheets.find(s => s.properties.title === '(Mẫu) Bảng nhận xét');
+        const templateSheet = sheets.find(s => s.properties.title === '(M?u) B?ng nh?n x�t');
         
         if (!templateSheet) {
-            console.warn('[SHEETS] Không tìm thấy sheet template');
+            console.warn('[SHEETS] Kh�ng t�m th?y sheet template');
             return;
         }
         
         const templateSheetId = templateSheet.properties.sheetId;
         
         // 2. Duplicate template for each assignment
-        // [FIX] Tên sheet được tạo theo format "Bảng nhận xét (Tên bài tập)" để khớp với config
+        // [FIX] T�n sheet du?c t?o theo format "B?ng nh?n x�t (T�n b�i t?p)" d? kh?p v?i config
         const requests = [];
         for (const assignment of assignments) {
-            const sheetName = `Bảng nhận xét (${assignment.name})`;
+            const sheetName = `B?ng nh?n x�t (${assignment.name})`;
             requests.push({
                 duplicateSheet: {
                     sourceSheetId: templateSheetId,
@@ -1474,7 +1474,7 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
                     insertSheetIndex: sheets.length
                 }
             });
-            console.log(`[SHEETS] Tạo sheet: "${sheetName}"`);
+            console.log(`[SHEETS] T?o sheet: "${sheetName}"`);
         }
         
         await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -1482,174 +1482,174 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
             resource: { requests: requests }
         });
         
-        console.log(`[SHEETS] ✓ Đã tạo ${assignments.length} sheet từ template`);
+        console.log(`[SHEETS] ? �� t?o ${assignments.length} sheet t? template`);
         
     } catch (error) {
-        console.error('[SHEETS] Lỗi tạo assignment sheets:', error);
-        updateStatus(`⚠️ Lỗi tạo sheet: ${error.result?.error?.message || error.message}`);
+        console.error('[SHEETS] L?i t?o assignment sheets:', error);
+        updateStatus(`?? L?i t?o sheet: ${error.result?.error?.message || error.message}`);
     }
 }
 
 async function apiWriteAssignmentsToConfig(spreadsheetId, assignments) {
     if (!assignments || assignments.length === 0) {
-        console.log('[CONFIG] Không có assignment nào để ghi.');
+        console.log('[CONFIG] Kh�ng c� assignment n�o d? ghi.');
         return;
     }
     
-    // 1. Đọc dữ liệu hiện có từ hàng 3 trở đi (hàng 2 dành riêng cho Điểm danh)
+    // 1. �?c d? li?u hi?n c� t? h�ng 3 tr? di (h�ng 2 d�nh ri�ng cho �i?m danh)
     let existingAssignments = [];
     try {
         const response = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Cấu Hình!A3:F1000'
+            range: 'C?u H�nh!A3:F1000'
         });
         existingAssignments = response.result.values || [];
     } catch (e) {
-        console.log('[CONFIG] Chưa có dữ liệu cũ, tạo mới.');
+        console.log('[CONFIG] Chua c� d? li?u cu, t?o m?i.');
     }
     
-    // 2. Tạo map tên bài tập hiện có để check trùng
-    const existingNames = new Set(existingAssignments.map(row => row[0])); // Cột A
+    // 2. T?o map t�n b�i t?p hi?n c� d? check tr�ng
+    const existingNames = new Set(existingAssignments.map(row => row[0])); // C?t A
     
-    // 3. HÀNG 2: Luôn là "Điểm danh"
+    // 3. H�NG 2: Lu�n l� "�i?m danh"
     const attendanceRow = [
-        'Điểm danh',                     // A: Tên bài tập
-        '',                              // B: Lịch học (bỏ trống - user tự điền)
-        '',                              // C: Thời gian mở (không có cho Điểm danh)
-        '',                              // D: Deadline (không có cho Điểm danh)
-        true,                            // E: Tự động dọn (TRUE - dọn sheet điểm danh trước giờ học)
-        'Điểm danh'                      // F: Tên sheet
+        '�i?m danh',                     // A: T�n b�i t?p
+        '',                              // B: L?ch h?c (b? tr?ng - user t? di?n)
+        '',                              // C: Th?i gian m? (kh�ng c� cho �i?m danh)
+        '',                              // D: Deadline (kh�ng c� cho �i?m danh)
+        true,                            // E: T? d?ng d?n (TRUE - d?n sheet di?m danh tru?c gi? h?c)
+        '�i?m danh'                      // F: T�n sheet
     ];
     
-    // 4. HÀNG 3+: Giữ lại dữ liệu cũ + thêm assignments mới
+    // 4. H�NG 3+: Gi? l?i d? li?u cu + th�m assignments m?i
     const assignmentRows = [];
     
-    // 4.1. Giữ lại dữ liệu cũ
+    // 4.1. Gi? l?i d? li?u cu
     existingAssignments.forEach(row => {
-        // Đảm bảo có đủ 6 cột
+        // �?m b?o c� d? 6 c?t
         while (row.length < 6) row.push('');
         assignmentRows.push(row);
     });
     
-    // 4.2. Thêm assignments mới (chưa tồn tại)
+    // 4.2. Th�m assignments m?i (chua t?n t?i)
     assignments.forEach(a => {
         const assignmentName = a.name;
-        if (!existingNames.has(assignmentName) && assignmentName !== 'Điểm danh') {
+        if (!existingNames.has(assignmentName) && assignmentName !== '�i?m danh') {
             assignmentRows.push([
-                assignmentName,                      // A: Tên bài tập
-                '',                                  // B: Lịch học (bỏ trống - user tự điền)
-                '',                                  // C: Thời gian mở (bỏ trống)
-                '',                                  // D: Deadline (bỏ trống)
-                false,                               // E: Tự động dọn (FALSE - user tự bật nếu cần)
-                `Bảng nhận xét (${assignmentName})`, // F: Tên sheet
-                a.folderId || ''                     // G: Folder ID (MỚI - để Library đọc)
+                assignmentName,                      // A: T�n b�i t?p
+                '',                                  // B: L?ch h?c (b? tr?ng - user t? di?n)
+                '',                                  // C: Th?i gian m? (b? tr?ng)
+                '',                                  // D: Deadline (b? tr?ng)
+                false,                               // E: T? d?ng d?n (FALSE - user t? b?t n?u c?n)
+                `B?ng nh?n x�t (${assignmentName})`, // F: T�n sheet
+                a.folderId || ''                     // G: Folder ID (M?I - d? Library d?c)
             ]);
-            console.log(`[CONFIG] Thêm assignment mới: ${assignmentName} (Folder: ${a.folderId})`);
+            console.log(`[CONFIG] Th�m assignment m?i: ${assignmentName} (Folder: ${a.folderId})`);
         }
     });
     
-    console.log(`[CONFIG] Hàng 2: Điểm danh`);
-    console.log(`[CONFIG] Hàng 3+: ${assignmentRows.length} bài tập`);
+    console.log(`[CONFIG] H�ng 2: �i?m danh`);
+    console.log(`[CONFIG] H�ng 3+: ${assignmentRows.length} b�i t?p`);
     
-    // 5. Ghi hàng 2 (Điểm danh)
+    // 5. Ghi h�ng 2 (�i?m danh)
     await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Cấu Hình!A2:G2',
+        range: 'C?u H�nh!A2:G2',
         valueInputOption: 'USER_ENTERED',
         resource: { values: [attendanceRow] }
     });
     
-    // 6. Ghi các assignments vào hàng 3-10 (giữ nguyên format checkbox)
-    // Template có sẵn 8 hàng trống (3-10) với checkbox ở cột E
-    const maxTemplateRows = 8; // Hàng 3-10
+    // 6. Ghi c�c assignments v�o h�ng 3-10 (gi? nguy�n format checkbox)
+    // Template c� s?n 8 h�ng tr?ng (3-10) v?i checkbox ? c?t E
+    const maxTemplateRows = 8; // H�ng 3-10
     const rowsToWrite = assignmentRows.slice(0, maxTemplateRows);
     
     if (rowsToWrite.length > 0) {
         await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `Cấu Hình!A3:G${2 + rowsToWrite.length}`,
+            range: `C?u H�nh!A3:G${2 + rowsToWrite.length}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: rowsToWrite }
         });
     }
     
-    // 7. Xóa nội dung các hàng template còn trống (giữ format)
+    // 7. X�a n?i dung c�c h�ng template c�n tr?ng (gi? format)
     if (rowsToWrite.length < maxTemplateRows) {
         const emptyStartRow = 3 + rowsToWrite.length;
         const emptyEndRow = 10;
         await gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId,
-            range: `Cấu Hình!A${emptyStartRow}:G${emptyEndRow}`
+            range: `C?u H�nh!A${emptyStartRow}:G${emptyEndRow}`
         });
     }
     
-    // 8. Nếu có nhiều hơn 8 assignments, append thêm (vượt quá template)
+    // 8. N?u c� nhi?u hon 8 assignments, append th�m (vu?t qu� template)
     if (assignmentRows.length > maxTemplateRows) {
         const extraRows = assignmentRows.slice(maxTemplateRows);
         await gapi.client.sheets.spreadsheets.values.append({
             spreadsheetId,
-            range: 'Cấu Hình!A11:G11',
+            range: 'C?u H�nh!A11:G11',
             valueInputOption: 'USER_ENTERED',
             insertDataOption: 'INSERT_ROWS',
             resource: { values: extraRows }
         });
-        console.log(`[CONFIG] ⚠ Có ${extraRows.length} bài tập vượt quá template (hàng 11+)`);
+        console.log(`[CONFIG] ? C� ${extraRows.length} b�i t?p vu?t qu� template (h�ng 11+)`);
     }
     
-    console.log(`[CONFIG] ✓ Đã cập nhật bảng config: Hàng 2 (Điểm danh) + ${assignmentRows.length} hàng assignments`);
+    console.log(`[CONFIG] ? �� c?p nh?t b?ng config: H�ng 2 (�i?m danh) + ${assignmentRows.length} h�ng assignments`);
     
-    // Tạo các sheet bài tập từ template "(Mẫu) Bảng nhận xét"
-    console.log('[SHEETS] Bắt đầu tạo sheets bài tập từ template...');
+    // T?o c�c sheet b�i t?p t? template "(M?u) B?ng nh?n x�t"
+    console.log('[SHEETS] B?t d?u t?o sheets b�i t?p t? template...');
     await apiCreateAssignmentSheets(spreadsheetId, assignments);
 }
 
 /**
- * Tạo các sheet bài tập bằng cách duplicate sheet template
- * @param {string} spreadsheetId - ID của spreadsheet
- * @param {Array} assignments - Danh sách bài tập [{name: ..., folderId: ...}]
+ * T?o c�c sheet b�i t?p b?ng c�ch duplicate sheet template
+ * @param {string} spreadsheetId - ID c?a spreadsheet
+ * @param {Array} assignments - Danh s�ch b�i t?p [{name: ..., folderId: ...}]
  */
 async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
     try {
-        // 1. Lấy thông tin spreadsheet để tìm template sheet
+        // 1. L?y th�ng tin spreadsheet d? t�m template sheet
         const spreadsheet = await gapi.client.sheets.spreadsheets.get({
             spreadsheetId
         }).then(res => res.result);
         
-        // 2. Tìm sheet có tên "(Mẫu) Bảng nhận xét"
+        // 2. T�m sheet c� t�n "(M?u) B?ng nh?n x�t"
         const templateSheet = spreadsheet.sheets.find(s => 
-            s.properties.title === '(Mẫu) Bảng nhận xét'
+            s.properties.title === '(M?u) B?ng nh?n x�t'
         );
         
         if (!templateSheet) {
-            console.warn('[SHEETS] Không tìm thấy sheet template "(Mẫu) Bảng nhận xét". Bỏ qua tạo sheets.');
+            console.warn('[SHEETS] Kh�ng t�m th?y sheet template "(M?u) B?ng nh?n x�t". B? qua t?o sheets.');
             return;
         }
         
         const templateSheetId = templateSheet.properties.sheetId;
         const isTemplateHidden = templateSheet.properties.hidden || false;
-        console.log(`[SHEETS] Tìm thấy template sheet ID: ${templateSheetId}, hidden: ${isTemplateHidden}`);
+        console.log(`[SHEETS] T�m th?y template sheet ID: ${templateSheetId}, hidden: ${isTemplateHidden}`);
         
-        // 3. Kiểm tra sheets hiện có để chỉ tạo những sheet mới
+        // 3. Ki?m tra sheets hi?n c� d? ch? t?o nh?ng sheet m?i
         const existingSheetNames = new Set(
             spreadsheet.sheets.map(s => s.properties.title)
         );
         
         const newAssignments = assignments.filter(assignment => {
-            const sheetName = `Bảng nhận xét (${assignment.name})`;
+            const sheetName = `B?ng nh?n x�t (${assignment.name})`;
             return !existingSheetNames.has(sheetName);
         });
         
         if (newAssignments.length === 0) {
-            console.log('[SHEETS] Tất cả sheets bài tập đã tồn tại, bỏ qua.');
+            console.log('[SHEETS] T?t c? sheets b�i t?p d� t?n t?i, b? qua.');
             return;
         }
         
-        console.log(`[SHEETS] Cần tạo ${newAssignments.length}/${assignments.length} sheets mới`);
+        console.log(`[SHEETS] C?n t?o ${newAssignments.length}/${assignments.length} sheets m?i`);
         
-        // 4. Duplicate template cho mỗi assignment mới
+        // 4. Duplicate template cho m?i assignment m?i
         const requests = [];
         newAssignments.forEach((assignment, index) => {
-            const newSheetName = `Bảng nhận xét (${assignment.name})`;
+            const newSheetName = `B?ng nh?n x�t (${assignment.name})`;
             
             // Request duplicate
             requests.push({
@@ -1661,13 +1661,13 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
             });
         });
         
-        // 5. Thực hiện batch update để duplicate
+        // 5. Th?c hi?n batch update d? duplicate
         const batchResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
             spreadsheetId,
             resource: { requests }
         }).then(res => res.result);
         
-        // 6. Nếu template bị ẩn, ẩn các sheets mới tạo
+        // 6. N?u template b? ?n, ?n c�c sheets m?i t?o
         if (isTemplateHidden && batchResponse.replies) {
             const hideRequests = batchResponse.replies
                 .filter(reply => reply.duplicateSheet)
@@ -1686,19 +1686,19 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
                     spreadsheetId,
                     resource: { requests: hideRequests }
                 });
-                console.log(`[SHEETS] ✓ Đã ẩn ${hideRequests.length} sheets theo template`);
+                console.log(`[SHEETS] ? �� ?n ${hideRequests.length} sheets theo template`);
             }
         }
         
-        console.log(`[SHEETS] ✓ Đã tạo ${newAssignments.length} sheets bài tập từ template`);
+        console.log(`[SHEETS] ? �� t?o ${newAssignments.length} sheets b�i t?p t? template`);
     } catch (e) {
-        console.error('[SHEETS] Lỗi khi tạo sheets từ template:', e);
-        // Không throw để không làm gián đoạn quá trình tạo lớp
+        console.error('[SHEETS] L?i khi t?o sheets t? template:', e);
+        // Kh�ng throw d? kh�ng l�m gi�n do?n qu� tr�nh t?o l?p
     }
 }
 
 function clearClassForm() {
-    classModalTitle.textContent = "Tạo Lớp Mới";
+    classModalTitle.textContent = "T?o L?p M?i";
     formClassId.value = "";
     formClassName.value = "";
     assignmentTypesContainer.innerHTML = '';
@@ -1713,19 +1713,19 @@ function deleteClassProfile() {
     const profile = classProfiles.find(p => p.id === idToDelete);
     if (!profile) return;
 
-    if (!confirm(`Xác nhận xóa lớp "${profile.name}"?\n\nSẽ xóa:\n- Folder lớp\n- Form nộp bài\n- Sheet nhận xét\n- Script projects\n- Tất cả thư mục bài tập\n\nHành động này KHÔNG THỂ hoàn tác!`)) {
+    if (!confirm(`X�c nh?n x�a l?p "${profile.name}"?\n\nS? x�a:\n- Folder l?p\n- Form n?p b�i\n- Sheet nh?n x�t\n- Script projects\n- T?t c? thu m?c b�i t?p\n\nH�nh d?ng n�y KH�NG TH? ho�n t�c!`)) {
         return;
     }
 
     // Delete ALL files in folder (including form, sheet, scripts) then folder
     deleteClassFolderFromDrive(idToDelete, profile).catch(err => {
-        console.error('Lỗi khi xóa folder trên Drive:', err);
-        updateStatus(`✗ Xóa lớp trên Drive thất bại. Bạn có thể xóa thủ công.`, true);
+        console.error('L?i khi x�a folder tr�n Drive:', err);
+        updateStatus(`? X�a l?p tr�n Drive th?t b?i. B?n c� th? x�a th? c�ng.`, true);
     });
 
     classProfiles = classProfiles.filter(p => p.id !== idToDelete);
     localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
-    updateStatus(`✓ Đã xóa lớp "${profile.name}"`);
+    updateStatus(`? �� x�a l?p "${profile.name}"`);
 
     const activeId = localStorage.getItem('activeClassProfileId');
     if (activeId === idToDelete) {
@@ -1837,21 +1837,21 @@ function updateStatus(message, isError = false) {
 }
 
 /**
- * Xử lý chuột phải vào nút Form
- * Kiểm tra form đã xuất bản chưa
- * - Nếu đã xuất bản → copy link rút gọn
- * - Nếu chưa xuất bản → mở form editor
+ * X? l� chu?t ph?i v�o n�t Form
+ * Ki?m tra form d� xu?t b?n chua
+ * - N?u d� xu?t b?n ? copy link r�t g?n
+ * - N?u chua xu?t b?n ? m? form editor
  */
 async function handleFormContextMenu(profile) {
     if (!profile || !profile.formId) {
-        updateStatus("⚠ Không tìm thấy Form ID.", true);
+        updateStatus("? Kh�ng t�m th?y Form ID.", true);
         return;
     }
     
     try {
-        updateStatus("→ Đang kiểm tra trạng thái Form...");
+        updateStatus("? �ang ki?m tra tr?ng th�i Form...");
         
-        // Gọi Forms API để lấy thông tin form
+        // G?i Forms API d? l?y th�ng tin form
         const formResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${profile.formId}`,
             method: 'GET'
@@ -1859,62 +1859,62 @@ async function handleFormContextMenu(profile) {
         
         const form = formResponse.result;
         
-        // Kiểm tra responderUri - nếu có thì form đã published
+        // Ki?m tra responderUri - n?u c� th� form d� published
         if (form.responderUri) {
-            // Form đã published - lấy link viewform
+            // Form d� published - l?y link viewform
             const formShortLink = `https://docs.google.com/forms/d/${profile.formId}/viewform`;
             
-            // Cập nhật profile
+            // C?p nh?t profile
             profile.formShortLink = formShortLink;
             profile.formLink = formShortLink;
             
-            // Lưu vào localStorage
+            // Luu v�o localStorage
             const profileIndex = classProfiles.findIndex(p => p.id === profile.id);
             if (profileIndex > -1) {
                 classProfiles[profileIndex] = profile;
                 localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
             }
             
-            // Copy link vào clipboard
+            // Copy link v�o clipboard
             navigator.clipboard.writeText(formShortLink).then(() => {
-                updateStatus(`✓ Đã copy link Form rút gọn: ${formShortLink}`);
+                updateStatus(`? �� copy link Form r�t g?n: ${formShortLink}`);
             }).catch(err => {
-                console.error('Lỗi copy:', err);
-                updateStatus("⚠ Không thể copy link.", true);
+                console.error('L?i copy:', err);
+                updateStatus("? Kh�ng th? copy link.", true);
             });
             
         } else {
-            // Form chưa published - mở editor
-            updateStatus("⚠ Form chưa xuất bản, đang mở editor...");
+            // Form chua published - m? editor
+            updateStatus("? Form chua xu?t b?n, dang m? editor...");
             const formEditLink = `https://docs.google.com/forms/d/${profile.formId}/edit`;
             window.open(formEditLink, '_blank');
-            updateStatus("📋 Vui lòng publish form rồi chuột phải lại để copy link");
+            updateStatus("?? Vui l�ng publish form r?i chu?t ph?i l?i d? copy link");
         }
         
     } catch (err) {
-        console.error('Lỗi kiểm tra form:', err);
-        updateStatus(`✗ Lỗi: ${err.message || 'Không thể kiểm tra form'}`, true);
-        // Fallback: mở editor
+        console.error('L?i ki?m tra form:', err);
+        updateStatus(`? L?i: ${err.message || 'Kh�ng th? ki?m tra form'}`, true);
+        // Fallback: m? editor
         const formEditLink = `https://docs.google.com/forms/d/${profile.formId}/edit`;
         window.open(formEditLink, '_blank');
     }
 }
 
 /**
- * Kiểm tra xem form đã xuất bản chưa
- * Nếu đã xuất bản → lấy link viewform rút gọn
- * Nếu chưa xuất bản → hướng dẫn user xuất bản
+ * Ki?m tra xem form d� xu?t b?n chua
+ * N?u d� xu?t b?n ? l?y link viewform r�t g?n
+ * N?u chua xu?t b?n ? hu?ng d?n user xu?t b?n
  */
 async function checkFormPublishedAndSaveLink(profile) {
     if (!profile || !profile.formId) {
-        updateStatus("⚠ Không tìm thấy Form ID.", true);
+        updateStatus("? Kh�ng t�m th?y Form ID.", true);
         return;
     }
     
     try {
-        updateStatus("→ Đang kiểm tra trạng thái Form...");
+        updateStatus("? �ang ki?m tra tr?ng th�i Form...");
         
-        // Gọi Forms API để lấy thông tin form
+        // G?i Forms API d? l?y th�ng tin form
         const formResponse = await gapi.client.request({
             path: `https://forms.googleapis.com/v1/forms/${profile.formId}`,
             method: 'GET'
@@ -1922,43 +1922,43 @@ async function checkFormPublishedAndSaveLink(profile) {
         
         const form = formResponse.result;
         
-        // Kiểm tra responderUri - nếu có thì form đã published
+        // Ki?m tra responderUri - n?u c� th� form d� published
         if (form.responderUri) {
-            // Form đã published - lấy link viewform
+            // Form d� published - l?y link viewform
             const formShortLink = `https://docs.google.com/forms/d/${profile.formId}/viewform`;
             
-            // Cập nhật profile
+            // C?p nh?t profile
             profile.formShortLink = formShortLink;
-            profile.formLink = formShortLink; // Thay edit link bằng short link
+            profile.formLink = formShortLink; // Thay edit link b?ng short link
             
-            // Lưu vào localStorage
+            // Luu v�o localStorage
             const profileIndex = classProfiles.findIndex(p => p.id === profile.id);
             if (profileIndex > -1) {
                 classProfiles[profileIndex] = profile;
                 localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
             }
             
-            updateStatus("✅ Form đã xuất bản! Link đã được lưu.");
-            updateStatus(`📋 Link rút gọn: ${formShortLink}`);
+            updateStatus("? Form d� xu?t b?n! Link d� du?c luu.");
+            updateStatus(`?? Link r�t g?n: ${formShortLink}`);
             
-            // Copy link vào clipboard tự động
+            // Copy link v�o clipboard t? d?ng
             navigator.clipboard.writeText(formShortLink).then(() => {
-                updateStatus("✓ Link đã được copy vào clipboard");
+                updateStatus("? Link d� du?c copy v�o clipboard");
             });
             
         } else {
-            // Form chưa published
-            updateStatus("⚠ Form chưa được xuất bản!", true);
-            updateStatus("👉 Hãy:");
-            updateStatus("   1. Mở form: " + `https://docs.google.com/forms/d/${profile.formId}/edit`);
-            updateStatus("   2. Click nút 'Send' ở góc trên bên phải");
+            // Form chua published
+            updateStatus("? Form chua du?c xu?t b?n!", true);
+            updateStatus("?? H�y:");
+            updateStatus("   1. M? form: " + `https://docs.google.com/forms/d/${profile.formId}/edit`);
+            updateStatus("   2. Click n�t 'Send' ? g�c tr�n b�n ph?i");
             updateStatus("   3. Copy link 'Responder link'");
-            updateStatus("   4. Rồi click 'Kiểm tra' lại");
+            updateStatus("   4. R?i click 'Ki?m tra' l?i");
         }
         
     } catch (err) {
-        console.error('Lỗi kiểm tra form:', err);
-        updateStatus(`✗ Lỗi: ${err.message || 'Không thể kiểm tra form'}`, true);
+        console.error('L?i ki?m tra form:', err);
+        updateStatus(`? L?i: ${err.message || 'Kh�ng th? ki?m tra form'}`, true);
     }
 }
 
@@ -1972,9 +1972,9 @@ function checkSystemReady() {
 
         // [FIX] Show list, hide placeholder
         submissionStatusList.classList.remove('hidden');
-        submissionStatusList.style.display = ''; // Xóa inline style display:none
+        submissionStatusList.style.display = ''; // X�a inline style display:none
         submissionStatusPlaceholder.style.setProperty('display', 'none', 'important');
-        submissionStatusPlaceholder.classList.add('hidden'); // Đảm bảo hoàn toàn ẩn
+        submissionStatusPlaceholder.classList.add('hidden'); // �?m b?o ho�n to�n ?n
 
         // Load submission status from cache when logged in
         loadSubmissionStatusFromCache(true);
@@ -1982,7 +1982,7 @@ function checkSystemReady() {
         // Auto-scan classes from Drive after login (silent mode)
         if (inpRootFolderId && inpRootFolderId.value.trim()) {
             scanAndSyncClasses(true).catch(err => {
-                console.error("[AUTO-SCAN] Lỗi khi quét tự động:", err);
+                console.error("[AUTO-SCAN] L?i khi qu�t t? d?ng:", err);
             });
         }
 
@@ -1991,32 +1991,32 @@ function checkSystemReady() {
 
         if (!classProfileSelect.value) {
             processButton.disabled = true;
-            processButton.querySelector('span').textContent = "Vui lòng chọn Lớp";
+            processButton.querySelector('span').textContent = "Vui l�ng ch?n L?p";
         } else if (!activeAssignment) {
             processButton.disabled = true;
-            processButton.querySelector('span').textContent = "Chọn loại bài tập";
+            processButton.querySelector('span').textContent = "Ch?n lo?i b�i t?p";
         } else {
-            if (processButton.querySelector('span').textContent !== "Đang xử lý...") {
+            if (processButton.querySelector('span').textContent !== "�ang x? l�...") {
                 processButton.disabled = false;
-                processButton.querySelector('span').textContent = "Bắt đầu Xử lý";
+                processButton.querySelector('span').textContent = "B?t d?u X? l�";
             }
         }
     } else {
         authButton.style.display = 'block';
         authButton.disabled = false;
-        authButton.querySelector('span').textContent = "Đăng nhập";
+        authButton.querySelector('span').textContent = "�ang nh?p";
         signoutButton.style.display = 'none';
         processButton.style.display = 'block';
         processButton.disabled = true;
 
         // [FIX] Hide list, show placeholder
         submissionStatusList.style.display = 'none';
-        submissionStatusList.classList.add('hidden'); // Đảm bảo hoàn toàn ẩn
+        submissionStatusList.classList.add('hidden'); // �?m b?o ho�n to�n ?n
         submissionStatusPlaceholder.style.display = 'block';
-        submissionStatusPlaceholder.classList.remove('hidden'); // Hiển thị placeholder
+        submissionStatusPlaceholder.classList.remove('hidden'); // Hi?n th? placeholder
 
-        if (!classProfileSelect.value) processButton.querySelector('span').textContent = "Vui lòng chọn Lớp";
-        else processButton.querySelector('span').textContent = "Vui lòng Đăng nhập";
+        if (!classProfileSelect.value) processButton.querySelector('span').textContent = "Vui l�ng ch?n L?p";
+        else processButton.querySelector('span').textContent = "Vui l�ng �ang nh?p";
     }
 }
 
@@ -2025,9 +2025,9 @@ function gapiLoaded() {
         try {
             await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
             gapiInited = true;
-            updateStatus("✓ GAPI sẵn sàng.");
+            updateStatus("? GAPI s?n s�ng.");
             checkInitStatus();
-        } catch (error) { updateStatus(`✗ Lỗi GAPI init: ${error.message}. Kiểm tra API Key.`, true); console.error(error); }
+        } catch (error) { updateStatus(`? L?i GAPI init: ${error.message}. Ki?m tra API Key.`, true); console.error(error); }
     });
 }
 
@@ -2038,16 +2038,16 @@ function gisLoaded() {
             scope: SCOPES,
             callback: async (tokenResponse) => {
                 if (tokenResponse.error) {
-                    updateStatus(`✗ Lỗi Token: ${tokenResponse.error_description || tokenResponse.error}`, true);
+                    updateStatus(`? L?i Token: ${tokenResponse.error_description || tokenResponse.error}`, true);
                 } else {
                     // Critical fix: Set the token for the GAPI client
                     gapi.client.setToken(tokenResponse);
-                    updateStatus("✓ Đã đăng nhập.");
+                    updateStatus("? �� dang nh?p.");
                     
-                    // Đợi 500ms để token được apply hoàn toàn
+                    // �?i 500ms d? token du?c apply ho�n to�n
                     await new Promise(resolve => setTimeout(resolve, 500));
                     
-                    // Luôn lưu email hint mỗi lần đăng nhập thành công
+                    // Lu�n luu email hint m?i l?n dang nh?p th�nh c�ng
                     await fetchAndSaveEmailHint();
                     
                     const savedAutoRefreshState = localStorage.getItem('autoRefreshState');
@@ -2057,30 +2057,30 @@ function gisLoaded() {
                 checkSystemReady();
             },
             error_callback: (error) => {
-                updateStatus(`✗ Lỗi yêu cầu token: ${error.type} - ${error.error}`, true);
+                updateStatus(`? L?i y�u c?u token: ${error.type} - ${error.error}`, true);
                 checkSystemReady();
             }
         });
         gisInited = true;
-        updateStatus("✓ GIS sẵn sàng.");
+        updateStatus("? GIS s?n s�ng.");
         
         // Check if returning from OAuth redirect
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('code') || urlParams.has('state')) {
-            updateStatus("→ Xử lý OAuth redirect...");
+            updateStatus("? X? l� OAuth redirect...");
             // Clean URL without reloading
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         
         checkInitStatus();
-    } catch (error) { updateStatus(`✗ Lỗi GIS init: ${error.message}. Kiểm tra Client ID.`, true); console.error(error); }
+    } catch (error) { updateStatus(`? L?i GIS init: ${error.message}. Ki?m tra Client ID.`, true); console.error(error); }
 }
 
 async function fetchAndSaveEmailHint() {
     try {
         const token = gapi.client.getToken();
         if (!token || !token.access_token) {
-            console.warn('[EMAIL] Chưa có access token');
+            console.warn('[EMAIL] Chua c� access token');
             return;
         }
         
@@ -2098,14 +2098,14 @@ async function fetchAndSaveEmailHint() {
         if (userInfo.email) {
             LOGIN_HINT = userInfo.email;
             localStorage.setItem('login_hint_email', userInfo.email);
-            console.log(`[EMAIL] ✓ Đã lưu: ${userInfo.email}`);
-            updateStatus(`✓ Đã lưu gợi ý đăng nhập: ${userInfo.email}`);
+            console.log(`[EMAIL] ? �� luu: ${userInfo.email}`);
+            updateStatus(`? �� luu g?i � dang nh?p: ${userInfo.email}`);
         } else {
-            console.warn('[EMAIL] Không tìm thấy email trong userInfo:', userInfo);
+            console.warn('[EMAIL] Kh�ng t�m th?y email trong userInfo:', userInfo);
         }
     } catch (error) { 
-        console.error('[EMAIL] Lỗi:', error);
-        updateStatus(`✗ Không thể lưu email hint: ${error.message}`, true); 
+        console.error('[EMAIL] L?i:', error);
+        updateStatus(`? Kh�ng th? luu email hint: ${error.message}`, true); 
     }
 }
 
@@ -2116,21 +2116,21 @@ function checkInitStatus() {
         startAutoRefresh();
         
         if (LOGIN_HINT) {
-            updateStatus("→ Đăng nhập tự động...");
+            updateStatus("? �ang nh?p t? d?ng...");
             // Try silent login immediately
             tokenClient.requestAccessToken({
                 prompt: 'none',
                 hint: LOGIN_HINT
             });
         } else {
-            updateStatus("✓ Sẵn sàng. Vui lòng đăng nhập.");
+            updateStatus("? S?n s�ng. Vui l�ng dang nh?p.");
         }
     }
 }
 
 function handleAuthClick() {
     if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
-    else updateStatus("✗ Lỗi: Hệ thống Đăng nhập (GIS) chưa sẵn sàng.", true);
+    else updateStatus("? L?i: H? th?ng �ang nh?p (GIS) chua s?n s�ng.", true);
 }
 
 function handleSignoutClick() {
@@ -2140,7 +2140,7 @@ function handleSignoutClick() {
         gapi.client.setToken('');
         LOGIN_HINT = null;
         localStorage.removeItem('login_hint_email');
-        updateStatus("✓ Đã đăng xuất & xóa gợi ý.");
+        updateStatus("? �� dang xu?t & x�a g?i �.");
         authButton.style.display = 'block';
         signoutButton.style.display = 'none';
         processButton.disabled = true;
@@ -2155,16 +2155,16 @@ async function processFormFileUploads(classFolderId, sheetId) {
         const { folders } = await listFilesInFolder(classFolderId);
         const fileResponsesFolder = folders.find(f => 
             f.name.includes('File responses') || 
-            f.name.includes('Nộp bài tập về nhà') ||
+            f.name.includes('N?p b�i t?p v? nh�') ||
             f.name.includes('responses')
         );
         
         if (!fileResponsesFolder) {
-            updateStatus('   ℹ️ Không tìm thấy folder File responses');
+            updateStatus('   ?? Kh�ng t�m th?y folder File responses');
             return;
         }
         
-        updateStatus(`   → Tìm thấy folder: ${fileResponsesFolder.name}`);
+        updateStatus(`   ? T�m th?y folder: ${fileResponsesFolder.name}`);
         
         // 2. Get form responses from Sheet
         const responsesData = await gapi.client.sheets.spreadsheets.values.get({
@@ -2174,7 +2174,7 @@ async function processFormFileUploads(classFolderId, sheetId) {
         
         const responses = responsesData.result.values || [];
         if (responses.length === 0) {
-            updateStatus('   ℹ️ Chưa có responses nào trong sheet');
+            updateStatus('   ?? Chua c� responses n�o trong sheet');
             return;
         }
         
@@ -2186,27 +2186,27 @@ async function processFormFileUploads(classFolderId, sheetId) {
         
         const headers = headerData.result.values?.[0] || [];
         const nameColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('tên học sinh') || 
-            h.toLowerCase().includes('họ và tên') ||
-            h.toLowerCase().includes('họ tên')
+            h.toLowerCase().includes('t�n h?c sinh') || 
+            h.toLowerCase().includes('h? v� t�n') ||
+            h.toLowerCase().includes('h? t�n')
         ));
         const assignmentColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('chọn bài') || 
-            h.toLowerCase().includes('loại bài') ||
-            h.toLowerCase().includes('bài tập')
+            h.toLowerCase().includes('ch?n b�i') || 
+            h.toLowerCase().includes('lo?i b�i') ||
+            h.toLowerCase().includes('b�i t?p')
         ));
         const fileColIdx = headers.findIndex(h => h && (
-            h.toLowerCase().includes('nộp bài') ||
-            h.toLowerCase().includes('tải lên') ||
+            h.toLowerCase().includes('n?p b�i') ||
+            h.toLowerCase().includes('t?i l�n') ||
             h.toLowerCase().includes('file')
         ));
         
         if (nameColIdx === -1 || assignmentColIdx === -1 || fileColIdx === -1) {
-            updateStatus('   ⚠️ Không tìm thấy cột cần thiết trong sheet');
+            updateStatus('   ?? Kh�ng t�m th?y c?t c?n thi?t trong sheet');
             return;
         }
         
-        updateStatus(`   → Xử lý ${responses.length} responses...`);
+        updateStatus(`   ? X? l� ${responses.length} responses...`);
         
         // 4. Get all files from file responses folder
         const fileResponsesList = await listFilesInFolder(fileResponsesFolder.id);
@@ -2234,7 +2234,7 @@ async function processFormFileUploads(classFolderId, sheetId) {
             
             if (!studentFolder) {
                 studentFolder = await apiCreateFolder(studentFolderName, assignment.folderId);
-                updateStatus(`   → Tạo folder: ${studentFolderName}`);
+                updateStatus(`   ? T?o folder: ${studentFolderName}`);
             }
             
             // Move files from file responses to student folder
@@ -2255,36 +2255,36 @@ async function processFormFileUploads(classFolderId, sheetId) {
                     });
                     movedCount++;
                 } catch (err) {
-                    console.error(`Lỗi move file ${fileId}:`, err);
+                    console.error(`L?i move file ${fileId}:`, err);
                 }
             }
         }
         
-        updateStatus(`   ✓ Đã phân loại ${movedCount} file vào folder bài tập`);
+        updateStatus(`   ? �� ph�n lo?i ${movedCount} file v�o folder b�i t?p`);
         
     } catch (error) {
-        console.error('Lỗi processFormFileUploads:', error);
-        updateStatus(`   ⚠️ Lỗi phân loại file: ${error.message}`);
+        console.error('L?i processFormFileUploads:', error);
+        updateStatus(`   ?? L?i ph�n lo?i file: ${error.message}`);
     }
 }
 
 async function handleProcessClick() {
-    if (!activeAssignment) { updateStatus("✗ LỖI: Bạn chưa chọn loại bài tập để xử lý.", true); return; }
+    if (!activeAssignment) { updateStatus("? L?I: B?n chua ch?n lo?i b�i t?p d? x? l�.", true); return; }
     const parentFolderIdToProcess = activeAssignment.folderId;
     const folderTypeName = activeAssignment.name;
-    updateStatus(`→ Bắt đầu xử lý lớp [${folderTypeName}]...`);
+    updateStatus(`? B?t d?u x? l� l?p [${folderTypeName}]...`);
     processButton.disabled = true;
-    processButton.querySelector('span').textContent = "Đang xử lý...";
+    processButton.querySelector('span').textContent = "�ang x? l�...";
 
     try {
         // Step 0: Process file uploads from Form responses folder
         const selectedProfile = classProfiles.find(p => p.id === classProfileSelectValue.value);
         if (selectedProfile && selectedProfile.sheetId && selectedProfile.formId) {
-            updateStatus("→ Đang phân loại file uploads từ Form...");
+            updateStatus("? �ang ph�n lo?i file uploads t? Form...");
             await processFormFileUploads(selectedProfile.id, selectedProfile.sheetId);
         }
         
-        updateStatus("→ Đang quét thư mục con...");
+        updateStatus("? �ang qu�t thu m?c con...");
         const allFoldersFromDrive = await findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }]);
         
         // Filter out "File responses" folder (case-insensitive)
@@ -2292,7 +2292,7 @@ async function handleProcessClick() {
             !folder.name.toLowerCase().includes('file responses')
         );
         
-        updateStatus(`✓ Quét xong: ${filteredFolders.length} thư mục con (bỏ qua ${allFoldersFromDrive.length - filteredFolders.length} folder File responses).`);
+        updateStatus(`? Qu�t xong: ${filteredFolders.length} thu m?c con (b? qua ${allFoldersFromDrive.length - filteredFolders.length} folder File responses).`);
 
         const key = getStatusCacheKey();
         const cachedData = localStorage.getItem(key);
@@ -2301,8 +2301,8 @@ async function handleProcessClick() {
 
         const syncedStatusList = [];
         filteredFolders.forEach(folder => {
-            const isProcessed = folder.name.includes('[Đã xử lý]');
-            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
+            const isProcessed = folder.name.includes('[�� x? l�]');
+            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('qu� h?n');
             const cleanName = sanitizeFolderDisplayName(folder.name);
             const existingItem = statusMap.get(cleanName);
             let currentStatus;
@@ -2315,29 +2315,29 @@ async function handleProcessClick() {
             syncedStatusList.push({ id: folder.id, name: cleanName, status: currentStatus });
         });
 
-        updateStatus("→ Đồng bộ hóa danh sách...");
+        updateStatus("? �?ng b? h�a danh s�ch...");
         syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
 
-        const foldersToActuallyProcess = filteredFolders.filter(f => !f.name.includes('[Đã xử lý]') && !f.name.toLowerCase().includes('quá hạn'));
-        updateStatus(`→ ${foldersToActuallyProcess.length} thư mục mới cần xử lý.`);
+        const foldersToActuallyProcess = filteredFolders.filter(f => !f.name.includes('[�� x? l�]') && !f.name.toLowerCase().includes('qu� h?n'));
+        updateStatus(`? ${foldersToActuallyProcess.length} thu m?c m?i c?n x? l�.`);
 
         if (foldersToActuallyProcess.length > 0) {
             await processFoldersConcurrently(foldersToActuallyProcess, folderTypeName);
         } else {
-            updateStatus("✓ Không có thư mục mới. Hoàn tất.");
+            updateStatus("? Kh�ng c� thu m?c m?i. Ho�n t?t.");
             processButton.disabled = false;
-            processButton.querySelector('span').textContent = "Bắt đầu Xử lý";
+            processButton.querySelector('span').textContent = "B?t d?u X? l�";
         }
     } catch (error) {
-        updateStatus(`✗ Lỗi trong quá trình xử lý chính: ${error.message}`, true);
+        updateStatus(`? L?i trong qu� tr�nh x? l� ch�nh: ${error.message}`, true);
         processButton.disabled = false;
-        processButton.querySelector('span').textContent = "Bắt đầu Xử lý";
+        processButton.querySelector('span').textContent = "B?t d?u X? l�";
     }
 }
 
-// Helper: Lấy class màu dựa trên status và current design/theme
+// Helper: L?y class m�u d?a tr�n status v� current design/theme
 function getStatusClasses(status) {
     const currentDesign = localStorage.getItem('design-system') || 'material3';
     
@@ -2361,7 +2361,7 @@ function getStatusClasses(status) {
     }
 }
 
-// Helper: Lấy tất cả class có thể có để remove
+// Helper: L?y t?t c? class c� th? c� d? remove
 function getAllStatusClasses() {
     return [
         'bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary',
@@ -2375,7 +2375,7 @@ function getAllStatusClasses() {
 function displaySubmissionStatus(statusList) {
     submissionStatusList.innerHTML = '';
     if (!statusList || statusList.length === 0) {
-        submissionStatusList.innerHTML = '<div class="text-outline">Chưa có dữ liệu cho lớp này. Bắt đầu xử lý để quét...</div>';
+        submissionStatusList.innerHTML = '<div class="text-outline">Chua c� d? li?u cho l?p n�y. B?t d?u x? l� d? qu�t...</div>';
         return;
     }
 
@@ -2396,21 +2396,21 @@ function displaySubmissionStatus(statusList) {
 
         switch (itemData.status) {
             case 'processed': 
-                statusText = 'Đã xử lý'; 
+                statusText = '�� x? l�'; 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'overdue': 
-                statusText = 'Quá hạn'; 
+                statusText = 'Qu� h?n'; 
                 extraItemClass = 'submission-item-reprocessable'; 
                 break;
             case 'processing': 
-                statusText = 'Đang xử lý...'; 
+                statusText = '�ang x? l�...'; 
                 break;
             case 'error': 
-                statusText = 'Lỗi'; 
+                statusText = 'L?i'; 
                 break;
             default: 
-                statusText = 'Chưa xử lý'; 
+                statusText = 'Chua x? l�'; 
                 break;
         }
 
@@ -2419,16 +2419,16 @@ function displaySubmissionStatus(statusList) {
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
         
-        // Áp dụng class màu dựa trên status
+        // �p d?ng class m�u d?a tr�n status
         const statusClasses = getStatusClasses(itemData.status);
         item.classList.add(...statusClasses);
         
         if (extraItemClass) item.classList.add(extraItemClass);
         
-        // [NEW] Nút thay đổi trạng thái
+        // [NEW] N�t thay d?i tr?ng th�i
         const statusBtn = document.createElement('button');
         statusBtn.className = 'm3-button m3-button-icon-text p-1 px-2 text-xs rounded-lg hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-1';
-        statusBtn.title = 'Thay đổi trạng thái';
+        statusBtn.title = 'Thay d?i tr?ng th�i';
         statusBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2-8.83"></path></svg>`;
         statusBtn.onclick = (e) => {
             e.stopPropagation();
@@ -2441,15 +2441,15 @@ function displaySubmissionStatus(statusList) {
     });
     submissionStatusList.appendChild(list);
     
-    // Cập nhật thống kê sau khi render bảng tình trạng
+    // C?p nh?t th?ng k� sau khi render b?ng t�nh tr?ng
     if (typeof updateSubmissionStats === 'function') {
         updateSubmissionStats();
     }
 }
 
-// [NEW] Hiển thị menu thay đổi trạng thái
+// [NEW] Hi?n th? menu thay d?i tr?ng th�i
 function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
-    // Tạo menu popup
+    // T?o menu popup
     const menu = document.createElement('div');
     menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
     menu.style.position = 'fixed';
@@ -2457,10 +2457,10 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     menu.style.left = (button.getBoundingClientRect().left) + 'px';
     
     const statusOptions = [
-        { value: 'submitted', label: '📝 Chưa xử lý', icon: '📝' },
-        { value: 'processed', label: '✅ Đã xử lý', icon: '✅' },
-        { value: 'overdue', label: '⏰ Quá hạn', icon: '⏰' },
-        { value: 'error', label: '❌ Lỗi', icon: '❌' }
+        { value: 'submitted', label: '?? Chua x? l�', icon: '??' },
+        { value: 'processed', label: '? �� x? l�', icon: '?' },
+        { value: 'overdue', label: '? Qu� h?n', icon: '?' },
+        { value: 'error', label: '? L?i', icon: '?' }
     ];
     
     statusOptions.forEach(option => {
@@ -2476,7 +2476,7 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     
     document.body.appendChild(menu);
     
-    // Đóng menu khi click bên ngoài
+    // ��ng menu khi click b�n ngo�i
     const closeMenu = () => {
         menu.remove();
         document.removeEventListener('click', closeMenu);
@@ -2486,19 +2486,19 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     }, 10);
 }
 
-// [NEW] Thay đổi trạng thái và cập nhật local
+// [NEW] Thay d?i tr?ng th�i v� c?p nh?t local
 async function changeSubmissionStatus(folderId, folderName, newStatus) {
     const key = getStatusCacheKey();
     if (!key) return;
     
     try {
-        // Bước 1: Xác định status prefix cũ và mới
+        // Bu?c 1: X�c d?nh status prefix cu v� m?i
         const statusPrefixMap = {
-            'processed': '[Đã xử lý]',
-            'overdue': '[Quá hạn]',
-            'submitted': '',  // Không có prefix cho "Chưa xử lý"
-            'processing': '[Đang xử lý]',
-            'error': '[Lỗi]'
+            'processed': '[�� x? l�]',
+            'overdue': '[Qu� h?n]',
+            'submitted': '',  // Kh�ng c� prefix cho "Chua x? l�"
+            'processing': '[�ang x? l�]',
+            'error': '[L?i]'
         };
         
         const oldPrefix = Array.from(Object.entries(statusPrefixMap))
@@ -2506,45 +2506,45 @@ async function changeSubmissionStatus(folderId, folderName, newStatus) {
             ?.[1] || '';
         const newPrefix = statusPrefixMap[newStatus] || '';
         
-        // Bước 2: Xóa prefix cũ khỏi tên folder
+        // Bu?c 2: X�a prefix cu kh?i t�n folder
         let cleanName = folderName;
         if (oldPrefix) {
             cleanName = folderName.substring(oldPrefix.length).trim();
         }
         
-        // Bước 3: Thêm prefix mới (nếu có)
+        // Bu?c 3: Th�m prefix m?i (n?u c�)
         const newFolderName = newPrefix ? `${newPrefix} ${cleanName}` : cleanName;
         
-        // Bước 4: Rename folder trên Google Drive
+        // Bu?c 4: Rename folder tr�n Google Drive
         await gapi.client.drive.files.update({
             fileId: folderId,
             resource: { name: newFolderName }
         });
         
-        // Bước 5: Cập nhật localStorage
+        // Bu?c 5: C?p nh?t localStorage
         let statusList = JSON.parse(localStorage.getItem(key) || '[]');
         const itemIndex = statusList.findIndex(item => item.id === folderId);
         
         if (itemIndex !== -1) {
             const oldStatus = statusList[itemIndex].status;
-            statusList[itemIndex].name = cleanName;  // Cập nhật tên không có prefix
+            statusList[itemIndex].name = cleanName;  // C?p nh?t t�n kh�ng c� prefix
             statusList[itemIndex].status = newStatus;
             localStorage.setItem(key, JSON.stringify(statusList));
         }
         
-        // Bước 6: Cập nhật UI
+        // Bu?c 6: C?p nh?t UI
         loadSubmissionStatusFromCache(true);
-        updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
+        updateStatus(`? �� c?p nh?t "${folderName}" ? "${newFolderName}"`);
         
     } catch (error) {
-        const errorMsg = error?.message || (error?.result?.error?.message || 'Lỗi không xác định');
-        updateStatus(`✗ Lỗi khi thay đổi trạng thái: ${errorMsg}`, true);
+        const errorMsg = error?.message || (error?.result?.error?.message || 'L?i kh�ng x�c d?nh');
+        updateStatus(`? L?i khi thay d?i tr?ng th�i: ${errorMsg}`, true);
     }
 }
 
-// [OLD] Xóa trạng thái (giữ lại nhưng đổi tên hàm)
+// [OLD] X�a tr?ng th�i (gi? l?i nhung d?i t�n h�m)
 async function deleteSubmissionStatus(folderId, folderName) {
-    if (!confirm(`Xóa trạng thái của "${folderName}" không?\n\n(Folder sẽ được giữ nguyên trên Google Drive)`)) {
+    if (!confirm(`X�a tr?ng th�i c?a "${folderName}" kh�ng?\n\n(Folder s? du?c gi? nguy�n tr�n Google Drive)`)) {
         return;
     }
     
@@ -2555,22 +2555,22 @@ async function deleteSubmissionStatus(folderId, folderName) {
     statusList = statusList.filter(item => item.id !== folderId);
     localStorage.setItem(key, JSON.stringify(statusList));
     
-    // Cập nhật UI
+    // C?p nh?t UI
     loadSubmissionStatusFromCache();
-    updateStatus(`✓ Đã xóa trạng thái của "${folderName}" khỏi bảng`);
+    updateStatus(`? �� x�a tr?ng th�i c?a "${folderName}" kh?i b?ng`);
 }
 
 async function deleteSelectedSubmissions() {
     const selectedItems = document.querySelectorAll('#submission-status-list li[data-selected="true"]');
     if (selectedItems.length === 0) {
-        updateStatus('⚠ Vui lòng chọn học sinh để xóa.');
+        updateStatus('? Vui l�ng ch?n h?c sinh d? x�a.');
         return;
     }
     
-    const confirmMsg = `Bạn có chắc muốn xóa ${selectedItems.length} học sinh và folder tương ứng không?\n\nLưu ý: Folder sẽ bị xóa vĩnh viễn trên Google Drive!`;
+    const confirmMsg = `B?n c� ch?c mu?n x�a ${selectedItems.length} h?c sinh v� folder tuong ?ng kh�ng?\n\nLuu �: Folder s? b? x�a vinh vi?n tr�n Google Drive!`;
     if (!confirm(confirmMsg)) return;
     
-    updateStatus(`→ Đang xóa ${selectedItems.length} học sinh...`);
+    updateStatus(`? �ang x�a ${selectedItems.length} h?c sinh...`);
     
     let successCount = 0;
     let failCount = 0;
@@ -2589,10 +2589,10 @@ async function deleteSelectedSubmissions() {
             // Remove from UI
             item.remove();
             successCount++;
-            updateStatus(`✓ Xóa thành công: "${folderName}"`);
+            updateStatus(`? X�a th�nh c�ng: "${folderName}"`);
         } catch (error) {
             failCount++;
-            updateStatus(`✗ Lỗi khi xóa "${folderName}": ${error.message}`, true);
+            updateStatus(`? L?i khi x�a "${folderName}": ${error.message}`, true);
         }
     }
     
@@ -2611,7 +2611,7 @@ async function deleteSelectedSubmissions() {
         }
     }
     
-    updateStatus(`✅ Hoàn tất xóa: ${successCount} thành công, ${failCount} thất bại.`);
+    updateStatus(`? Ho�n t?t x�a: ${successCount} th�nh c�ng, ${failCount} th?t b?i.`);
 }
 
 async function processFoldersConcurrently(folders, folderTypeName) {
@@ -2621,7 +2621,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
     const processSingleFolderAndUpdateUI = async (folder) => {
         processedCount++;
         const displayName = sanitizeFolderDisplayName(folder.name);
-        updateStatus(`→ Xử lý ${processedCount}/${folders.length}: "${displayName}"`);
+        updateStatus(`? X? l� ${processedCount}/${folders.length}: "${displayName}"`);
 
         let wasSuccessful = false;
         const sanitizedName = displayName.replace(/[^a-zA-Z0-9]/g, '-');
@@ -2631,7 +2631,7 @@ async function processFoldersConcurrently(folders, folderTypeName) {
             updateSingleStatusInCache(displayName, 'processing');
             if (statusElement) {
                 statusElement.dataset.status = 'processing';
-                statusElement.querySelector('span:last-child').textContent = 'Đang xử lý...';
+                statusElement.querySelector('span:last-child').textContent = '�ang x? l�...';
                 // Remove all status classes before adding new ones
                 statusElement.classList.remove(...getAllStatusClasses());
                 statusElement.classList.add(...getStatusClasses('processing'));
@@ -2641,29 +2641,29 @@ async function processFoldersConcurrently(folders, folderTypeName) {
 
             if (wasSuccessful) {
                 await markFolderAsProcessed(folder.id, folder.name);
-                updateStatus(`✓ Hoàn thành: "${folder.name}"`);
+                updateStatus(`? Ho�n th�nh: "${folder.name}"`);
                 updateSingleStatusInCache(displayName, 'processed');
                 if (statusElement) {
                     statusElement.dataset.status = 'processed';
-                    statusElement.querySelector('span:last-child').textContent = 'Đã xử lý';
+                    statusElement.querySelector('span:last-child').textContent = '�� x? l�';
                     // Remove all status classes before adding new ones
                     statusElement.classList.remove(...getAllStatusClasses());
                     statusElement.classList.add(...getStatusClasses('processed'), 'submission-item-reprocessable');
                 }
             } else {
-                updateStatus(`⚠ Tạm dừng "${folder.name}" do lỗi.`, true);
+                updateStatus(`? T?m d?ng "${folder.name}" do l?i.`, true);
                 updateSingleStatusInCache(displayName, 'error');
                 if (statusElement) {
                     statusElement.dataset.status = 'error';
-                    statusElement.querySelector('span:last-child').textContent = 'Lỗi';
+                    statusElement.querySelector('span:last-child').textContent = 'L?i';
                     // Remove all status classes before adding new ones
                     statusElement.classList.remove(...getAllStatusClasses());
                     statusElement.classList.add(...getStatusClasses('error'));
                 }
             }
         } catch (error) {
-            const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
-            updateStatus(`✗ Lỗi nghiêm trọng khi xử lý "${folder.name}": ${errorMessage}`, true);
+            const errorMessage = error.message || (error.result ? error.result.error.message : 'L?i kh�ng x�c d?nh');
+            updateStatus(`? L?i nghi�m tr?ng khi x? l� "${folder.name}": ${errorMessage}`, true);
         }
     };
 
@@ -2673,9 +2673,9 @@ async function processFoldersConcurrently(folders, folderTypeName) {
     const workerPromises = Array(CONCURRENCY_LIMIT).fill(null).map(worker);
     await Promise.all(workerPromises);
 
-    updateStatus("✅ HOÀN TẤT TẤT CẢ!");
+    updateStatus("? HO�N T?T T?T C?!");
     processButton.disabled = false;
-    processButton.querySelector('span').textContent = "Bắt đầu Xử lý";
+    processButton.querySelector('span').textContent = "B?t d?u X? l�";
 }
 
 async function processSingleFolder(folderId, folderName, folderTypeName) {
@@ -2685,11 +2685,11 @@ async function processSingleFolder(folderId, folderName, folderTypeName) {
         try {
             const fontUrl = 'https://cdn.jsdelivr.net/npm/roboto-font@0.1.0/fonts/Roboto/roboto-regular-webfont.ttf';
             customFontBuffer = await fetch(fontUrl).then(res => res.arrayBuffer());
-        } catch (fontError) { updateStatus(`  ✗ Lỗi tải font: ${fontError.message}.`, true); }
+        } catch (fontError) { updateStatus(`  ? L?i t?i font: ${fontError.message}.`, true); }
     }
 
     const files = await fetchFiles(folderId);
-    if (files.length === 0) { updateStatus(`✗ Không tìm thấy tệp trong "${folderName}".`, true); return false; }
+    if (files.length === 0) { updateStatus(`? Kh�ng t�m th?y t?p trong "${folderName}".`, true); return false; }
 
     const gdocIds = files.filter(f => f.mimeType === 'application/vnd.google-apps.document').map(f => f.id);
     const docxFiles = files.filter(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -2728,7 +2728,7 @@ async function processSingleFolder(folderId, folderName, folderTypeName) {
         try {
             const imagePdfBuffer = await createPdfFromImages(imageFiles, folderName);
             pdfBuffers.push(imagePdfBuffer);
-        } catch (error) { updateStatus(`✗ Lỗi khi gộp ảnh: ${error.message}`, true); hasEncounteredError = true; }
+        } catch (error) { updateStatus(`? L?i khi g?p ?nh: ${error.message}`, true); hasEncounteredError = true; }
     }
     if (pdfFiles.length > 0) {
         const existingPdfs = await fetchPdfBlobs(pdfFiles.map(f => f.id));
@@ -2738,18 +2738,18 @@ async function processSingleFolder(folderId, folderName, folderTypeName) {
     if (pdfBuffers.length > 0) {
         try {
             const mergedPdfBytes = await mergePdfs(pdfBuffers, folderName);
-            const assignmentName = folderTypeName || "BàiTập";
+            const assignmentName = folderTypeName || "B�iT?p";
             const fileName = `${folderName} (${assignmentName}).pdf`;
             download(mergedPdfBytes, fileName, "application/pdf");
-            updateStatus(`✓ ĐÃ TẢI VỀ: ${fileName}`);
-        } catch (error) { updateStatus(`✗ Lỗi khi nối PDF: ${error.message}`, true); hasEncounteredError = true; }
-    } else { updateStatus(`✗ Không có tệp hợp lệ trong "${folderName}".`, true); return false; }
+            updateStatus(`? �� T?I V?: ${fileName}`);
+        } catch (error) { updateStatus(`? L?i khi n?i PDF: ${error.message}`, true); hasEncounteredError = true; }
+    } else { updateStatus(`? Kh�ng c� t?p h?p l? trong "${folderName}".`, true); return false; }
 
     return !hasEncounteredError;
 }
 
 async function markFolderAsProcessed(folderId, folderName) {
-    try { await gapi.client.drive.files.update({ fileId: folderId, resource: { name: `[Đã xử lý] ${folderName}` } }); updateStatus(`✓ Đổi tên: "[Đã xử lý] ${folderName}"`); } catch (err) { updateStatus(`✗ Lỗi đổi tên: ${err.message}`, true); }
+    try { await gapi.client.drive.files.update({ fileId: folderId, resource: { name: `[�� x? l�] ${folderName}` } }); updateStatus(`? �?i t�n: "[�� x? l�] ${folderName}"`); } catch (err) { updateStatus(`? L?i d?i t�n: ${err.message}`, true); }
 }
 
 async function findAllSubfolders(parentFolders) {
@@ -2763,7 +2763,7 @@ async function findAllSubfolders(parentFolders) {
                 if (response.result.files) allSubfolders = allSubfolders.concat(response.result.files);
                 pageToken = response.result.nextPageToken;
             } while (pageToken);
-        } catch (err) { updateStatus(`✗ Lỗi quét thư mục "${parent.name}": ${err.message}`, true); }
+        } catch (err) { updateStatus(`? L?i qu�t thu m?c "${parent.name}": ${err.message}`, true); }
     }
     return allSubfolders;
 }
@@ -2800,7 +2800,7 @@ async function listFilesInFolder(folderId) {
             pageToken = response.result.nextPageToken;
         } while (pageToken);
     } catch (err) {
-        updateStatus(`✗ Lỗi list files trong folder: ${err.message}`, true);
+        updateStatus(`? L?i list files trong folder: ${err.message}`, true);
     }
 
     return { files, folders };
@@ -2814,7 +2814,7 @@ async function getFolderMetadata(folderId) {
         });
         return response.result;
     } catch (err) {
-        console.error(`[METADATA] Lỗi lấy metadata folder ${folderId}:`, err);
+        console.error(`[METADATA] L?i l?y metadata folder ${folderId}:`, err);
         return { appProperties: {} };
     }
 }
@@ -2833,9 +2833,9 @@ async function markFolderAsScanned(folderId, formFile, sheetFile) {
                 }
             }
         });
-        console.log(`[METADATA] Đã đánh dấu folder ${folderId} là đã quét`);
+        console.log(`[METADATA] �� d�nh d?u folder ${folderId} l� d� qu�t`);
     } catch (err) {
-        console.error(`[METADATA] Lỗi đánh dấu folder ${folderId}:`, err);
+        console.error(`[METADATA] L?i d�nh d?u folder ${folderId}:`, err);
     }
 }
 
@@ -2847,14 +2847,14 @@ async function listAssignmentFolders(classFolderId) {
             .filter(f => !f.name.toLowerCase().includes('file responses'))
             .map(f => ({ name: f.name, folderId: f.id }));
     } catch (err) {
-        console.error(`[METADATA] Lỗi list assignment folders:`, err);
+        console.error(`[METADATA] L?i list assignment folders:`, err);
         return [];
     }
 }
 
 /**
- * Quét folder lớp để tìm Form và Sheet hiện có
- * @param {string} classFolderId - ID của folder lớp
+ * Qu�t folder l?p d? t�m Form v� Sheet hi?n c�
+ * @param {string} classFolderId - ID c?a folder l?p
  * @returns {object} - {formFile: {...}, sheetFile: {...}, assignmentFolders: [...]}
  */
 async function scanClassFolder(classFolderId) {
@@ -2876,7 +2876,7 @@ async function scanClassFolder(classFolderId) {
             } else if (file.mimeType === 'application/vnd.google-apps.spreadsheet') {
                 sheetFile = file;
             } else if (file.mimeType === 'application/vnd.google-apps.folder') {
-                // Bỏ qua folder "File responses"
+                // B? qua folder "File responses"
                 if (!file.name.toLowerCase().includes('file responses')) {
                     assignmentFolders.push(file);
                 }
@@ -2885,13 +2885,13 @@ async function scanClassFolder(classFolderId) {
         
         return { formFile, sheetFile, assignmentFolders };
     } catch (e) {
-        console.error('Lỗi quét folder lớp:', e);
+        console.error('L?i qu�t folder l?p:', e);
         return { formFile: null, sheetFile: null, assignmentFolders: [] };
     }
 }
 
 /**
- * Kiểm tra xem Form có tồn tại không
+ * Ki?m tra xem Form c� t?n t?i kh�ng
  */
 async function checkFormExists(formId) {
     if (!formId) return false;
@@ -2902,13 +2902,13 @@ async function checkFormExists(formId) {
         });
         return response && response.result;
     } catch (e) {
-        console.log(`Form ${formId} không tồn tại hoặc không có quyền truy cập:`, e);
+        console.log(`Form ${formId} kh�ng t?n t?i ho?c kh�ng c� quy?n truy c?p:`, e);
         return false;
     }
 }
 
 /**
- * Kiểm tra xem Sheet có tồn tại không
+ * Ki?m tra xem Sheet c� t?n t?i kh�ng
  */
 async function checkSheetExists(sheetId) {
     if (!sheetId) return false;
@@ -2918,173 +2918,173 @@ async function checkSheetExists(sheetId) {
         });
         return response && response.result;
     } catch (e) {
-        console.log(`Sheet ${sheetId} không tồn tại hoặc không có quyền truy cập:`, e);
+        console.log(`Sheet ${sheetId} kh�ng t?n t?i ho?c kh�ng c� quy?n truy c?p:`, e);
         return false;
     }
 }
 
 /**
- * Tạo lại Sheet cho class (khi Sheet bị xóa)
+ * T?o l?i Sheet cho class (khi Sheet b? x�a)
  * @param {object} profile - Class profile
- * @returns {string} - Sheet ID mới
+ * @returns {string} - Sheet ID m?i
  */
 async function recreateClassSheet(profile) {
-    updateStatus(`🔄 Phát hiện Sheet bị xóa. Đang tạo lại Sheet cho "${profile.name}"...`);
+    updateStatus(`?? Ph�t hi?n Sheet b? x�a. �ang t?o l?i Sheet cho "${profile.name}"...`);
     
     const rootId = inpRootFolderId.value.trim();
     const tmplSheetId = TEMPLATE_SHEET_ID;
     
     if (!rootId || !profile.classFolderId) {
-        updateStatus('❌ Thiếu Root Folder ID hoặc Class Folder ID', true);
+        updateStatus('? Thi?u Root Folder ID ho?c Class Folder ID', true);
         throw new Error('Missing Root/Class Folder ID');
     }
     
     try {
         // 1. Copy Sheet template
-        updateStatus(`📋 Đang copy Sheet template...`);
+        updateStatus(`?? �ang copy Sheet template...`);
         const newSheet = await apiCopyFile(
             tmplSheetId,
-            `📊 ${profile.name}`,
+            `?? ${profile.name}`,
             profile.classFolderId
         );
         const newSheetId = newSheet.id;
-        updateStatus(`✅ Đã tạo Sheet mới: ${newSheetId}`);
+        updateStatus(`? �� t?o Sheet m?i: ${newSheetId}`);
         
-        // 2. Ghi config vào Sheet (I1, I3, I4, I5)
-        updateStatus(`📝 Đang ghi cấu hình vào Sheet...`);
+        // 2. Ghi config v�o Sheet (I1, I3, I4, I5)
+        updateStatus(`?? �ang ghi c?u h�nh v�o Sheet...`);
         await apiUpdateSheetConfig(newSheetId, profile.name, profile.classFolderId, profile.formId || '');
         
-        // 3. Tạo các sheet bài tập (duplicate từ template)
+        // 3. T?o c�c sheet b�i t?p (duplicate t? template)
         if (profile.assignments && profile.assignments.length > 0) {
-            updateStatus(`📑 Đang tạo ${profile.assignments.length} sheet bài tập...`);
+            updateStatus(`?? �ang t?o ${profile.assignments.length} sheet b�i t?p...`);
             await apiCreateAssignmentSheets(newSheetId, profile.assignments);
         }
         
-        // 4. Ghi danh sách bài tập vào tab Cấu Hình
+        // 4. Ghi danh s�ch b�i t?p v�o tab C?u H�nh
         if (profile.assignments && profile.assignments.length > 0) {
-            updateStatus(`✍️ Đang điền danh sách bài tập vào Sheet...`);
+            updateStatus(`?? �ang di?n danh s�ch b�i t?p v�o Sheet...`);
             await apiWriteAssignmentsToConfig(newSheetId, profile.assignments);
         }
         
-        // 5. Liên kết Form với Sheet mới (nếu có Form)
+        // 5. Li�n k?t Form v?i Sheet m?i (n?u c� Form)
         if (profile.formId) {
-            updateStatus(`🔗 Đang liên kết Form với Sheet mới...`);
+            updateStatus(`?? �ang li�n k?t Form v?i Sheet m?i...`);
             await apiLinkFormToSheet(profile.formId, newSheetId);
         }
         
-        // 6. Ghi email vào config (cell H6)
+        // 6. Ghi email v�o config (cell H6)
         const userEmail = await getUserEmail();
         if (userEmail) {
             await apiWriteUserEmailToConfig(newSheetId, userEmail);
         }
         
-        // 7. Cập nhật profile với Sheet ID mới
+        // 7. C?p nh?t profile v?i Sheet ID m?i
         profile.sheetId = newSheetId;
         profile.sheetUrl = newSheet.webViewLink;
         
-        // 8. Lưu vào localStorage
+        // 8. Luu v�o localStorage
         const idx = classProfiles.findIndex(p => p.id === profile.id);
         if (idx !== -1) {
             classProfiles[idx] = profile;
             localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
         }
         
-        updateStatus(`✨ Đã tạo lại Sheet thành công!`);
+        updateStatus(`? �� t?o l?i Sheet th�nh c�ng!`);
         return newSheetId;
         
     } catch (e) {
-        updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
+        updateStatus(`? L?i t?o l?i Sheet: ${e.message}`, true);
         throw e;
     }
 }
 
 /**
- * Đồng bộ và liên kết lại class system - NÂNG CẤP
- * Quét folder lớp, phát hiện Form/Sheet bị mất, tự động tạo lại và liên kết
+ * �?ng b? v� li�n k?t l?i class system - N�NG C?P
+ * Qu�t folder l?p, ph�t hi?n Form/Sheet b? m?t, t? d?ng t?o l?i v� li�n k?t
  */
 async function syncAndLinkClassSystem() {
     const selectedId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
     
     if (!selectedId) {
-        updateStatus("⚠ Vui lòng chọn lớp cần đồng bộ.", true);
+        updateStatus("? Vui l�ng ch?n l?p c?n d?ng b?.", true);
         return;
     }
     
     const profile = getClassProfile(selectedId);
     if (!profile) {
-        updateStatus("✗ Không tìm thấy thông tin lớp.", true);
+        updateStatus("? Kh�ng t�m th?y th�ng tin l?p.", true);
         return;
     }
     
-    // Tự động nhận diện Class Folder ID (chính là profile.id)
+    // T? d?ng nh?n di?n Class Folder ID (ch�nh l� profile.id)
     const classFolderId = profile.classFolderId || profile.id;
     if (!classFolderId) {
-        updateStatus("✗ Lỗi: Không xác định được Class Folder ID.", true);
+        updateStatus("? L?i: Kh�ng x�c d?nh du?c Class Folder ID.", true);
         return;
     }
     
-    updateStatus(`🔍 Đang quét folder lớp "${profile.name}"...`);
+    updateStatus(`?? �ang qu�t folder l?p "${profile.name}"...`);
     
     try {
-        // BƯỚC 1: Quét folder lớp để tìm Form và Sheet hiện có
+        // BU?C 1: Qu�t folder l?p d? t�m Form v� Sheet hi?n c�
         const { formFile, sheetFile, assignmentFolders } = await scanClassFolder(classFolderId);
         
-        console.log('[SYNC] Kết quả quét:', { formFile, sheetFile, assignmentFolders: assignmentFolders.length });
+        console.log('[SYNC] K?t qu? qu�t:', { formFile, sheetFile, assignmentFolders: assignmentFolders.length });
         
         let needFormLink = false;
         let needSheetLink = false;
         let currentFormId = formFile ? formFile.id : null;
         let currentSheetId = sheetFile ? sheetFile.id : null;
         
-        // BƯỚC 2: Kiểm tra Form
+        // BU?C 2: Ki?m tra Form
         if (!formFile) {
-            updateStatus(`⚠️ Không tìm thấy Form trong folder. Đang tạo Form mới...`);
+            updateStatus(`?? Kh�ng t�m th?y Form trong folder. �ang t?o Form m?i...`);
             
-            // Tạo Form mới từ template
+            // T?o Form m?i t? template
             const newForm = await apiCopyFile(
                 TEMPLATE_FORM_ID,
-                `📝 ${profile.name}`,
+                `?? ${profile.name}`,
                 classFolderId
             );
             currentFormId = newForm.id;
-            updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
+            updateStatus(`? �� t?o Form m?i: ${currentFormId}`);
             needFormLink = true;
         } else {
-            updateStatus(`✅ Tìm thấy Form: "${formFile.name}"`);
+            updateStatus(`? T�m th?y Form: "${formFile.name}"`);
             currentFormId = formFile.id;
             
-            // Kiểm tra Form có còn tồn tại không (có thể bị xóa nhưng chưa vào thùng rác)
+            // Ki?m tra Form c� c�n t?n t?i kh�ng (c� th? b? x�a nhung chua v�o th�ng r�c)
             const formExists = await checkFormExists(currentFormId);
             if (!formExists) {
-                updateStatus(`⚠️ Form bị lỗi. Đang tạo Form mới...`);
+                updateStatus(`?? Form b? l?i. �ang t?o Form m?i...`);
                 const newForm = await apiCopyFile(
                     TEMPLATE_FORM_ID,
-                    `📝 ${profile.name}`,
+                    `?? ${profile.name}`,
                     classFolderId
                 );
                 currentFormId = newForm.id;
-                updateStatus(`✅ Đã tạo Form mới: ${currentFormId}`);
+                updateStatus(`? �� t?o Form m?i: ${currentFormId}`);
                 needFormLink = true;
             }
         }
         
-        // BƯỚC 3: Kiểm tra Sheet
+        // BU?C 3: Ki?m tra Sheet
         if (!sheetFile) {
-            updateStatus(`⚠️ Không tìm thấy Sheet trong folder. Đang tạo Sheet mới...`);
+            updateStatus(`?? Kh�ng t�m th?y Sheet trong folder. �ang t?o Sheet m?i...`);
             
-            // Tạo Sheet mới từ template
+            // T?o Sheet m?i t? template
             const newSheet = await apiCopyFile(
                 TEMPLATE_SHEET_ID,
-                `📊 ${profile.name}`,
+                `?? ${profile.name}`,
                 classFolderId
             );
             currentSheetId = newSheet.id;
-            updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
+            updateStatus(`? �� t?o Sheet m?i: ${currentSheetId}`);
             
-            // Ghi config vào Sheet mới
+            // Ghi config v�o Sheet m?i
             await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
             
-            // Tạo các assignment sheets
+            // T?o c�c assignment sheets
             if (assignmentFolders.length > 0) {
                 const assignments = assignmentFolders.map(f => ({ name: f.name, folderId: f.id }));
                 await apiCreateAssignmentSheets(currentSheetId, assignments);
@@ -3093,25 +3093,25 @@ async function syncAndLinkClassSystem() {
             
             needSheetLink = true;
         } else {
-            updateStatus(`✅ Tìm thấy Sheet: "${sheetFile.name}"`);
+            updateStatus(`? T�m th?y Sheet: "${sheetFile.name}"`);
             currentSheetId = sheetFile.id;
             
-            // Kiểm tra Sheet có còn tồn tại không
+            // Ki?m tra Sheet c� c�n t?n t?i kh�ng
             const sheetExists = await checkSheetExists(currentSheetId);
             if (!sheetExists) {
-                updateStatus(`⚠️ Sheet bị lỗi. Đang tạo Sheet mới...`);
+                updateStatus(`?? Sheet b? l?i. �ang t?o Sheet m?i...`);
                 const newSheet = await apiCopyFile(
                     TEMPLATE_SHEET_ID,
-                    `📊 ${profile.name}`,
+                    `?? ${profile.name}`,
                     classFolderId
                 );
                 currentSheetId = newSheet.id;
-                updateStatus(`✅ Đã tạo Sheet mới: ${currentSheetId}`);
+                updateStatus(`? �� t?o Sheet m?i: ${currentSheetId}`);
                 
-                // Ghi config vào Sheet mới
+                // Ghi config v�o Sheet m?i
                 await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
                 
-                // Tạo các assignment sheets
+                // T?o c�c assignment sheets
                 if (assignmentFolders.length > 0) {
                     const assignments = assignmentFolders.map(f => ({ name: f.name, folderId: f.id }));
                     await apiCreateAssignmentSheets(currentSheetId, assignments);
@@ -3122,13 +3122,13 @@ async function syncAndLinkClassSystem() {
             }
         }
         
-        // BƯỚC 4: Cập nhật profile với ID mới
+        // BU?C 4: C?p nh?t profile v?i ID m?i
         profile.formId = currentFormId;
         profile.sheetId = currentSheetId;
         profile.formUrl = `https://docs.google.com/forms/d/${currentFormId}/edit`;
         profile.sheetUrl = `https://docs.google.com/spreadsheets/d/${currentSheetId}/edit`;
         
-        // Cập nhật assignments từ folder
+        // C?p nh?t assignments t? folder
         if (assignmentFolders.length > 0) {
             profile.assignments = assignmentFolders.map(f => ({
                 name: f.name,
@@ -3136,18 +3136,18 @@ async function syncAndLinkClassSystem() {
             }));
         }
         
-        // Lưu vào localStorage
+        // Luu v�o localStorage
         const idx = classProfiles.findIndex(p => p.id === selectedId);
         if (idx !== -1) {
             classProfiles[idx] = profile;
             localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
         }
         
-        // BƯỚC 5: Ghi lại config vào Sheet (đảm bảo đồng bộ)
-        updateStatus(`📝 Đang cập nhật config vào Sheet...`);
+        // BU?C 5: Ghi l?i config v�o Sheet (d?m b?o d?ng b?)
+        updateStatus(`?? �ang c?p nh?t config v�o Sheet...`);
         await apiUpdateSheetConfig(currentSheetId, profile.name, classFolderId, currentFormId);
         
-        // Ghi danh sách assignments
+        // Ghi danh s�ch assignments
         if (profile.assignments && profile.assignments.length > 0) {
             await apiWriteAssignmentsToConfig(currentSheetId, profile.assignments);
         }
@@ -3158,57 +3158,57 @@ async function syncAndLinkClassSystem() {
             await apiWriteUserEmailToConfig(currentSheetId, userEmail);
         }
         
-        // BƯỚC 6: Cập nhật lựa chọn trong Form (danh sách bài tập)
-        updateStatus(`📋 Đang cập nhật lựa chọn bài tập trong Form...`);
+        // BU?C 6: C?p nh?t l?a ch?n trong Form (danh s�ch b�i t?p)
+        updateStatus(`?? �ang c?p nh?t l?a ch?n b�i t?p trong Form...`);
         await apiUpdateFormChoices(currentFormId, profile.assignments || []);
         
-        // BƯỚC 6.5: Cảnh báo về email notification
+        // BU?C 6.5: C?nh b�o v? email notification
         if (needFormLink || needSheetLink) {
-            updateStatus(`⚠️ LƯU Ý: Sau khi liên kết Form-Sheet xong, cần setup email trong Apps Script:`);
-            updateStatus(`   1. Mở Form → Apps Script (3 chấm → Script editor)`);
-            updateStatus(`   2. Chạy function: FormLib.quickSetupForm()`);
-            updateStatus(`   3. Authorize các quyền cần thiết`);
-            updateStatus(`   → Email notification sẽ hoạt động sau khi setup!`);
+            updateStatus(`?? LUU �: Sau khi li�n k?t Form-Sheet xong, c?n setup email trong Apps Script:`);
+            updateStatus(`   1. M? Form ? Apps Script (3 ch?m ? Script editor)`);
+            updateStatus(`   2. Ch?y function: FormLib.quickSetupForm()`);
+            updateStatus(`   3. Authorize c�c quy?n c?n thi?t`);
+            updateStatus(`   ? Email notification s? ho?t d?ng sau khi setup!`);
         }
         
-        // BƯỚC 7: Yêu cầu user liên kết thủ công nếu cần
+        // BU?C 7: Y�u c?u user li�n k?t th? c�ng n?u c?n
         if (needFormLink || needSheetLink) {
-            let linkInstructions = '\n\n🔗 CẦN LIÊN KẾT THỦ CÔNG:\n';
+            let linkInstructions = '\n\n?? C?N LI�N K?T TH? C�NG:\n';
             
             if (needFormLink && needSheetLink) {
-                linkInstructions += `\n1️⃣ Mở Form (đã tự động mở tab mới)\n`;
-                linkInstructions += `2️⃣ Click "Responses" → "Select response destination"\n`;
-                linkInstructions += `3️⃣ Chọn "Select existing spreadsheet"\n`;
-                linkInstructions += `4️⃣ Dán Sheet URL và chọn sheet đúng\n`;
-                linkInstructions += `\n📧 SETUP EMAIL NOTIFICATION:\n`;
-                linkInstructions += `5️⃣ Trong Form, click dấu 3 chấm → "Script editor"\n`;
-                linkInstructions += `6️⃣ Chạy function: FormLib.quickSetupForm()\n`;
-                linkInstructions += `7️⃣ Authorize các quyền cần thiết\n`;
-                linkInstructions += `\n✅ Sau khi hoàn tất, email sẽ báo khi có người nộp bài!`;
+                linkInstructions += `\n1?? M? Form (d� t? d?ng m? tab m?i)\n`;
+                linkInstructions += `2?? Click "Responses" ? "Select response destination"\n`;
+                linkInstructions += `3?? Ch?n "Select existing spreadsheet"\n`;
+                linkInstructions += `4?? D�n Sheet URL v� ch?n sheet d�ng\n`;
+                linkInstructions += `\n?? SETUP EMAIL NOTIFICATION:\n`;
+                linkInstructions += `5?? Trong Form, click d?u 3 ch?m ? "Script editor"\n`;
+                linkInstructions += `6?? Ch?y function: FormLib.quickSetupForm()\n`;
+                linkInstructions += `7?? Authorize c�c quy?n c?n thi?t\n`;
+                linkInstructions += `\n? Sau khi ho�n t?t, email s? b�o khi c� ngu?i n?p b�i!`;
                 
-                // Mở Form để user liên kết
+                // M? Form d? user li�n k?t
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             } else if (needFormLink) {
-                linkInstructions += `\n⚠️ Form mới cần liên kết với Sheet hiện có.\n`;
-                linkInstructions += `\n📧 Và cần setup email notification:\n`;
-                linkInstructions += `1️⃣ Mở Form → Script editor (3 chấm)\n`;
-                linkInstructions += `2️⃣ Chạy: FormLib.quickSetupForm()\n`;
-                linkInstructions += `\nĐã tự động mở Form. Hãy làm theo hướng dẫn!`;
+                linkInstructions += `\n?? Form m?i c?n li�n k?t v?i Sheet hi?n c�.\n`;
+                linkInstructions += `\n?? V� c?n setup email notification:\n`;
+                linkInstructions += `1?? M? Form ? Script editor (3 ch?m)\n`;
+                linkInstructions += `2?? Ch?y: FormLib.quickSetupForm()\n`;
+                linkInstructions += `\n�� t? d?ng m? Form. H�y l�m theo hu?ng d?n!`;
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             } else if (needSheetLink) {
-                linkInstructions += `\n⚠️ Sheet mới đã được tạo.\n`;
-                linkInstructions += `Form hiện tại cần được link lại với Sheet mới.\n`;
-                linkInstructions += `\n📧 Và cần setup lại email notification:\n`;
-                linkInstructions += `1️⃣ Mở Form → Script editor (3 chấm)\n`;
-                linkInstructions += `2️⃣ Chạy: FormLib.quickSetupForm()\n`;
-                linkInstructions += `\nĐã tự động mở Form. Hãy link với Sheet mới!`;
+                linkInstructions += `\n?? Sheet m?i d� du?c t?o.\n`;
+                linkInstructions += `Form hi?n t?i c?n du?c link l?i v?i Sheet m?i.\n`;
+                linkInstructions += `\n?? V� c?n setup l?i email notification:\n`;
+                linkInstructions += `1?? M? Form ? Script editor (3 ch?m)\n`;
+                linkInstructions += `2?? Ch?y: FormLib.quickSetupForm()\n`;
+                linkInstructions += `\n�� t? d?ng m? Form. H�y link v?i Sheet m?i!`;
                 window.open(`https://docs.google.com/forms/d/${currentFormId}/edit`, '_blank');
             }
             
-            updateStatus(`✅ Đồng bộ hoàn tất!${linkInstructions}`);
-            alert(`Đồng bộ thành công!${linkInstructions}`);
+            updateStatus(`? �?ng b? ho�n t?t!${linkInstructions}`);
+            alert(`�?ng b? th�nh c�ng!${linkInstructions}`);
         } else {
-            updateStatus(`✅ Đồng bộ hoàn tất! Tất cả thành phần đã liên kết đúng.`);
+            updateStatus(`? �?ng b? ho�n t?t! T?t c? th�nh ph?n d� li�n k?t d�ng.`);
         }
         
         // Reload UI
@@ -3216,8 +3216,8 @@ async function syncAndLinkClassSystem() {
         updateAssignmentSelectionUI();
         
     } catch (e) {
-        console.error('[SYNC] Lỗi:', e);
-        updateStatus(`❌ Lỗi đồng bộ: ${e.message}`, true);
+        console.error('[SYNC] L?i:', e);
+        updateStatus(`? L?i d?ng b?: ${e.message}`, true);
     }
 }
 
@@ -3225,13 +3225,13 @@ async function scanAndSyncClasses(silent = false) {
     const rootId = inpRootFolderId.value.trim();
     if (!rootId) {
         if (!silent) {
-            updateStatus("✗ Lỗi: Cần ID Thư mục cha. Vui lòng vào Cài đặt > Tự động hóa.", true);
-            alert("Vui lòng vào Cài đặt -> Tự động hóa để nhập ID Thư mục cha (Root) trước.");
+            updateStatus("? L?i: C?n ID Thu m?c cha. Vui l�ng v�o C�i d?t > T? d?ng h�a.", true);
+            alert("Vui l�ng v�o C�i d?t -> T? d?ng h�a d? nh?p ID Thu m?c cha (Root) tru?c.");
         }
         return;
     }
 
-    // [NEW] Kiểm tra và tạo lại Sheet nếu thiếu
+    // [NEW] Ki?m tra v� t?o l?i Sheet n?u thi?u
     const selectedId = classProfileSelectValue ? classProfileSelectValue.value : classProfileSelect.value;
     if (selectedId) {
         const currentProfile = classProfiles.find(p => p.id === selectedId);
@@ -3239,40 +3239,40 @@ async function scanAndSyncClasses(silent = false) {
             const sheetExists = await checkSheetExists(currentProfile.sheetId);
             if (!sheetExists) {
                 try {
-                    if (!silent) updateStatus(`⚠️ Phát hiện Sheet bị xóa cho lớp "${currentProfile.name}"`);
+                    if (!silent) updateStatus(`?? Ph�t hi?n Sheet b? x�a cho l?p "${currentProfile.name}"`);
                     await recreateClassSheet(currentProfile);
-                    if (!silent) updateStatus('✅ Đã tạo lại Sheet thành công!');
-                    // Reload để cập nhật UI
+                    if (!silent) updateStatus('? �� t?o l?i Sheet th�nh c�ng!');
+                    // Reload d? c?p nh?t UI
                     loadClassProfiles();
                 } catch (e) {
-                    updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
+                    updateStatus(`? L?i t?o l?i Sheet: ${e.message}`, true);
                     return;
                 }
             }
         }
     }
 
-    console.log("[SCAN] Bắt đầu quét Root Folder ID:", rootId, silent ? "(silent mode)" : "");
+    console.log("[SCAN] B?t d?u qu�t Root Folder ID:", rootId, silent ? "(silent mode)" : "");
     if (!silent) {
-        updateStatus("🔍 Đang quét Root Folder để tìm các lớp...");
+        updateStatus("?? �ang qu�t Root Folder d? t�m c�c l?p...");
     }
 
     try {
         // Get all folders in root
         const { folders: classFolderCandidates, files: rootFiles } = await listFilesInFolder(rootId);
-        console.log("[SCAN] Tìm thấy trong Root:", {
+        console.log("[SCAN] T�m th?y trong Root:", {
             folders: classFolderCandidates.length,
             files: rootFiles.length
         });
-        console.log("[SCAN] Danh sách folders:", classFolderCandidates.map(f => f.name));
+        console.log("[SCAN] Danh s�ch folders:", classFolderCandidates.map(f => f.name));
 
-        if (!silent) updateStatus(`→ Tìm thấy ${classFolderCandidates.length} folder trong Root.`);
+        if (!silent) updateStatus(`? T�m th?y ${classFolderCandidates.length} folder trong Root.`);
 
         const detectedClasses = [];
 
         for (const classFolder of classFolderCandidates) {
-            console.log(`[SCAN] Đang kiểm tra folder: "${classFolder.name}" (ID: ${classFolder.id})`);
-            if (!silent) updateStatus(`→ Đang kiểm tra folder: "${classFolder.name}"...`);
+            console.log(`[SCAN] �ang ki?m tra folder: "${classFolder.name}" (ID: ${classFolder.id})`);
+            if (!silent) updateStatus(`? �ang ki?m tra folder: "${classFolder.name}"...`);
 
             // Check if folder has been scanned before (using appProperties)
             const metadata = await getFolderMetadata(classFolder.id);
@@ -3280,8 +3280,8 @@ async function scanAndSyncClasses(silent = false) {
 
             if (props.scanned === 'true' && props.formId && props.sheetId) {
                 // Folder already scanned - use cached metadata
-                console.log(`[SCAN] ⚡ Sử dụng metadata đã lưu cho "${classFolder.name}"`);
-                if (!silent) updateStatus(`  ⚡ Dùng cache: "${classFolder.name}"`);
+                console.log(`[SCAN] ? S? d?ng metadata d� luu cho "${classFolder.name}"`);
+                if (!silent) updateStatus(`  ? D�ng cache: "${classFolder.name}"`);
 
                 const assignments = await listAssignmentFolders(classFolder.id);
 
@@ -3296,14 +3296,14 @@ async function scanAndSyncClasses(silent = false) {
                     assignments: assignments
                 });
 
-                if (!silent) updateStatus(`  → Tìm thấy ${assignments.length} loại bài tập.`);
+                if (!silent) updateStatus(`  ? T�m th?y ${assignments.length} lo?i b�i t?p.`);
             } else {
                 // First time scan - do full check
-                console.log(`[SCAN] 📋 Quét chi tiết folder "${classFolder.name}" (lần đầu)`);
+                console.log(`[SCAN] ?? Qu�t chi ti?t folder "${classFolder.name}" (l?n d?u)`);
 
                 const { files, folders: assignmentFolderCandidates } = await listFilesInFolder(classFolder.id);
 
-                console.log(`[SCAN] Nội dung folder "${classFolder.name}":`, {
+                console.log(`[SCAN] N?i dung folder "${classFolder.name}":`, {
                     files: files.length,
                     folders: assignmentFolderCandidates.length
                 });
@@ -3314,15 +3314,15 @@ async function scanAndSyncClasses(silent = false) {
                 const formFile = files.find(f => f.mimeType === 'application/vnd.google-apps.form');
                 const sheetFile = files.find(f => f.mimeType === 'application/vnd.google-apps.spreadsheet');
 
-                console.log(`[SCAN] Tìm thấy:`, {
-                    form: formFile ? formFile.name : 'KHÔNG CÓ',
-                    sheet: sheetFile ? sheetFile.name : 'KHÔNG CÓ'
+                console.log(`[SCAN] T�m th?y:`, {
+                    form: formFile ? formFile.name : 'KH�NG C�',
+                    sheet: sheetFile ? sheetFile.name : 'KH�NG C�'
                 });
 
                 if (formFile && sheetFile) {
                     // Valid class folder!
-                    console.log(`[SCAN] ✓ "${classFolder.name}" là lớp hợp lệ!`);
-                    if (!silent) updateStatus(`✓ Nhận diện lớp: "${classFolder.name}" (Form + Sheet)`);
+                    console.log(`[SCAN] ? "${classFolder.name}" l� l?p h?p l?!`);
+                    if (!silent) updateStatus(`? Nh?n di?n l?p: "${classFolder.name}" (Form + Sheet)`);
 
                     // Mark folder for faster future scans
                     await markFolderAsScanned(classFolder.id, formFile, sheetFile);
@@ -3346,38 +3346,38 @@ async function scanAndSyncClasses(silent = false) {
                         assignments: assignments
                     });
 
-                    if (!silent) updateStatus(`  → Tìm thấy ${assignments.length} loại bài tập.`);
+                    if (!silent) updateStatus(`  ? T�m th?y ${assignments.length} lo?i b�i t?p.`);
                 } else {
-                    console.log(`[SCAN] ⊗ Bỏ qua "${classFolder.name}" - thiếu ${!formFile ? 'Form' : ''} ${!sheetFile ? 'Sheet' : ''}`);
-                    if (!silent) updateStatus(`  ⊗ Bỏ qua: "${classFolder.name}" (thiếu ${!formFile ? 'Form' : ''} ${!sheetFile ? 'Sheet' : ''})`);
+                    console.log(`[SCAN] ? B? qua "${classFolder.name}" - thi?u ${!formFile ? 'Form' : ''} ${!sheetFile ? 'Sheet' : ''}`);
+                    if (!silent) updateStatus(`  ? B? qua: "${classFolder.name}" (thi?u ${!formFile ? 'Form' : ''} ${!sheetFile ? 'Sheet' : ''})`);
                 }
             }
         }
 
-        console.log(`[SCAN] Tổng số lớp phát hiện được: ${detectedClasses.length}`);
+        console.log(`[SCAN] T?ng s? l?p ph�t hi?n du?c: ${detectedClasses.length}`);
 
         if (detectedClasses.length === 0) {
-            if (!silent) updateStatus("⚠ Không tìm thấy lớp nào. Đảm bảo mỗi folder có Form + Sheet.", true);
-            console.log("[SCAN] KHÔNG TÌM THẤY LỚP NÀO - Kiểm tra:");
-            console.log("1. Folder có chứa Google Form?");
-            console.log("2. Folder có chứa Google Spreadsheet?");
-            console.log("3. Root Folder ID đúng chưa?");
+            if (!silent) updateStatus("? Kh�ng t�m th?y l?p n�o. �?m b?o m?i folder c� Form + Sheet.", true);
+            console.log("[SCAN] KH�NG T�M TH?Y L?P N�O - Ki?m tra:");
+            console.log("1. Folder c� ch?a Google Form?");
+            console.log("2. Folder c� ch?a Google Spreadsheet?");
+            console.log("3. Root Folder ID d�ng chua?");
             return;
         }
 
         // Replace classProfiles with detected classes
         classProfiles = detectedClasses;
         localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
-        console.log("[SCAN] Đã cập nhật classProfiles và lưu vào localStorage:", classProfiles);
+        console.log("[SCAN] �� c?p nh?t classProfiles v� luu v�o localStorage:", classProfiles);
 
         // Reload dropdown
         loadClassProfiles();
 
-        if (!silent) updateStatus(`🎉 Hoàn tất! Đã quét và đồng bộ ${detectedClasses.length} lớp.`);
+        if (!silent) updateStatus(`?? Ho�n t?t! �� qu�t v� d?ng b? ${detectedClasses.length} l?p.`);
     } catch (error) {
-        if (!silent) updateStatus(`✗ Lỗi khi quét: ${error.message}`, true);
-        console.error("[SCAN] LỖI:", error);
-        console.error("[SCAN] Chi tiết lỗi:", {
+        if (!silent) updateStatus(`? L?i khi qu�t: ${error.message}`, true);
+        console.error("[SCAN] L?I:", error);
+        console.error("[SCAN] Chi ti?t l?i:", {
             message: error.message,
             result: error.result,
             stack: error.stack
@@ -3444,7 +3444,7 @@ async function handleDrop(e) {
 }
 
 async function moveFolders(items, oldParentId, newParentId, newParentName) {
-    updateStatus(`→ Bắt đầu di chuyển ${items.length} học sinh sang "${newParentName}"...`);
+    updateStatus(`? B?t d?u di chuy?n ${items.length} h?c sinh sang "${newParentName}"...`);
     processButton.disabled = true;
     const movePromises = items.map(item => {
         return gapi.client.drive.files.update({ fileId: item.id, addParents: newParentId, removeParents: oldParentId, fields: 'id, parents' }).then(res => ({ status: 'fulfilled', item })).catch(err => ({ status: 'rejected', item, reason: err }));
@@ -3452,9 +3452,9 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
     const results = await Promise.all(movePromises);
     const successfulMoves = results.filter(r => r.status === 'fulfilled').map(r => r.item);
     const failedMoves = results.filter(r => r.status === 'rejected');
-    if (failedMoves.length > 0) failedMoves.forEach(fail => updateStatus(`✗ Lỗi di chuyển "${fail.item.name}": ${fail.reason?.result?.error?.message}`, true));
+    if (failedMoves.length > 0) failedMoves.forEach(fail => updateStatus(`? L?i di chuy?n "${fail.item.name}": ${fail.reason?.result?.error?.message}`, true));
     if (successfulMoves.length > 0) {
-        updateStatus(`✓ Đã di chuyển thành công ${successfulMoves.length} học sinh.`);
+        updateStatus(`? �� di chuy?n th�nh c�ng ${successfulMoves.length} h?c sinh.`);
         const activeClassId = classProfileSelect.value;
         const oldKey = getStatusCacheKey(activeClassId, oldParentId);
         const newKey = getStatusCacheKey(activeClassId, newParentId);
@@ -3492,7 +3492,7 @@ function startAutoRefresh() {
     }
     
     isAutoRefreshOn = true;
-    updateStatus("✓ Quét nền tự động được bật (mỗi 5 phút).");
+    updateStatus("? Qu�t n?n t? d?ng du?c b?t (m?i 5 ph�t).");
 
     runAutoScan();
     autoRefreshTimer = setInterval(runAutoScan, REFRESH_INTERVAL);
@@ -3505,7 +3505,7 @@ function stopAutoRefresh() {
         clearInterval(autoRefreshTimer);
         autoRefreshTimer = null;
     }
-    updateStatus("⏸ Quét nền tự động dừng.");
+    updateStatus("? Qu�t n?n t? d?ng d?ng.");
 }
 
 // updateAutoRefreshUI removed - not needed anymore
@@ -3516,7 +3516,7 @@ async function runAutoScan() {
         stopAutoRefresh();
         return;
     }
-    updateStatus("→ Tự động quét nền đang chạy...");
+    updateStatus("? T? d?ng qu�t n?n dang ch?y...");
     const parentFolderIdToProcess = activeAssignment.folderId;
     try {
         const allFoldersFromDrive = await findAllSubfolders([{
@@ -3529,8 +3529,8 @@ async function runAutoScan() {
         const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
         const syncedStatusList = [];
         allFoldersFromDrive.forEach(folder => {
-            const isProcessed = folder.name.includes('[Đã xử lý]');
-            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
+            const isProcessed = folder.name.includes('[�� x? l�]');
+            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('qu� h?n');
             const cleanName = sanitizeFolderDisplayName(folder.name);
             const existingItem = statusMap.get(cleanName);
             let currentStatus;
@@ -3547,11 +3547,11 @@ async function runAutoScan() {
         syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
-        updateStatus(`✓ Đồng bộ hoàn tất: ${syncedStatusList.length} mục.`);
+        updateStatus(`? �?ng b? ho�n t?t: ${syncedStatusList.length} m?c.`);
     } catch (error) {
-        const errorMessage = error.message || (error.result ? error.result.error.message : 'Lỗi không xác định');
-        updateStatus(`✗ Lỗi khi quét tự động: ${errorMessage}`, true);
-        console.error("Lỗi tự động quét:", error);
+        const errorMessage = error.message || (error.result ? error.result.error.message : 'L?i kh�ng x�c d?nh');
+        updateStatus(`? L?i khi qu�t t? d?ng: ${errorMessage}`, true);
+        console.error("L?i t? d?ng qu�t:", error);
         stopAutoRefresh();
     }
 }
@@ -3567,13 +3567,13 @@ function saveSubmissionStatusToCache(statusList, customKey = null) {
 }
 function loadSubmissionStatusFromCache(silent = false) {
     const key = getStatusCacheKey();
-    const defaultText = '<div class="text-outline">Chọn lớp và bài tập để xem tình trạng...</div>';
+    const defaultText = '<div class="text-outline">Ch?n l?p v� b�i t?p d? xem t�nh tr?ng...</div>';
     if (!key) { submissionStatusList.innerHTML = defaultText; return; }
     const cachedData = localStorage.getItem(key);
     if (cachedData) {
         try {
             const statusList = JSON.parse(cachedData); displaySubmissionStatus(statusList);
-            if (!silent) updateStatus("✓ Tải trạng thái từ cache.");
+            if (!silent) updateStatus("? T?i tr?ng th�i t? cache.");
         } catch (e) { localStorage.removeItem(key); submissionStatusList.innerHTML = defaultText; }
     } else submissionStatusList.innerHTML = defaultText;
 }
@@ -3600,7 +3600,7 @@ async function fetchFiles(folderId) {
 }
 
 async function convertGDocsToPdf(docIds) {
-    updateStatus(`→ Chuyển đổi ${docIds.length} GDocs...`);
+    updateStatus(`? Chuy?n d?i ${docIds.length} GDocs...`);
     const promises = docIds.map(id => gapi.client.drive.files.export({ fileId: id, mimeType: 'application/pdf' }).then(response => {
         const bytes = new Uint8Array(response.body.length);
         for (let i = 0; i < response.body.length; i++) bytes[i] = response.body.charCodeAt(i);
@@ -3609,20 +3609,20 @@ async function convertGDocsToPdf(docIds) {
     );
     const results = await Promise.all(promises);
     const pdfBuffers = [];
-    results.forEach(result => { if (result.status === 'fulfilled') pdfBuffers.push(result.value); else updateStatus(`✗ Lỗi GDoc: ${result.reason.message}`, true); });
-    updateStatus(`✓ GDocs: ${pdfBuffers.length}/${docIds.length} thành công.`);
+    results.forEach(result => { if (result.status === 'fulfilled') pdfBuffers.push(result.value); else updateStatus(`? L?i GDoc: ${result.reason.message}`, true); });
+    updateStatus(`? GDocs: ${pdfBuffers.length}/${docIds.length} th�nh c�ng.`);
     return pdfBuffers;
 }
 
 async function convertDocxToPdf(docxFiles) {
-    updateStatus(`→ Chuyển đổi ${docxFiles.length} tệp DOCX (tăng tốc)...`);
+    updateStatus(`? Chuy?n d?i ${docxFiles.length} t?p DOCX (tang t?c)...`);
     const pdfBuffers = [];
     const CONCURRENCY_LIMIT = 4;
 
     const processSingleFile = async (file) => {
         let tempGDocId = null;
         try {
-            updateStatus(`  → Đang xử lý DOCX: "${file.name}"`);
+            updateStatus(`  ? �ang x? l� DOCX: "${file.name}"`);
             const copyResponse = await gapi.client.drive.files.copy({ fileId: file.id, resource: { mimeType: 'application/vnd.google-apps.document' } });
             tempGDocId = copyResponse.result.id;
             const exportResponse = await gapi.client.drive.files.export({ fileId: tempGDocId, mimeType: 'application/pdf' });
@@ -3630,7 +3630,7 @@ async function convertDocxToPdf(docxFiles) {
             for (let i = 0; i < exportResponse.body.length; i++) bytes[i] = exportResponse.body.charCodeAt(i);
             return bytes.buffer;
         } catch (error) {
-            updateStatus(`✗ Lỗi DOCX "${file.name}": ${error.message}`, true); return null;
+            updateStatus(`? L?i DOCX "${file.name}": ${error.message}`, true); return null;
         } finally {
             if (tempGDocId) try { await gapi.client.drive.files.update({ fileId: tempGDocId, resource: { trashed: true } }); } catch (e) { }
         }
@@ -3640,7 +3640,7 @@ async function convertDocxToPdf(docxFiles) {
     const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; const result = await processSingleFile(task); if (result) pdfBuffers.push(result); } };
     const workerPromises = Array(CONCURRENCY_LIMIT).fill(null).map(worker);
     await Promise.all(workerPromises);
-    updateStatus(`✓ DOCX: ${pdfBuffers.length}/${docxFiles.length} thành công.`);
+    updateStatus(`? DOCX: ${pdfBuffers.length}/${docxFiles.length} th�nh c�ng.`);
     return pdfBuffers;
 }
 
@@ -3686,20 +3686,20 @@ async function createPdfFromImages(imageFiles, folderName) {
     pdfDoc.registerFontkit(window.fontkit);
     const accessToken = gapi.client.getToken().access_token;
     const CONCURRENCY_LIMIT = 4;
-    updateStatus(`→ Xử lý ${imageFiles.length} ảnh (${CONCURRENCY_LIMIT} luồng)...`);
+    updateStatus(`? X? l� ${imageFiles.length} ?nh (${CONCURRENCY_LIMIT} lu?ng)...`);
     const processedImages = new Array(imageFiles.length).fill(null);
     let taskIndex = -1;
     const getNextTask = () => { taskIndex++; return taskIndex < imageFiles.length ? { file: imageFiles[taskIndex], index: taskIndex } : null; };
     const processImage = async (file, index) => {
         try {
             const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
-            if (!res.ok) throw new Error(`Tải thất bại`);
+            if (!res.ok) throw new Error(`T?i th?t b?i`);
             const originalBuffer = await res.arrayBuffer();
             
-            // [NEW] Phát hiện góc xoay bằng AI (nếu bật)
+            // [NEW] Ph�t hi?n g�c xoay b?ng AI (n?u b?t)
             let rotationAngle = 0;
             if (isAIAutoRotateEnabled() && (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png')) {
-                updateStatus(`  🤖 AI kiểm tra chiều "${file.name}"...`);
+                updateStatus(`  ?? AI ki?m tra chi?u "${file.name}"...`);
                 const blob = new Blob([originalBuffer], { type: file.mimeType });
                 rotationAngle = await detectTextOrientation(blob);
             }
@@ -3714,16 +3714,16 @@ async function createPdfFromImages(imageFiles, folderName) {
                 try {
                     const pngBuffer = await convertImageToPng(originalBuffer, file.mimeType);
                     image = await pdfDoc.embedPng(pngBuffer);
-                } catch (e) { throw new Error(`Chuyển đổi thất bại`); }
+                } catch (e) { throw new Error(`Chuy?n d?i th?t b?i`); }
             }
             processedImages[index] = { image, rotation: rotationAngle };
-        } catch (error) { updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true); }
+        } catch (error) { updateStatus(`  ? L?i ?nh ${file.name}: ${error.message}`, true); }
     };
     const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; await processImage(task.file, task.index); } };
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(null).map(worker));
-    updateStatus(`✓ Xử lý ảnh xong, đang gộp PDF...`);
+    updateStatus(`? X? l� ?nh xong, dang g?p PDF...`);
     
-    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh + xoay nếu cần
+    // [IMPROVED] Th�m header tr�n m?i trang + thu nh? ?nh + xoay n?u c?n
     for (const imageData of processedImages) {
         if (!imageData) continue;
         const { image, rotation } = imageData;
@@ -3733,29 +3733,29 @@ async function createPdfFromImages(imageFiles, folderName) {
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
         
-        // [NEW] Chừa 25px ở trên cho header (tên người nộp)
+        // [NEW] Ch?a 25px ? tr�n cho header (t�n ngu?i n?p)
         const headerHeight = 25;
         const availableHeight = pageHeight - headerHeight;
         
-        // Thu nhỏ ảnh vừa vào không gian còn lại
+        // Thu nh? ?nh v?a v�o kh�ng gian c�n l?i
         const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // [NEW] Xoay trang nếu AI phát hiện góc
-        // Tesseract trả về góc văn bản HIỆN TẠI, cần xoay NGƯỢC lại để thẳng
+        // [NEW] Xoay trang n?u AI ph�t hi?n g�c
+        // Tesseract tr? v? g�c van b?n HI?N T?I, c?n xoay NGU?C l?i d? th?ng
         if (rotation !== 0) {
-            const correctRotation = (360 - rotation) % 360; // Đảo ngược góc
+            const correctRotation = (360 - rotation) % 360; // �?o ngu?c g�c
             page.setRotation(degrees(correctRotation));
-            console.log(`[AI] Phát hiện văn bản nghiêng ${rotation}° → Xoay trang ${correctRotation}°`);
+            console.log(`[AI] Ph�t hi?n van b?n nghi�ng ${rotation}� ? Xoay trang ${correctRotation}�`);
         }
         
-        // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
+        // [IMPROVED] V? header (t�n ngu?i n?p) ? �?U m?i trang
         if (folderName) {
             try {
-                // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
+                // C? g?ng d�ng custom font n?u c� (h? tr? ti?ng Vi?t)
                 if (customFontBuffer) {
                     const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
                     page.drawText(`${folderName}`, {
@@ -3766,7 +3766,7 @@ async function createPdfFromImages(imageFiles, folderName) {
                         color: rgb(1, 0, 0),
                     });
                 } else {
-                    // Fallback: dùng font mặc định
+                    // Fallback: d�ng font m?c d?nh
                     page.drawText(`${folderName}`, {
                         x: 15,
                         y: pageHeight - 18,
@@ -3775,12 +3775,12 @@ async function createPdfFromImages(imageFiles, folderName) {
                     });
                 }
             } catch (headerErr) {
-                // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý ảnh
-                console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
+                // B? qua l?i encoding k� t? d?c bi?t - ti?p t?c x? l� ?nh
+                console.warn(`[PDF] B? qua header do l?i: ${headerErr.message}`);
             }
         }
         
-        // [IMPROVED] Vẽ ảnh ở phía dưới header
+        // [IMPROVED] V? ?nh ? ph�a du?i header
         page.drawImage(image, {
             x: (pageWidth - scaledWidth) / 2,
             y: (availableHeight - scaledHeight) / 2,
@@ -3795,19 +3795,19 @@ async function mergePdfs(pdfBuffers, folderName) {
     const mergedPdf = await PDFDocument.create();
     mergedPdf.registerFontkit(window.fontkit);
     
-    // [IMPROVED] Thêm header tên người nộp trên mỗi trang
+    // [IMPROVED] Th�m header t�n ngu?i n?p tr�n m?i trang
     for (const pdfBuffer of pdfBuffers) {
         try {
             const pdf = await PDFDocument.load(pdfBuffer);
             const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
             
-            // [NEW] Thêm header vào mỗi trang
+            // [NEW] Th�m header v�o m?i trang
             for (const page of copiedPages) {
                 if (folderName) {
                     try {
                         const pageHeight = page.getHeight();
                         
-                        // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
+                        // C? g?ng d�ng custom font n?u c� (h? tr? ti?ng Vi?t)
                         if (customFontBuffer) {
                             const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
                             page.drawText(`${folderName}`, {
@@ -3818,7 +3818,7 @@ async function mergePdfs(pdfBuffers, folderName) {
                                 color: rgb(1, 0, 0),
                             });
                         } else {
-                            // Fallback: dùng font mặc định
+                            // Fallback: d�ng font m?c d?nh
                             page.drawText(`${folderName}`, {
                                 x: 15,
                                 y: pageHeight - 18,
@@ -3827,15 +3827,15 @@ async function mergePdfs(pdfBuffers, folderName) {
                             });
                         }
                     } catch (headerErr) {
-                        // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý trang
-                        console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
+                        // B? qua l?i encoding k� t? d?c bi?t - ti?p t?c x? l� trang
+                        console.warn(`[PDF] B? qua header do l?i: ${headerErr.message}`);
                     }
                 }
                 
                 mergedPdf.addPage(page);
             }
         } catch (err) {
-            updateStatus(`✗ Lỗi đọc PDF con. Bỏ qua.`, true);
+            updateStatus(`? L?i d?c PDF con. B? qua.`, true);
         }
     }
     
@@ -3843,7 +3843,7 @@ async function mergePdfs(pdfBuffers, folderName) {
 }
 
 // ==================================================================
-// LOGIC GIAO DIỆN (DESIGN SWITCHER & THEME)
+// LOGIC GIAO DI?N (DESIGN SWITCHER & THEME)
 // ==================================================================
 const themeButtons = document.querySelectorAll('.theme-btn');
 const accentButtons = document.querySelectorAll('.accent-btn');
@@ -4107,39 +4107,39 @@ function handleMobileNavigation(nav) {
 }
 
 // ==================================================================
-// AUTO-UPDATE: KIỂM TRA PHIÊN BẢN MỚI
+// AUTO-UPDATE: KI?M TRA PHI�N B?N M?I
 // ==================================================================
 
 /**
- * Kiểm tra phiên bản mới từ Google Drive
+ * Ki?m tra phi�n b?n m?i t? Google Drive
  */
 async function checkForUpdates() {
     try {
-        console.log(`[UPDATE] Phiên bản hiện tại: ${CURRENT_VERSION}`);
+        console.log(`[UPDATE] Phi�n b?n hi?n t?i: ${CURRENT_VERSION}`);
         
         const response = await fetch(VERSION_CHECK_URL);
         if (!response.ok) {
-            console.log('[UPDATE] Không thể lấy thông tin phiên bản mới');
+            console.log('[UPDATE] Kh�ng th? l?y th�ng tin phi�n b?n m?i');
             return;
         }
         
         const latestInfo = await response.json();
-        console.log(`[UPDATE] Phiên bản mới nhất: ${latestInfo.version}`);
+        console.log(`[UPDATE] Phi�n b?n m?i nh?t: ${latestInfo.version}`);
         
-        // So sánh phiên bản
+        // So s�nh phi�n b?n
         if (compareVersions(latestInfo.version, CURRENT_VERSION) > 0) {
             showUpdateNotification(latestInfo);
         } else {
-            console.log('[UPDATE] Đang dùng phiên bản mới nhất');
+            console.log('[UPDATE] �ang d�ng phi�n b?n m?i nh?t');
         }
     } catch (error) {
-        console.error('[UPDATE] Lỗi khi kiểm tra update:', error);
+        console.error('[UPDATE] L?i khi ki?m tra update:', error);
     }
 }
 
 /**
- * So sánh 2 phiên bản (semver)
- * @returns {number} 1 nếu v1 > v2, -1 nếu v1 < v2, 0 nếu bằng nhau
+ * So s�nh 2 phi�n b?n (semver)
+ * @returns {number} 1 n?u v1 > v2, -1 n?u v1 < v2, 0 n?u b?ng nhau
  */
 function compareVersions(v1, v2) {
     const parts1 = v1.split('.').map(Number);
@@ -4158,13 +4158,13 @@ function compareVersions(v1, v2) {
 
 
 /**
- * Tạo lại Sheet cho bài tập (xóa cái cũ, tạo cái mới)
+ * T?o l?i Sheet cho b�i t?p (x�a c�i cu, t?o c�i m?i)
  */
 async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
     try {
-        updateStatus(`→ Đang tạo lại Sheet cho bài tập "${assignmentName}"...`);
+        updateStatus(`? �ang t?o l?i Sheet cho b�i t?p "${assignmentName}"...`);
         
-        // Lấy danh sách files trong folder bài tập
+        // L?y danh s�ch files trong folder b�i t?p
         const files = await gapi.client.drive.files.list({
             q: `'${assignmentFolderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
             spaces: 'drive',
@@ -4172,7 +4172,7 @@ async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
             pageSize: 10
         });
         
-        // Xóa Sheet cũ
+        // X�a Sheet cu
         if (files.result.files && files.result.files.length > 0) {
             for (const file of files.result.files) {
                 await gapi.client.drive.files.update({
@@ -4180,16 +4180,16 @@ async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
                     resource: { trashed: true }
                 });
             }
-            updateStatus(`✓ Đã xóa Sheet cũ`);
+            updateStatus(`? �� x�a Sheet cu`);
         }
         
-        // Tạo Sheet mới
+        // T?o Sheet m?i
         const classId = formClassId.value;
         const profile = classProfiles.find(p => p.id === classId);
         const studentCount = profile && profile.students ? profile.students.length : 0;
         
         const sheetMetadata = {
-            name: `${assignmentName} - Điểm`,
+            name: `${assignmentName} - �i?m`,
             mimeType: 'application/vnd.google-apps.spreadsheet',
             parents: [assignmentFolderId]
         };
@@ -4201,7 +4201,7 @@ async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
         
         const sheetId = sheet.result.id;
         
-        // Ghi dữ liệu vào sheet
+        // Ghi d? li?u v�o sheet
         await gapi.client.sheets.spreadsheets.batchUpdate({
             spreadsheetId: sheetId,
             resource: {
@@ -4223,7 +4223,7 @@ async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
         });
         
         // Ghi header
-        const headers = [['STT', 'Tên Học Sinh', 'Điểm', 'Nhận xét', 'Ngày nộp']];
+        const headers = [['STT', 'T�n H?c Sinh', '�i?m', 'Nh?n x�t', 'Ng�y n?p']];
         const studentNames = profile && profile.students ? profile.students.map((s, idx) => [idx + 1, s, '', '', '']) : [];
         
         await gapi.client.sheets.spreadsheets.values.batchUpdate({
@@ -4243,20 +4243,20 @@ async function recreateAssignmentSheet(assignmentFolderId, assignmentName) {
             }
         });
         
-        updateStatus(`✅ Tạo lại Sheet thành công cho "${assignmentName}"`);
+        updateStatus(`? T?o l?i Sheet th�nh c�ng cho "${assignmentName}"`);
     } catch (error) {
-        updateStatus(`✗ Lỗi tạo Sheet: ${error.message}`, true);
+        updateStatus(`? L?i t?o Sheet: ${error.message}`, true);
     }
 }
 
 /**
- * Tạo lại Form cho bài tập (xóa cái cũ, tạo cái mới)
+ * T?o l?i Form cho b�i t?p (x�a c�i cu, t?o c�i m?i)
  */
 async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
     try {
-        updateStatus(`→ Đang tạo lại Form cho bài tập "${assignmentName}"...`);
+        updateStatus(`? �ang t?o l?i Form cho b�i t?p "${assignmentName}"...`);
         
-        // Lấy danh sách Forms trong folder
+        // L?y danh s�ch Forms trong folder
         const files = await gapi.client.drive.files.list({
             q: `'${assignmentFolderId}' in parents and mimeType='application/vnd.google-apps.form' and trashed=false`,
             spaces: 'drive',
@@ -4264,7 +4264,7 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
             pageSize: 10
         });
         
-        // Xóa Form cũ
+        // X�a Form cu
         if (files.result.files && files.result.files.length > 0) {
             for (const file of files.result.files) {
                 await gapi.client.drive.files.update({
@@ -4272,10 +4272,10 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
                     resource: { trashed: true }
                 });
             }
-            updateStatus(`✓ Đã xóa Form cũ`);
+            updateStatus(`? �� x�a Form cu`);
         }
         
-        // Tạo Form mới
+        // T?o Form m?i
         const formMetadata = {
             name: assignmentName,
             mimeType: 'application/vnd.google-apps.form',
@@ -4289,7 +4289,7 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
         
         const formId = form.result.id;
         
-        // Tạo câu hỏi trong Form (Họ tên, Lớp, File nộp bài)
+        // T?o c�u h?i trong Form (H? t�n, L?p, File n?p b�i)
         await gapi.client.forms.forms.batchUpdate({
             formId: formId,
             resource: {
@@ -4297,7 +4297,7 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
                     {
                         createItem: {
                             item: {
-                                title: 'Họ tên học sinh',
+                                title: 'H? t�n h?c sinh',
                                 questionItem: {
                                     question: {
                                         required: true,
@@ -4313,7 +4313,7 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
                     {
                         createItem: {
                             item: {
-                                title: 'Nộp bài tập',
+                                title: 'N?p b�i t?p',
                                 questionItem: {
                                     question: {
                                         required: true,
@@ -4330,16 +4330,16 @@ async function recreateAssignmentForm(assignmentFolderId, assignmentName) {
             }
         });
         
-        updateStatus(`✅ Tạo lại Form thành công cho "${assignmentName}"`);
+        updateStatus(`? T?o l?i Form th�nh c�ng cho "${assignmentName}"`);
     } catch (error) {
-        updateStatus(`✗ Lỗi tạo Form: ${error.message}`, true);
+        updateStatus(`? L?i t?o Form: ${error.message}`, true);
     }
 }
 
 /**
- * Tìm kiếm Form trong folder lớp
- * @param {string} classFolderId - ID của folder lớp
- * @returns {Promise<Object|null>} - File object của Form hoặc null
+ * T�m ki?m Form trong folder l?p
+ * @param {string} classFolderId - ID c?a folder l?p
+ * @returns {Promise<Object|null>} - File object c?a Form ho?c null
  */
 async function findFormInFolder(classFolderId) {
     if (!classFolderId) return null;
@@ -4352,24 +4352,24 @@ async function findFormInFolder(classFolderId) {
         
         if (response.result.files && response.result.files.length > 0) {
             const form = response.result.files[0];
-            // Link chỉnh sửa Form
+            // Link ch?nh s?a Form
             form.shortLink = `https://docs.google.com/forms/d/${form.id}/edit`;
-            // Link xuất bản (viewform) để lấy khi cần
+            // Link xu?t b?n (viewform) d? l?y khi c?n
             form.publishedLink = `https://docs.google.com/forms/d/${form.id}/viewform`;
             return form;
         }
         
         return null;
     } catch (err) {
-        console.error(`Lỗi tìm Form trong folder ${classFolderId}:`, err);
+        console.error(`L?i t�m Form trong folder ${classFolderId}:`, err);
         return null;
     }
 }
 
 /**
- * Tìm kiếm Sheet trong folder lớp
- * @param {string} classFolderId - ID của folder lớp
- * @returns {Promise<Object|null>} - File object của Sheet hoặc null
+ * T�m ki?m Sheet trong folder l?p
+ * @param {string} classFolderId - ID c?a folder l?p
+ * @returns {Promise<Object|null>} - File object c?a Sheet ho?c null
  */
 async function findSheetInFolder(classFolderId) {
     if (!classFolderId) return null;
@@ -4381,20 +4381,20 @@ async function findSheetInFolder(classFolderId) {
         });
         return response.result.files && response.result.files.length > 0 ? response.result.files[0] : null;
     } catch (err) {
-        console.error(`Lỗi tìm Sheet trong folder ${classFolderId}:`, err);
+        console.error(`L?i t�m Sheet trong folder ${classFolderId}:`, err);
         return null;
     }
 }
 
 /**
- * Đếm số học sinh từ sheet assignment (dựa trên số thứ tự cao nhất ở cột A)
- * @param {string} spreadsheetId - ID của spreadsheet
- * @param {string} sheetName - Tên sheet assignment
- * @returns {Promise<number>} - Số lượng học sinh
+ * �?m s? h?c sinh t? sheet assignment (d?a tr�n s? th? t? cao nh?t ? c?t A)
+ * @param {string} spreadsheetId - ID c?a spreadsheet
+ * @param {string} sheetName - T�n sheet assignment
+ * @returns {Promise<number>} - S? lu?ng h?c sinh
  */
 async function countStudentsInSheet(spreadsheetId, sheetName) {
     try {
-        // 1. Tìm vị trí cột STT
+        // 1. T�m v? tr� c?t STT
         const headerResponse = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
             range: `${sheetName}!1:1`
@@ -4404,14 +4404,14 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
         const sttColIndex = headerRow.findIndex(cell => cell && cell.trim().toLowerCase() === 'stt');
         
         if (sttColIndex === -1) {
-            console.warn(`Không tìm thấy cột 'STT' trong sheet ${sheetName}`);
+            console.warn(`Kh�ng t�m th?y c?t 'STT' trong sheet ${sheetName}`);
             return 0;
         }
         
-        // 2. Lấy chữ cột từ index (A=0, B=1, ..., Z=25)
+        // 2. L?y ch? c?t t? index (A=0, B=1, ..., Z=25)
         const colLetter = String.fromCharCode(65 + sttColIndex);
         
-        // 3. Đọc cột STT từ dòng 2 trở đi (bỏ header)
+        // 3. �?c c?t STT t? d�ng 2 tr? di (b? header)
         const response = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
             range: `${sheetName}!${colLetter}2:${colLetter}1000`
@@ -4420,7 +4420,7 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
         const values = response.result.values;
         if (!values || values.length === 0) return 0;
         
-        // 4. Tìm số thứ tự cao nhất (bỏ qua ô trống)
+        // 4. T�m s? th? t? cao nh?t (b? qua � tr?ng)
         let maxNumber = 0;
         for (const row of values) {
             if (row && row[0]) {
@@ -4431,23 +4431,23 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
             }
         }
         
-        console.log(`[STATS] Sheet "${sheetName}": Cột STT là cột ${colLetter}, số học sinh tối đa: ${maxNumber}`);
+        console.log(`[STATS] Sheet "${sheetName}": C?t STT l� c?t ${colLetter}, s? h?c sinh t?i da: ${maxNumber}`);
         return maxNumber;
     } catch (err) {
-        console.error(`Lỗi đếm học sinh trong sheet ${sheetName}:`, err);
+        console.error(`L?i d?m h?c sinh trong sheet ${sheetName}:`, err);
         return 0;
     }
 }
 
 /**
- * Tìm tên sheet tương ứng với assignment bằng fuzzy matching
- * Logic: Khớp từ khóa cuối của assignment name vào tên sheet
- * VD: "Đại số" → match "Bảng nhận xét (Đại số)"
- * VD: "Bài tập thứ 5 đại số" → match "Bảng nhận xét (Đại số)" (dựa vào từ cuối "đại số")
+ * T�m t�n sheet tuong ?ng v?i assignment b?ng fuzzy matching
+ * Logic: Kh?p t? kh�a cu?i c?a assignment name v�o t�n sheet
+ * VD: "�?i s?" ? match "B?ng nh?n x�t (�?i s?)"
+ * VD: "B�i t?p th? 5 d?i s?" ? match "B?ng nh?n x�t (�?i s?)" (d?a v�o t? cu?i "d?i s?")
  * 
- * @param {string} assignmentName - Tên loại bài tập (VD: "Đại số" hoặc "Bài tập thứ 5 đại số")
- * @param {Array} allSheetNames - Danh sách tất cả tên sheet
- * @returns {string|null} - Tên sheet match hoặc null
+ * @param {string} assignmentName - T�n lo?i b�i t?p (VD: "�?i s?" ho?c "B�i t?p th? 5 d?i s?")
+ * @param {Array} allSheetNames - Danh s�ch t?t c? t�n sheet
+ * @returns {string|null} - T�n sheet match ho?c null
  */
 function findAssignmentSheetByFuzzyMatch(assignmentName, allSheetNames) {
     if (!assignmentName || !allSheetNames || allSheetNames.length === 0) {
@@ -4456,36 +4456,36 @@ function findAssignmentSheetByFuzzyMatch(assignmentName, allSheetNames) {
     
     const assignmentLower = assignmentName.toLowerCase().trim();
     
-    // **CHIẾN LƯỢC 0: MATCH CHÍNH XÁC VỚI PATTERN "Bảng nhận xét (...)"**
-    // Nếu assignment = "Đại số", tìm "Bảng nhận xét (Đại số)" chính xác
-    const exactPattern = `bảng nhận xét (${assignmentLower})`;
+    // **CHI?N LU?C 0: MATCH CH�NH X�C V?I PATTERN "B?ng nh?n x�t (...)"**
+    // N?u assignment = "�?i s?", t�m "B?ng nh?n x�t (�?i s?)" ch�nh x�c
+    const exactPattern = `b?ng nh?n x�t (${assignmentLower})`;
     const exactMatch = allSheetNames.find(s => s.toLowerCase() === exactPattern);
     if (exactMatch) {
-        console.log(`[FUZZY] Match chính xác: "${exactMatch}"`);
+        console.log(`[FUZZY] Match ch�nh x�c: "${exactMatch}"`);
         return exactMatch;
     }
     
-    // Tách từ từ assignment name
+    // T�ch t? t? assignment name
     const words = assignmentLower.split(/[\s\-_]+/).filter(w => w.length > 0);
     
     if (words.length === 0) return null;
     
-    // **CHIẾN LƯỢC 1: MATCH CÓ CHỨA TOÀN BỘ TÊN ASSIGNMENT**
-    // VD: "Đại số" → tìm sheet chứa đầy đủ "đại số"
+    // **CHI?N LU?C 1: MATCH C� CH?A TO�N B? T�N ASSIGNMENT**
+    // VD: "�?i s?" ? t�m sheet ch?a d?y d? "d?i s?"
     const fullNameMatches = allSheetNames.filter(sheetName => {
         const sheetLower = sheetName.toLowerCase();
-        // Kiểm tra xem sheet name có chứa toàn bộ assignment name không (có thể ở trong dấu ngoặc)
+        // Ki?m tra xem sheet name c� ch?a to�n b? assignment name kh�ng (c� th? ? trong d?u ngo?c)
         return sheetLower.includes(assignmentLower);
     });
     
     if (fullNameMatches.length > 0) {
-        console.log(`[FUZZY] Match toàn bộ tên (${fullNameMatches.length}):`, fullNameMatches);
+        console.log(`[FUZZY] Match to�n b? t�n (${fullNameMatches.length}):`, fullNameMatches);
         return fullNameMatches[0];
     }
     
-    // **CHIẾN LƯỢC 2: MATCH 2 TỪ CUỐI**
+    // **CHI?N LU?C 2: MATCH 2 T? CU?I**
     const lastTwoWords = words.slice(-2);
-    console.log(`[FUZZY] Assignment: "${assignmentName}" → Tìm 2 từ cuối: [${lastTwoWords.join(', ')}]`);
+    console.log(`[FUZZY] Assignment: "${assignmentName}" ? T�m 2 t? cu?i: [${lastTwoWords.join(', ')}]`);
     
     const twoWordMatches = allSheetNames.filter(sheetName => {
         const sheetLower = sheetName.toLowerCase();
@@ -4493,45 +4493,45 @@ function findAssignmentSheetByFuzzyMatch(assignmentName, allSheetNames) {
     });
     
     if (twoWordMatches.length > 0) {
-        console.log(`[FUZZY] Match 2 từ (${twoWordMatches.length}):`, twoWordMatches);
+        console.log(`[FUZZY] Match 2 t? (${twoWordMatches.length}):`, twoWordMatches);
         return twoWordMatches[0];
     }
     
-    // **CHIẾN LƯỢC 3: MATCH 1 TỪ CUỐI (TỪ QUAN TRỌNG NHẤT)**
+    // **CHI?N LU?C 3: MATCH 1 T? CU?I (T? QUAN TR?NG NH?T)**
     const lastWord = words[words.length - 1];
-    console.log(`[FUZZY] Thử tìm 1 từ cuối: "${lastWord}"`);
+    console.log(`[FUZZY] Th? t�m 1 t? cu?i: "${lastWord}"`);
     
     const oneWordMatches = allSheetNames.filter(sheetName => 
         sheetName.toLowerCase().includes(lastWord)
     );
     
     if (oneWordMatches.length > 0) {
-        console.log(`[FUZZY] Match 1 từ (${oneWordMatches.length}):`, oneWordMatches);
+        console.log(`[FUZZY] Match 1 t? (${oneWordMatches.length}):`, oneWordMatches);
         return oneWordMatches[0];
     }
     
-    // **CHIẾN LƯỢC 4: FUZZY MATCHING - TỪ DÀI NHẤT**
-    // (thường là từ chứa nội dung chính)
+    // **CHI?N LU?C 4: FUZZY MATCHING - T? D�I NH?T**
+    // (thu?ng l� t? ch?a n?i dung ch�nh)
     const longestWord = words.reduce((a, b) => a.length >= b.length ? a : b, '');
     if (longestWord.length > 3) {
-        console.log(`[FUZZY] Thử từ dài nhất: "${longestWord}"`);
+        console.log(`[FUZZY] Th? t? d�i nh?t: "${longestWord}"`);
         const fuzzyMatches = allSheetNames.filter(sheetName => 
             sheetName.toLowerCase().includes(longestWord)
         );
         if (fuzzyMatches.length > 0) {
-            console.log(`[FUZZY] Match từ dài (${fuzzyMatches.length}):`, fuzzyMatches);
+            console.log(`[FUZZY] Match t? d�i (${fuzzyMatches.length}):`, fuzzyMatches);
             return fuzzyMatches[0];
         }
     }
     
-    console.log(`[FUZZY] ⚠️ Không tìm được sheet match cho "${assignmentName}"`);
+    console.log(`[FUZZY] ?? Kh�ng t�m du?c sheet match cho "${assignmentName}"`);
     return null;
 }
 
 /**
- * Lấy danh sách tất cả tên sheet từ spreadsheet
- * @param {string} spreadsheetId - ID của spreadsheet
- * @returns {Promise<Array>} - Danh sách tên sheet
+ * L?y danh s�ch t?t c? t�n sheet t? spreadsheet
+ * @param {string} spreadsheetId - ID c?a spreadsheet
+ * @returns {Promise<Array>} - Danh s�ch t�n sheet
  */
 async function getAllSheetNames(spreadsheetId) {
     try {
@@ -4543,13 +4543,13 @@ async function getAllSheetNames(spreadsheetId) {
         const sheets = response.result.sheets || [];
         return sheets.map(s => s.properties.title);
     } catch (err) {
-        console.error('[SHEETS] Lỗi lấy danh sách sheet:', err);
+        console.error('[SHEETS] L?i l?y danh s�ch sheet:', err);
         return [];
     }
 }
 
 /**
- * Cập nhật thống kê số lượng nộp bài
+ * C?p nh?t th?ng k� s? lu?ng n?p b�i
  */
 async function updateSubmissionStats() {
     const statsDiv = document.getElementById('submission-stats');
@@ -4570,57 +4570,57 @@ async function updateSubmissionStats() {
     }
     
     try {
-        // 1. Lấy tên sheet thực tế từ config Sheet (cột F)
+        // 1. L?y t�n sheet th?c t? t? config Sheet (c?t F)
         let sheetNameToUse = null;
         
         try {
-            // Đọc cấu hình bài tập từ sheet Cấu Hình
+            // �?c c?u h�nh b�i t?p t? sheet C?u H�nh
             const configResponse = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: profile.sheetId,
-                range: 'Cấu Hình!A:F'
+                range: 'C?u H�nh!A:F'
             });
             
             const rows = configResponse.result.values || [];
-            // Tìm hàng có tên assignment = activeAssignment.name
+            // T�m h�ng c� t�n assignment = activeAssignment.name
             for (let i = 1; i < rows.length; i++) {
                 if (rows[i] && rows[i][0] === activeAssignment.name) {
-                    // Cột F (index 5) là tên sheet
+                    // C?t F (index 5) l� t�n sheet
                     const configuredSheetName = rows[i][5];
                     if (configuredSheetName) {
                         sheetNameToUse = configuredSheetName;
-                        console.log(`[STATS] Tìm được tên sheet từ config: "${sheetNameToUse}"`);
+                        console.log(`[STATS] T�m du?c t�n sheet t? config: "${sheetNameToUse}"`);
                     }
                     break;
                 }
             }
         } catch (configErr) {
-            console.warn('[STATS] Không thể đọc config:', configErr);
+            console.warn('[STATS] Kh�ng th? d?c config:', configErr);
         }
         
-        // 2. Nếu không tìm được từ config, dùng fuzzy matching
+        // 2. N?u kh�ng t�m du?c t? config, d�ng fuzzy matching
         if (!sheetNameToUse) {
-            console.log('[STATS] Sheet chưa có trong config, thử fuzzy matching...');
+            console.log('[STATS] Sheet chua c� trong config, th? fuzzy matching...');
             
-            // Lấy danh sách tất cả sheet
+            // L?y danh s�ch t?t c? sheet
             const allSheets = await getAllSheetNames(profile.sheetId);
-            console.log('[STATS] Danh sách sheet:', allSheets);
+            console.log('[STATS] Danh s�ch sheet:', allSheets);
             
-            // Tìm sheet match bằng fuzzy matching
+            // T�m sheet match b?ng fuzzy matching
             sheetNameToUse = findAssignmentSheetByFuzzyMatch(activeAssignment.name, allSheets);
             
             if (sheetNameToUse) {
-                console.log(`[STATS] Fuzzy matching tìm được: "${sheetNameToUse}"`);
+                console.log(`[STATS] Fuzzy matching t�m du?c: "${sheetNameToUse}"`);
             } else {
-                console.warn(`[STATS] Không tìm được sheet cho "${activeAssignment.name}"`);
+                console.warn(`[STATS] Kh�ng t�m du?c sheet cho "${activeAssignment.name}"`);
                 if (statsDiv) statsDiv.classList.add('hidden');
                 return;
             }
         }
         
-        // 3. Đếm tổng số học sinh từ sheet
+        // 3. �?m t?ng s? h?c sinh t? sheet
         const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
-        // 4. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
+        // 4. �?m s? ngu?i n?p t? b?ng t�nh tr?ng (lo?i b? "overdue")
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
         let submittedCount = 0;
         submissionItems.forEach(item => {
@@ -4630,33 +4630,33 @@ async function updateSubmissionStats() {
             }
         });
         
-        // 5. Cập nhật UI
+        // 5. C?p nh?t UI
         if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
         if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
         if (statsDiv) statsDiv.classList.remove('hidden');
         
-        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
+        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} h?c sinh d� n?p (sheet: "${sheetNameToUse}")`);
     } catch (err) {
-        console.error('[STATS] Lỗi cập nhật thống kê:', err);
+        console.error('[STATS] L?i c?p nh?t th?ng k�:', err);
         if (statsDiv) statsDiv.classList.add('hidden');
     }
 }
 
 /**
- * Hiển thị thông báo có phiên bản mới
+ * Hi?n th? th�ng b�o c� phi�n b?n m?i
  */
 function showUpdateNotification(updateInfo) {
     const { version, downloadUrl, changelog } = updateInfo;
     
     const message = `
-🎉 Có phiên bản mới: ${version}
+?? C� phi�n b?n m?i: ${version}
 
-📝 Những thay đổi:
-${changelog || 'Xem chi tiết khi tải về'}
+?? Nh?ng thay d?i:
+${changelog || 'Xem chi ti?t khi t?i v?'}
 
-💾 Dữ liệu của bạn sẽ được giữ nguyên sau khi cập nhật.
+?? D? li?u c?a b?n s? du?c gi? nguy�n sau khi c?p nh?t.
 
-Bạn có muốn tải về ngay không?
+B?n c� mu?n t?i v? ngay kh�ng?
     `.trim();
     
     if (confirm(message)) {
@@ -4665,76 +4665,76 @@ Bạn có muốn tải về ngay không?
 }
 
 // ==================================================================
-// AI AUTO-ROTATE: Phát hiện hướng văn bản bằng Tesseract.js OCR
+// AI AUTO-ROTATE: Ph�t hi?n hu?ng van b?n b?ng Tesseract.js OCR
 // ==================================================================
 
 /**
- * Lấy cài đặt AI auto-rotate từ localStorage
+ * L?y c�i d?t AI auto-rotate t? localStorage
  */
 function isAIAutoRotateEnabled() {
     const setting = localStorage.getItem('ai_auto_rotate_enabled');
-    return setting === 'true'; // Mặc định false nếu chưa set
+    return setting === 'true'; // M?c d?nh false n?u chua set
 }
 
 /**
- * Lưu cài đặt AI auto-rotate vào localStorage
+ * Luu c�i d?t AI auto-rotate v�o localStorage
  */
 function saveAIAutoRotateSetting(enabled) {
     localStorage.setItem('ai_auto_rotate_enabled', enabled ? 'true' : 'false');
 }
 
 /**
- * Phát hiện góc xoay của ảnh bằng AI OCR (Tesseract.js)
- * @param {Blob} imageBlob - Ảnh cần kiểm tra
- * @returns {Promise<number>} - Góc cần xoay: 0, 90, 180, 270
+ * Ph�t hi?n g�c xoay c?a ?nh b?ng AI OCR (Tesseract.js)
+ * @param {Blob} imageBlob - ?nh c?n ki?m tra
+ * @returns {Promise<number>} - G�c c?n xoay: 0, 90, 180, 270
  */
 async function detectTextOrientation(imageBlob) {
     let worker = null;
     try {
-        console.log('[AI] Bắt đầu phân tích hướng văn bản...');
+        console.log('[AI] B?t d?u ph�n t�ch hu?ng van b?n...');
         
-        // Resize ảnh xuống 800px để AI xử lý nhanh hơn
+        // Resize ?nh xu?ng 800px d? AI x? l� nhanh hon
         const resizedBlob = await resizeImageBlob(imageBlob, 800);
         
-        // 1. Khởi tạo worker với ngôn ngữ 'eng'
-        // Vẫn dùng 'eng' để có model LSTM chuẩn, tránh lỗi "LSTM not present"
+        // 1. Kh?i t?o worker v?i ng�n ng? 'eng'
+        // V?n d�ng 'eng' d? c� model LSTM chu?n, tr�nh l?i "LSTM not present"
         worker = await Tesseract.createWorker('eng');
         
-        // 2. QUAN TRỌNG: Dùng hàm detect() thay vì recognize()
-        // Hàm này chuyên dùng cho OSD (Orientation & Script Detection)
-        // Nó tự động xử lý chế độ quét phù hợp mà không gây crash
+        // 2. QUAN TR?NG: D�ng h�m detect() thay v� recognize()
+        // H�m n�y chuy�n d�ng cho OSD (Orientation & Script Detection)
+        // N� t? d?ng x? l� ch? d? qu�t ph� h?p m� kh�ng g�y crash
         const result = await worker.detect(resizedBlob);
         const data = result.data;
         
-        // 3. Kết quả
-        const detectedAngle = data.orientation_degrees || ాణ;
+        // 3. K?t qu?
+        const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
+        console.log(`[AI] K?t qu?: g�c=${detectedAngle}�, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // Ngưỡng tin cậy (detection confidence thường thấp hơn recognition, > 2 là khá ổn)
+        // Ngu?ng tin c?y (detection confidence thu?ng th?p hon recognition, > 2 l� kh� ?n)
         if (confidence > 2) {
-            console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
+            console.log(`[AI] ? Tin c?y ? �p d?ng xoay ${detectedAngle}�`);
             return detectedAngle;
         }
         
-        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Bỏ qua`);
+        console.log(`[AI] ? �? tin c?y th?p (${confidence}) ? B? qua`);
         return 0;
         
     } catch (err) {
-        console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
-        // Đảm bảo kill worker nếu có lỗi để giải phóng RAM
+        console.error('[AI] ? L?i ph�t hi?n hu?ng:', err);
+        // �?m b?o kill worker n?u c� l?i d? gi?i ph�ng RAM
         if (worker) {
             try { await worker.terminate(); } catch(e) {}
         }
-        return 0; // Fallback: không xoay
+        return 0; // Fallback: kh�ng xoay
     }
 }
 
 /**
- * Resize ảnh để giảm kích thước (tăng tốc độ AI)
+ * Resize ?nh d? gi?m k�ch thu?c (tang t?c d? AI)
  */
 async function resizeImageBlob(blob, maxWidth) {
     return new Promise((resolve) => {
@@ -4746,7 +4746,7 @@ async function resizeImageBlob(blob, maxWidth) {
             let width = img.width;
             let height = img.height;
             
-            // Chỉ resize nếu ảnh lớn hơn maxWidth
+            // Ch? resize n?u ?nh l?n hon maxWidth
             if (width > maxWidth) {
                 const ratio = maxWidth / width;
                 width = maxWidth;
@@ -4762,7 +4762,7 @@ async function resizeImageBlob(blob, maxWidth) {
             }, blob.type || 'image/jpeg', 0.9);
         };
         
-        img.onerror = () => resolve(blob); // Fallback: dùng ảnh gốc
+        img.onerror = () => resolve(blob); // Fallback: d�ng ?nh g?c
         img.src = URL.createObjectURL(blob);
     });
 }
@@ -4780,11 +4780,11 @@ function initAIAutoRotateCheckbox() {
     // Save on change
     checkbox.addEventListener('change', (e) => {
         saveAIAutoRotateSetting(e.target.checked);
-        updateStatus(`✓ ${e.target.checked ? 'Bật' : 'Tắt'} AI tự động xoay ảnh`);
+        updateStatus(`? ${e.target.checked ? 'B?t' : 'T?t'} AI t? d?ng xoay ?nh`);
     });
 }
 
-// Gọi init khi DOM ready
+// G?i init khi DOM ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAIAutoRotateCheckbox);
 } else {
