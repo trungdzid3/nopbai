@@ -34,7 +34,7 @@ const DISCOVERY_DOCS = [
     "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
     "https://sheets.googleapis.com/$discovery/rest?version=v4"
 ];
-const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/forms";
+const SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/forms https://www.googleapis.com/auth/userinfo.email";
 
 let tokenClient;
 let gapiInited = false;
@@ -2036,7 +2036,7 @@ function gisLoaded() {
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
             scope: SCOPES,
-            callback: (tokenResponse) => {
+            callback: async (tokenResponse) => {
                 if (tokenResponse.error) {
                     updateStatus(`✗ Lỗi Token: ${tokenResponse.error_description || tokenResponse.error}`, true);
                 } else {
@@ -2044,8 +2044,11 @@ function gisLoaded() {
                     gapi.client.setToken(tokenResponse);
                     updateStatus("✓ Đã đăng nhập.");
                     
+                    // Đợi 500ms để token được apply hoàn toàn
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
                     // Luôn lưu email hint mỗi lần đăng nhập thành công
-                    fetchAndSaveEmailHint();
+                    await fetchAndSaveEmailHint();
                     
                     const savedAutoRefreshState = localStorage.getItem('autoRefreshState');
                     if (savedAutoRefreshState === 'on') startAutoRefresh();
