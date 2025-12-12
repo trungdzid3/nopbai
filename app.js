@@ -2402,18 +2402,18 @@ function displaySubmissionStatus(statusList) {
         
         if (extraItemClass) item.classList.add(extraItemClass);
         
-        // [NEW] Nút xóa trạng thái
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'm3-button m3-button-icon-text p-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-error/10 hover:text-error transition-colors';
-        deleteBtn.title = 'Xóa trạng thái';
-        deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-        deleteBtn.onclick = (e) => {
+        // [NEW] Nút thay đổi trạng thái
+        const statusBtn = document.createElement('button');
+        statusBtn.className = 'm3-button m3-button-icon-text p-1 px-2 text-xs rounded-lg hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-1';
+        statusBtn.title = 'Thay đổi trạng thái';
+        statusBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2-8.83"></path></svg>`;
+        statusBtn.onclick = (e) => {
             e.stopPropagation();
-            deleteSubmissionStatus(itemData.id, itemData.name);
+            showStatusChangeMenu(statusBtn, itemData.id, itemData.name, itemData.status);
         };
         
         item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-2"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
-        item.appendChild(deleteBtn);
+        item.appendChild(statusBtn);
         list.appendChild(item);
     });
     submissionStatusList.appendChild(list);
@@ -2424,7 +2424,118 @@ function displaySubmissionStatus(statusList) {
     }
 }
 
-// [NEW] Xóa trạng thái của một học sinh (không xóa folder)
+// [NEW] Hiển thị menu thay đổi trạng thái
+function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
+    // Tạo menu popup
+    const menu = document.createElement('div');
+    menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
+    menu.style.position = 'fixed';
+    menu.style.top = (button.getBoundingClientRect().bottom + 5) + 'px';
+    menu.style.left = (button.getBoundingClientRect().left) + 'px';
+    
+    const statusOptions = [
+        { value: 'submitted', label: '📝 Chưa xử lý', icon: '📝' },
+        { value: 'processed', label: '✅ Đã xử lý', icon: '✅' },
+        { value: 'overdue', label: '⏰ Quá hạn', icon: '⏰' },
+        { value: 'error', label: '❌ Lỗi', icon: '❌' }
+    ];
+    
+    statusOptions.forEach(option => {
+        const item = document.createElement('button');
+        item.className = `w-full text-left px-4 py-3 hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2 ${currentStatus === option.value ? 'bg-primary/10 text-primary font-semibold' : ''}`;
+        item.textContent = option.label;
+        item.onclick = async () => {
+            await changeSubmissionStatus(folderId, folderName, option.value);
+            menu.remove();
+        };
+        menu.appendChild(item);
+    });
+    
+    document.body.appendChild(menu);
+    
+    // Đóng menu khi click bên ngoài
+    const closeMenu = () => {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+    }, 10);
+}
+
+// [NEW] Thay đổi trạng thái và cập nhật lên Drive
+async function changeSubmissionStatus(folderId, folderName, newStatus) {
+    const key = getStatusCacheKey();
+    if (!key) return;
+    
+    // 1. Cập nhật trạng thái trong cache localStorage
+    let statusList = JSON.parse(localStorage.getItem(key) || '[]');
+    const itemIndex = statusList.findIndex(item => item.id === folderId);
+    
+    if (itemIndex !== -1) {
+        const oldStatus = statusList[itemIndex].status;
+        statusList[itemIndex].status = newStatus;
+        localStorage.setItem(key, JSON.stringify(statusList));
+        
+        // 2. Cập nhật UI ngay lập tức
+        loadSubmissionStatusFromCache(true);
+        
+        // 3. Cập nhật trên Drive (Sheet Cấu Hình)
+        const classId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
+        const profile = classProfiles.find(p => p.id === classId);
+        
+        if (profile && profile.sheetId) {
+            try {
+                // Tìm folder ID trong Sheet Cấu Hình và cập nhật status
+                await updateSubmissionStatusOnSheet(profile.sheetId, folderId, newStatus);
+                updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus}`);
+            } catch (error) {
+                updateStatus(`⚠️ Cập nhật local thành công nhưng lỗi Drive: ${error.message}`, true);
+            }
+        } else {
+            updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus} (local)`);
+        }
+    }
+}
+
+// [NEW] Cập nhật status lên Sheet Cấu Hình
+async function updateSubmissionStatusOnSheet(sheetId, folderId, newStatus) {
+    try {
+        // Đọc tất cả dữ liệu để tìm folder
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Cấu Hình!A:H'
+        });
+        
+        const rows = response.result.values || [];
+        
+        // Tìm hàng có folder ID (cột G) hoặc folder Name (cột A)
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i] && (rows[i][6] === folderId || rows[i][0] === folderId)) {
+                // Cột H (index 7) để lưu status
+                rows[i][7] = newStatus;
+                
+                // Cập nhật hàng đó
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: sheetId,
+                    range: `Cấu Hình!A${i + 1}:H${i + 1}`,
+                    valueInputOption: 'RAW',
+                    resource: { values: [rows[i]] }
+                });
+                
+                console.log(`[SHEET] Cập nhật status hàng ${i + 1}: ${newStatus}`);
+                return;
+            }
+        }
+        
+        console.warn(`[SHEET] Không tìm thấy folder ${folderId} để cập nhật status`);
+    } catch (error) {
+        console.error('[SHEET] Lỗi cập nhật status:', error);
+        throw error;
+    }
+}
+
+// [OLD] Xóa trạng thái (giữ lại nhưng đổi tên hàm)
 async function deleteSubmissionStatus(folderId, folderName) {
     if (!confirm(`Xóa trạng thái của "${folderName}" không?\n\n(Folder sẽ được giữ nguyên trên Google Drive)`)) {
         return;
