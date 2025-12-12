@@ -2441,6 +2441,16 @@ function displaySubmissionStatus(statusList) {
     });
     submissionStatusList.appendChild(list);
     
+    // Hiển thị nút bulk status nếu có submissions
+    const bulkBtn = document.getElementById('bulk-status-btn');
+    if (bulkBtn) {
+        if (sortedItems.length > 0) {
+            bulkBtn.classList.remove('hidden');
+        } else {
+            bulkBtn.classList.add('hidden');
+        }
+    }
+    
     // Cập nhật thống kê sau khi render bảng tình trạng
     if (typeof updateSubmissionStats === 'function') {
         updateSubmissionStats();
@@ -2486,8 +2496,106 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     }, 10);
 }
 
+// [NEW] Thay đổi trạng thái hàng loạt cho tất cả submissions
+async function bulkChangeStatus(newStatus) {
+    const key = getStatusCacheKey();
+    if (!key) {
+        updateStatus('✗ Chưa chọn lớp và bài tập', true);
+        return;
+    }
+    
+    const statusList = JSON.parse(localStorage.getItem(key) || '[]');
+    if (statusList.length === 0) {
+        updateStatus('✗ Không có học sinh nào để cập nhật', true);
+        return;
+    }
+    
+    const statusMap = {
+        'processed': '✅ Đã xử lý',
+        'overdue': '⏰ Quá hạn',
+        'submitted': '📝 Chưa xử lý',
+        'error': '❌ Lỗi'
+    };
+    
+    if (!confirm(`Đổi trạng thái của ${statusList.length} học sinh thành "${statusMap[newStatus]}"?`)) {
+        return;
+    }
+    
+    updateStatus(`→ Đang cập nhật ${statusList.length} học sinh...`);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    // Map prefix cho từng status
+    const statusPrefixMap = {
+        'processed': '[Đã xử lý]',
+        'overdue': '[Quá hạn]',
+        'submitted': '',
+        'processing': '[Đang xử lý]',
+        'error': '[Lỗi]'
+    };
+    
+    for (const item of statusList) {
+        try {
+            // Tạo tên folder hiện tại với prefix cũ
+            const oldPrefix = statusPrefixMap[item.status] || '';
+            const currentFolderName = oldPrefix ? `${oldPrefix} ${item.name}` : item.name;
+            
+            await changeSubmissionStatus(item.id, currentFolderName, newStatus, false);
+            successCount++;
+        } catch (err) {
+            failCount++;
+            console.error(`Lỗi cập nhật ${item.name}:`, err);
+        }
+    }
+    
+    // Refresh UI một lần duy nhất sau khi xong
+    loadSubmissionStatusFromCache(true);
+    updateStatus(`✓ Hoàn tất: ${successCount} thành công, ${failCount} lỗi`);
+}
+
+// [NEW] Hiển thị menu chọn trạng thái cho bulk change
+function showBulkStatusMenu() {
+    const button = document.getElementById('bulk-status-btn');
+    if (!button) return;
+    
+    const menu = document.createElement('div');
+    menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
+    menu.style.position = 'fixed';
+    menu.style.top = (button.getBoundingClientRect().bottom + 5) + 'px';
+    menu.style.left = (button.getBoundingClientRect().left) + 'px';
+    
+    const statusOptions = [
+        { value: 'submitted', label: '📝 Chưa xử lý' },
+        { value: 'processed', label: '✅ Đã xử lý' },
+        { value: 'overdue', label: '⏰ Quá hạn' },
+        { value: 'error', label: '❌ Lỗi' }
+    ];
+    
+    statusOptions.forEach(option => {
+        const item = document.createElement('button');
+        item.className = 'w-full text-left px-4 py-3 hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2 first:rounded-t-2xl last:rounded-b-2xl';
+        item.textContent = option.label;
+        item.onclick = async () => {
+            menu.remove();
+            await bulkChangeStatus(option.value);
+        };
+        menu.appendChild(item);
+    });
+    
+    document.body.appendChild(menu);
+    
+    const closeMenu = () => {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+    }, 10);
+}
+
 // [NEW] Thay đổi trạng thái và cập nhật local
-async function changeSubmissionStatus(folderId, folderName, newStatus) {
+async function changeSubmissionStatus(folderId, folderName, newStatus, refreshUI = true) {
     const key = getStatusCacheKey();
     if (!key) return;
     
@@ -2532,9 +2640,11 @@ async function changeSubmissionStatus(folderId, folderName, newStatus) {
             localStorage.setItem(key, JSON.stringify(statusList));
         }
         
-        // Bước 6: Cập nhật UI
-        loadSubmissionStatusFromCache(true);
-        updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
+        // Bước 6: Cập nhật UI (nếu cần)
+        if (refreshUI) {
+            loadSubmissionStatusFromCache(true);
+            updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
+        }
         
     } catch (error) {
         const errorMsg = error?.message || (error?.result?.error?.message || 'Lỗi không xác định');
@@ -4864,10 +4974,25 @@ function initAIAutoRotateCheckbox() {
     });
 }
 
+// Init bulk status button
+function initBulkStatusButton() {
+    const bulkBtn = document.getElementById('bulk-status-btn');
+    if (bulkBtn) {
+        bulkBtn.onclick = (e) => {
+            e.stopPropagation();
+            showBulkStatusMenu();
+        };
+    }
+}
+
 // Gọi init khi DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAIAutoRotateCheckbox);
+    document.addEventListener('DOMContentLoaded', () => {
+        initAIAutoRotateCheckbox();
+        initBulkStatusButton();
+    });
 } else {
     initAIAutoRotateCheckbox();
+    initBulkStatusButton();
 }
 
