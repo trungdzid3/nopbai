@@ -3702,7 +3702,20 @@ function loadSubmissionStatusFromCache(silent = false) {
     const cachedData = localStorage.getItem(key);
     if (cachedData) {
         try {
-            const statusList = JSON.parse(cachedData); displaySubmissionStatus(statusList);
+            let statusList = JSON.parse(cachedData);
+            
+            // Sắp xếp lại theo: 1) status group, 2) thời gian tạo
+            const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
+            statusList.sort((a, b) => {
+                const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+                if (statusDiff !== 0) return statusDiff;
+                // Trong cùng group, sắp xếp theo thời gian (mới nhất trước)
+                const aTime = a.createdTime || new Date().toISOString();
+                const bTime = b.createdTime || new Date().toISOString();
+                return new Date(bTime) - new Date(aTime);
+            });
+            
+            displaySubmissionStatus(statusList);
             if (!silent) updateStatus("✓ Tải trạng thái từ cache.");
         } catch (e) { localStorage.removeItem(key); submissionStatusList.innerHTML = defaultText; }
     } else submissionStatusList.innerHTML = defaultText;
