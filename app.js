@@ -2363,13 +2363,15 @@ function getStatusClasses(status) {
     
     switch (status) {
         case 'processed':
-            return ['bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'];
+            return ['bg-green-50', 'text-green-800', 'dark:bg-green-900/20', 'dark:text-green-300', 'border-l-4', 'border-green-500'];
         case 'overdue':
-            return ['bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'];
+            return ['bg-orange-50', 'text-orange-800', 'dark:bg-orange-900/20', 'dark:text-orange-300', 'border-l-4', 'border-orange-500'];
         case 'processing':
-            return ['bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'];
+            return ['bg-blue-50', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-300', 'animate-pulse', 'border-l-4', 'border-blue-500'];
         case 'error':
-            return ['bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200'];
+            return ['bg-red-50', 'text-red-800', 'dark:bg-red-900/20', 'dark:text-red-300', 'border-l-4', 'border-red-500'];
+        case 'submitted':
+            return ['bg-slate-50', 'text-slate-800', 'dark:bg-slate-800/30', 'dark:text-slate-300', 'border-l-4', 'border-slate-400'];
         default:
             return ['bg-surface-container', 'text-on-surface'];
     }
@@ -2378,11 +2380,14 @@ function getStatusClasses(status) {
 // Helper: Lấy tất cả class có thể có để remove
 function getAllStatusClasses() {
     return [
+        'bg-green-50', 'text-green-800', 'dark:bg-green-900/20', 'dark:text-green-300', 'border-green-500',
+        'bg-orange-50', 'text-orange-800', 'dark:bg-orange-900/20', 'dark:text-orange-300', 'border-orange-500',
+        'bg-blue-50', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-300', 'border-blue-500',
+        'bg-red-50', 'text-red-800', 'dark:bg-red-900/20', 'dark:text-red-300', 'border-red-500',
+        'bg-slate-50', 'text-slate-800', 'dark:bg-slate-800/30', 'dark:text-slate-300', 'border-slate-400',
         'bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary',
-        'bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200',
         'bg-secondary-container', 'text-on-secondary-container', 'animate-pulse',
-        'bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200',
-        'bg-surface-container', 'text-on-surface'
+        'bg-surface-container', 'text-on-surface', 'border-l-4'
     ];
 }
 
