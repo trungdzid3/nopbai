@@ -2526,22 +2526,9 @@ async function bulkChangeStatus(newStatus) {
     let successCount = 0;
     let failCount = 0;
     
-    // Map prefix cho từng status
-    const statusPrefixMap = {
-        'processed': '[Đã xử lý]',
-        'overdue': '[Quá hạn]',
-        'submitted': '',
-        'processing': '[Đang xử lý]',
-        'error': '[Lỗi]'
-    };
-    
     for (const item of statusList) {
         try {
-            // Tạo tên folder hiện tại với prefix cũ
-            const oldPrefix = statusPrefixMap[item.status] || '';
-            const currentFolderName = oldPrefix ? `${oldPrefix} ${item.name}` : item.name;
-            
-            await changeSubmissionStatus(item.id, currentFolderName, newStatus, false);
+            await changeSubmissionStatus(item.id, item.name, newStatus, false);
             successCount++;
         } catch (err) {
             failCount++;
