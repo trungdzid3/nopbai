@@ -4685,63 +4685,71 @@ function saveAIAutoRotateSetting(enabled) {
 
 /**
  * Phát hiện góc xoay của ảnh bằng AI OCR (Tesseract.js)
- * @param {Blob} imageBlob - Ảnh cần kiểm tra
- * @returns {Promise<number>} - Góc cần xoay: 0, 90, 180, 270
+ * LOGIC MỚI: Ngưỡng thích ứng (Adaptive Threshold)
  */
 async function detectTextOrientation(imageBlob) {
     let worker = null;
     try {
         console.log('[AI] Bắt đầu phân tích hướng văn bản...');
         
-        // [FIX] Dùng kích thước 1600px
+        // Giữ nguyên resize 1600px để đảm bảo AI nhìn thấy dòng kẻ
         const resizedBlob = await resizeImageBlob(imageBlob, 1600);
         
-        // 1. Khởi tạo worker với 'osd' và Legacy core
-        // detect() chỉ hoạt động với Legacy model, không dùng LSTM
         worker = await Tesseract.createWorker('osd', 1, {
             legacyCore: true,
             legacyLang: true
         });
         
-        // 2. Dùng hàm detect() cho OSD (Orientation & Script Detection)
+        // Dùng detect() để tránh lỗi crash
         const result = await worker.detect(resizedBlob);
         const data = result.data;
         
-        // 3. Kết quả
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
+        console.log(`[AI] Kết quả thô: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // --- LOGIC LỌC THÔNG MINH ---
-        
-        // 1. Nếu độ tin cậy quá thấp (< 4), bỏ qua ngay lập tức
-        if (confidence < 4) {
-            console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Giữ nguyên`);
+        // --- LOGIC QUYẾT ĐỊNH THÔNG MINH ---
+
+        // 1. Nếu góc là 0 (Ảnh thẳng)
+        if (detectedAngle === 0) {
+            // Không cần làm gì, nhưng log ra để biết
+            console.log(`[AI] Ảnh thẳng (0°) → Giữ nguyên`);
             return 0;
         }
 
-        // 2. Xử lý riêng lỗi "180 độ giả" (False Positive)
-        // Chữ viết tay thường bị AI nhầm là lộn ngược.
-        // Chỉ tin là lộn ngược (180) nếu AI cực kỳ chắc chắn (> 12 điểm)
-        if (detectedAngle === 180 && confidence < 12) {
-            console.log(`[AI] ⚠ Nghi ngờ góc 180° giả (confidence ${confidence} < 12) → Giữ nguyên`);
-            return 0;
+        // 2. Nếu góc là 90 hoặc 270 (Ảnh nằm ngang)
+        // Với chữ viết tay, confidence tầm 2.5 - 3.0 là đã rất đáng tin cậy cho góc ngang
+        if (detectedAngle === 90 || detectedAngle === 270) {
+            if (confidence > 2.0) { // Hạ ngưỡng xuống 2.0
+                console.log(`[AI] ✓ Phát hiện ảnh ngang (${detectedAngle}°), độ tin cậy ${confidence.toFixed(1)} > 2.0 → XOAY`);
+                return detectedAngle;
+            } else {
+                console.log(`[AI] ⚠ Ảnh ngang nhưng tin cậy thấp (${confidence.toFixed(1)}) → Bỏ qua`);
+                return 0;
+            }
         }
 
-        // 3. Với góc 90 hoặc 270 (ảnh ngang), chỉ cần confidence > 4 là đủ
-        console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
-        return detectedAngle;
+        // 3. Nếu góc là 180 (Ảnh lộn ngược)
+        // Đây là trường hợp AI hay nhầm nhất với chữ viết tay. Phải thật khắt khe.
+        if (detectedAngle === 180) {
+            if (confidence > 10.0) { // Ngưỡng cao
+                console.log(`[AI] ✓ Ảnh lộn ngược chắc chắn (${confidence.toFixed(1)}) → XOAY`);
+                return 180;
+            } else {
+                console.log(`[AI] ⚠ Nghi ngờ góc 180° giả (tin cậy ${confidence.toFixed(1)} < 10) → Giữ nguyên`);
+                return 0;
+            }
+        }
+
+        return 0; // Mặc định an toàn
         
     } catch (err) {
-        console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
-        // Đảm bảo kill worker nếu có lỗi để giải phóng RAM
-        if (worker) {
-            try { await worker.terminate(); } catch(e) {}
-        }
-        return 0; // Fallback: không xoay
+        console.error('[AI] ✗ Lỗi:', err);
+        if (worker) { try { await worker.terminate(); } catch(e) {} }
+        return 0; 
     }
 }
 
