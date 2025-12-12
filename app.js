@@ -3739,7 +3739,7 @@ async function createPdfFromImages(imageFiles, folderName) {
                         y: pageHeight - 18,
                         font: embeddedFont,
                         size: 11,
-                        color: rgb(0, 0, 0),
+                        color: rgb(1, 0, 0),
                     });
                 } else {
                     // Fallback: dùng font mặc định
@@ -3747,7 +3747,7 @@ async function createPdfFromImages(imageFiles, folderName) {
                         x: 15,
                         y: pageHeight - 18,
                         size: 11,
-                        color: rgb(0, 0, 0),
+                        color: rgb(1, 0, 0),
                     });
                 }
             } catch (headerErr) {
@@ -3791,7 +3791,7 @@ async function mergePdfs(pdfBuffers, folderName) {
                                 y: pageHeight - 18,
                                 font: embeddedFont,
                                 size: 11,
-                                color: rgb(0, 0, 0),
+                                color: rgb(1, 0, 0),
                             });
                         } else {
                             // Fallback: dùng font mặc định
@@ -3799,7 +3799,7 @@ async function mergePdfs(pdfBuffers, folderName) {
                                 x: 15,
                                 y: pageHeight - 18,
                                 size: 11,
-                                color: rgb(0, 0, 0),
+                                color: rgb(1, 0, 0),
                             });
                         }
                     } catch (headerErr) {
