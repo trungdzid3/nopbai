@@ -3715,8 +3715,8 @@ async function createPdfFromImages(imageFiles, folderName) {
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
         
-        // [NEW] Dự trữ 45px ở trên cho header (tên người nộp)
-        const headerHeight = 45;
+        // [NEW] Dự trữ 50px ở trên cho header (tên người nộp)
+        const headerHeight = 50;
         const availableHeight = pageHeight - headerHeight;
         
         // Thu nhỏ ảnh vừa vào không gian còn lại
@@ -3726,36 +3726,36 @@ async function createPdfFromImages(imageFiles, folderName) {
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // [NEW] Vẽ header (tên người nộp) trên mỗi trang
+        // [IMPROVED] Vẽ header (tên người nộp) trên mỗi trang
         if (folderName) {
             try {
-                if (customFontBuffer) {
-                    const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
-                    page.drawText(`Người nộp: ${folderName}`, {
+                // Cố gắng vẽ text - không cần custom font
+                page.drawText(`Người nộp: ${folderName}`, {
+                    x: 20,
+                    y: pageHeight - 25,
+                    size: 13,
+                    color: rgb(0, 97, 164),
+                });
+            } catch (e) {
+                console.warn('Lỗi vẽ header:', e);
+                // Fallback - vẽ lại ngay lập tức
+                try {
+                    page.drawText(folderName, {
                         x: 20,
-                        y: pageHeight - 22,
-                        font: embeddedFont,
+                        y: pageHeight - 25,
                         size: 12,
                         color: rgb(0, 97, 164),
                     });
-                } else {
-                    // Fallback nếu font không được
-                    page.drawText(`Người nộp: ${folderName}`, {
-                        x: 20,
-                        y: pageHeight - 20,
-                        size: 11,
-                        color: rgb(0, 97, 164),
-                    });
+                } catch (e2) {
+                    console.warn('Fallback header cũng thất bại:', e2);
                 }
-            } catch (e) {
-                console.warn('Lỗi vẽ header:', e);
             }
         }
         
-        // [IMPROVED] Vẽ ảnh ở phía dưới header
+        // [IMPROVED] Vẽ ảnh ở phía dưới header (center vertical trong available space)
         page.drawImage(image, {
             x: (pageWidth - scaledWidth) / 2,
-            y: (availableHeight - scaledHeight) / 2,
+            y: headerHeight + (availableHeight - scaledHeight) / 2,
             width: scaledWidth,
             height: scaledHeight
         });
@@ -3776,30 +3776,31 @@ async function mergePdfs(pdfBuffers, folderName) {
             // [NEW] Thêm header vào mỗi trang
             for (const page of copiedPages) {
                 try {
-                    if (folderName && customFontBuffer) {
-                        const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
+                    if (folderName) {
                         const pageHeight = page.getHeight();
                         
-                        // Vẽ header với nền nhẹ
+                        // Vẽ header tên người nộp
                         page.drawText(`Người nộp: ${folderName}`, {
                             x: 20,
-                            y: pageHeight - 22,
-                            font: embeddedFont,
-                            size: 12,
-                            color: rgb(0, 97, 164),
-                        });
-                    } else if (folderName) {
-                        // Fallback nếu không có custom font
-                        const pageHeight = page.getHeight();
-                        page.drawText(`Người nộp: ${folderName}`, {
-                            x: 20,
-                            y: pageHeight - 20,
-                            size: 11,
+                            y: pageHeight - 25,
+                            size: 13,
                             color: rgb(0, 97, 164),
                         });
                     }
                 } catch (headerErr) {
                     console.warn('Lỗi vẽ header trang:', headerErr);
+                    // Fallback - cố gắng vẽ lại với chỉ tên
+                    try {
+                        const pageHeight = page.getHeight();
+                        page.drawText(folderName, {
+                            x: 20,
+                            y: pageHeight - 25,
+                            size: 12,
+                            color: rgb(0, 97, 164),
+                        });
+                    } catch (e) {
+                        console.warn('Fallback header thất bại:', e);
+                    }
                 }
                 
                 mergedPdf.addPage(page);
