@@ -4689,34 +4689,32 @@ function saveAIAutoRotateSetting(enabled) {
  * @returns {Promise<number>} - Góc cần xoay: 0, 90, 180, 270
  */
 async function detectTextOrientation(imageBlob) {
+    let worker = null;
     try {
         console.log('[AI] Bắt đầu phân tích hướng văn bản...');
         
         // Resize ảnh xuống 800px để AI xử lý nhanh hơn
         const resizedBlob = await resizeImageBlob(imageBlob, 800);
         
-        // [FIX] Khởi tạo với 'eng' để tránh lỗi "LSTM requested but not present"
-        // 'eng' chứa mô hình LSTM chuẩn giúp engine khởi động không bị crash
-        const worker = await Tesseract.createWorker('eng');
+        // 1. Khởi tạo worker với ngôn ngữ 'eng'
+        // Vẫn dùng 'eng' để có model LSTM chuẩn, tránh lỗi "LSTM not present"
+        worker = await Tesseract.createWorker('eng');
         
-        // [FIX] Quan trọng: Đặt chế độ PSM thành '0' (OSD_ONLY)
-        // Chế độ này bảo Tesseract: "Đừng đọc chữ, chỉ tìm hướng thôi"
-        await worker.setParameters({
-            tessedit_pageseg_mode: '0', 
-        });
-        
-        // 2. Nhận diện orientation
-        const { data } = await worker.recognize(resizedBlob);
+        // 2. QUAN TRỌNG: Dùng hàm detect() thay vì recognize()
+        // Hàm này chuyên dùng cho OSD (Orientation & Script Detection)
+        // Nó tự động xử lý chế độ quét phù hợp mà không gây crash
+        const result = await worker.detect(resizedBlob);
+        const data = result.data;
         
         // 3. Kết quả
-        const detectedAngle = data.orientation_degrees || 0;
+        const detectedAngle = data.orientation_degrees || ాణ;
         const confidence = data.orientation_confidence || 0;
         
         console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // Ngưỡng tin cậy (có thể điều chỉnh, thường OSD trả về số khá cao nếu ảnh rõ)
+        // Ngưỡng tin cậy (detection confidence thường thấp hơn recognition, > 2 là khá ổn)
         if (confidence > 2) {
             console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
             return detectedAngle;
@@ -4727,6 +4725,10 @@ async function detectTextOrientation(imageBlob) {
         
     } catch (err) {
         console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
+        // Đảm bảo kill worker nếu có lỗi để giải phóng RAM
+        if (worker) {
+            try { await worker.terminate(); } catch(e) {}
+        }
         return 0; // Fallback: không xoay
     }
 }
