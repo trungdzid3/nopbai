@@ -615,6 +615,14 @@ function loadClassProfiles() {
 
     classProfiles = JSON.parse(localStorage.getItem('classProfiles')) || [];
     
+    // [FIX] Migrate old profiles: ensure classFolderId is set
+    classProfiles.forEach(profile => {
+        if (!profile.classFolderId) {
+            profile.classFolderId = profile.id; // Use profile.id as fallback
+            console.log(`[MIGRATE] Profile "${profile.name}": Set classFolderId = ${profile.id}`);
+        }
+    });
+    
     // Update old select (hidden fallback)
     if (classProfileSelect) {
         classProfileSelect.innerHTML = '';
@@ -721,6 +729,18 @@ function handleClassSelectChange() {
 
     localStorage.setItem('activeClassProfileId', selectedId);
     const selectedProfile = classProfiles.find(p => p.id === selectedId);
+    
+    // [FIX] Ensure classFolderId is set (migrate from old format)
+    if (!selectedProfile.classFolderId) {
+        selectedProfile.classFolderId = selectedProfile.id;
+        // Save migrated data
+        const idx = classProfiles.findIndex(p => p.id === selectedId);
+        if (idx !== -1) {
+            classProfiles[idx] = selectedProfile;
+            localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+        }
+    }
+    
     updateStatus(`✓ Lớp đang hoạt động: ${selectedProfile.name}`);
 
     if (selectedProfile.assignments && selectedProfile.assignments.length > 0) {
@@ -747,6 +767,16 @@ function loadActiveClass() {
     }
     const profile = classProfiles.find(p => p.id === activeId);
     if (profile) {
+        // [FIX] Ensure classFolderId is set (migrate from old format)
+        if (!profile.classFolderId) {
+            profile.classFolderId = profile.id;
+            const idx = classProfiles.findIndex(p => p.id === activeId);
+            if (idx !== -1) {
+                classProfiles[idx] = profile;
+                localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+            }
+        }
+        
         classProfileSelect.value = activeId;
         updateStatus(`✓ Lớp đang hoạt động: ${profile.name}`);
         if (profile.assignments && profile.assignments.length > 0) {
@@ -1433,15 +1463,18 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
         const templateSheetId = templateSheet.properties.sheetId;
         
         // 2. Duplicate template for each assignment
+        // [FIX] Tên sheet được tạo theo format "Bảng nhận xét (Tên bài tập)" để khớp với config
         const requests = [];
         for (const assignment of assignments) {
+            const sheetName = `Bảng nhận xét (${assignment.name})`;
             requests.push({
                 duplicateSheet: {
                     sourceSheetId: templateSheetId,
-                    newSheetName: assignment.name,
+                    newSheetName: sheetName,
                     insertSheetIndex: sheets.length
                 }
             });
+            console.log(`[SHEETS] Tạo sheet: "${sheetName}"`);
         }
         
         await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -1449,7 +1482,7 @@ async function apiCreateAssignmentSheets(spreadsheetId, assignments) {
             resource: { requests: requests }
         });
         
-        console.log(`[SHEETS] Đã tạo ${assignments.length} sheet từ template`);
+        console.log(`[SHEETS] ✓ Đã tạo ${assignments.length} sheet từ template`);
         
     } catch (error) {
         console.error('[SHEETS] Lỗi tạo assignment sheets:', error);
@@ -4167,10 +4200,11 @@ async function countStudentsInSheet(spreadsheetId, sheetName) {
 
 /**
  * Tìm tên sheet tương ứng với assignment bằng fuzzy matching
- * Logic: Tìm 2 từ cuối của assignment name trong tên sheet
- * VD: "Bài tập thứ 5 đại số" → tìm "thứ 5" + "đại số" → match "Bảng nhận xét (Đại số)"
+ * Logic: Khớp từ khóa cuối của assignment name vào tên sheet
+ * VD: "Đại số" → match "Bảng nhận xét (Đại số)"
+ * VD: "Bài tập thứ 5 đại số" → match "Bảng nhận xét (Đại số)" (dựa vào từ cuối "đại số")
  * 
- * @param {string} assignmentName - Tên loại bài tập (VD: "Bài tập thứ 5 đại số")
+ * @param {string} assignmentName - Tên loại bài tập (VD: "Đại số" hoặc "Bài tập thứ 5 đại số")
  * @param {Array} allSheetNames - Danh sách tất cả tên sheet
  * @returns {string|null} - Tên sheet match hoặc null
  */
@@ -4179,39 +4213,77 @@ function findAssignmentSheetByFuzzyMatch(assignmentName, allSheetNames) {
         return null;
     }
     
+    const assignmentLower = assignmentName.toLowerCase().trim();
+    
+    // **CHIẾN LƯỢC 0: MATCH CHÍNH XÁC VỚI PATTERN "Bảng nhận xét (...)"**
+    // Nếu assignment = "Đại số", tìm "Bảng nhận xét (Đại số)" chính xác
+    const exactPattern = `bảng nhận xét (${assignmentLower})`;
+    const exactMatch = allSheetNames.find(s => s.toLowerCase() === exactPattern);
+    if (exactMatch) {
+        console.log(`[FUZZY] Match chính xác: "${exactMatch}"`);
+        return exactMatch;
+    }
+    
     // Tách từ từ assignment name
-    const words = assignmentName.toLowerCase().split(/[\s\-_]+/).filter(w => w.length > 0);
+    const words = assignmentLower.split(/[\s\-_]+/).filter(w => w.length > 0);
     
     if (words.length === 0) return null;
     
-    // Lấy 2 từ cuối
+    // **CHIẾN LƯỢC 1: MATCH CÓ CHỨA TOÀN BỘ TÊN ASSIGNMENT**
+    // VD: "Đại số" → tìm sheet chứa đầy đủ "đại số"
+    const fullNameMatches = allSheetNames.filter(sheetName => {
+        const sheetLower = sheetName.toLowerCase();
+        // Kiểm tra xem sheet name có chứa toàn bộ assignment name không (có thể ở trong dấu ngoặc)
+        return sheetLower.includes(assignmentLower);
+    });
+    
+    if (fullNameMatches.length > 0) {
+        console.log(`[FUZZY] Match toàn bộ tên (${fullNameMatches.length}):`, fullNameMatches);
+        return fullNameMatches[0];
+    }
+    
+    // **CHIẾN LƯỢC 2: MATCH 2 TỪ CUỐI**
     const lastTwoWords = words.slice(-2);
+    console.log(`[FUZZY] Assignment: "${assignmentName}" → Tìm 2 từ cuối: [${lastTwoWords.join(', ')}]`);
     
-    console.log(`[FUZZY] Assignment: "${assignmentName}" → Tìm 2 từ: [${lastTwoWords.join(', ')}]`);
-    
-    // Tìm sheet chứa cả 2 từ cuối
-    const bestMatches = allSheetNames.filter(sheetName => {
+    const twoWordMatches = allSheetNames.filter(sheetName => {
         const sheetLower = sheetName.toLowerCase();
         return lastTwoWords.every(word => sheetLower.includes(word));
     });
     
-    if (bestMatches.length > 0) {
-        console.log(`[FUZZY] Tìm được ${bestMatches.length} sheet match:`, bestMatches);
-        return bestMatches[0];
+    if (twoWordMatches.length > 0) {
+        console.log(`[FUZZY] Match 2 từ (${twoWordMatches.length}):`, twoWordMatches);
+        return twoWordMatches[0];
     }
     
-    // Nếu không tìm được 2 từ cuối, thử 1 từ cuối
+    // **CHIẾN LƯỢC 3: MATCH 1 TỪ CUỐI (TỪ QUAN TRỌNG NHẤT)**
     const lastWord = words[words.length - 1];
-    const secondaryMatches = allSheetNames.filter(sheetName => 
+    console.log(`[FUZZY] Thử tìm 1 từ cuối: "${lastWord}"`);
+    
+    const oneWordMatches = allSheetNames.filter(sheetName => 
         sheetName.toLowerCase().includes(lastWord)
     );
     
-    if (secondaryMatches.length > 0) {
-        console.log(`[FUZZY] Tìm được ${secondaryMatches.length} sheet match từ 1 từ cuối:`, secondaryMatches);
-        return secondaryMatches[0];
+    if (oneWordMatches.length > 0) {
+        console.log(`[FUZZY] Match 1 từ (${oneWordMatches.length}):`, oneWordMatches);
+        return oneWordMatches[0];
     }
     
-    console.log(`[FUZZY] Không tìm được sheet match cho "${assignmentName}"`);
+    // **CHIẾN LƯỢC 4: FUZZY MATCHING - TỪ DÀI NHẤT**
+    // (thường là từ chứa nội dung chính)
+    const longestWord = words.reduce((a, b) => a.length >= b.length ? a : b, '');
+    if (longestWord.length > 3) {
+        console.log(`[FUZZY] Thử từ dài nhất: "${longestWord}"`);
+        const fuzzyMatches = allSheetNames.filter(sheetName => 
+            sheetName.toLowerCase().includes(longestWord)
+        );
+        if (fuzzyMatches.length > 0) {
+            console.log(`[FUZZY] Match từ dài (${fuzzyMatches.length}):`, fuzzyMatches);
+            return fuzzyMatches[0];
+        }
+    }
+    
+    console.log(`[FUZZY] ⚠️ Không tìm được sheet match cho "${assignmentName}"`);
     return null;
 }
 
