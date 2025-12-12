@@ -2402,7 +2402,18 @@ function displaySubmissionStatus(statusList) {
         
         if (extraItemClass) item.classList.add(extraItemClass);
         
-        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-1"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
+        // [NEW] Nút xóa trạng thái
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'm3-button m3-button-icon-text p-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-error/10 hover:text-error transition-colors';
+        deleteBtn.title = 'Xóa trạng thái';
+        deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteSubmissionStatus(itemData.id, itemData.name);
+        };
+        
+        item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-2"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
+        item.appendChild(deleteBtn);
         list.appendChild(item);
     });
     submissionStatusList.appendChild(list);
@@ -2411,6 +2422,24 @@ function displaySubmissionStatus(statusList) {
     if (typeof updateSubmissionStats === 'function') {
         updateSubmissionStats();
     }
+}
+
+// [NEW] Xóa trạng thái của một học sinh (không xóa folder)
+async function deleteSubmissionStatus(folderId, folderName) {
+    if (!confirm(`Xóa trạng thái của "${folderName}" không?\n\n(Folder sẽ được giữ nguyên trên Google Drive)`)) {
+        return;
+    }
+    
+    const key = getStatusCacheKey();
+    if (!key) return;
+    
+    let statusList = JSON.parse(localStorage.getItem(key) || '[]');
+    statusList = statusList.filter(item => item.id !== folderId);
+    localStorage.setItem(key, JSON.stringify(statusList));
+    
+    // Cập nhật UI
+    loadSubmissionStatusFromCache();
+    updateStatus(`✓ Đã xóa trạng thái của "${folderName}" khỏi bảng`);
 }
 
 async function deleteSelectedSubmissions() {
@@ -3566,17 +3595,59 @@ async function createPdfFromImages(imageFiles, folderName) {
     const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; await processImage(task.file, task.index); } };
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(null).map(worker));
     updateStatus(`✓ Xử lý ảnh xong, đang gộp PDF...`);
+    
+    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh
     for (const image of processedImages) {
         if (!image) continue;
         const A4_SHORT = 595.28, A4_LONG = 841.89;
         const isLandscape = image.width > image.height;
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
-        const ratio = Math.min(pageWidth / image.width, pageHeight / image.height);
+        
+        // [NEW] Dự trữ 45px ở trên cho header (tên người nộp)
+        const headerHeight = 45;
+        const availableHeight = pageHeight - headerHeight;
+        
+        // Thu nhỏ ảnh vừa vào không gian còn lại
+        const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
+        
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
-        page.drawImage(image, { x: (pageWidth - scaledWidth) / 2, y: (pageHeight - scaledHeight) / 2, width: scaledWidth, height: scaledHeight });
+        
+        // [NEW] Vẽ header (tên người nộp) trên mỗi trang
+        if (folderName) {
+            try {
+                if (customFontBuffer) {
+                    const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
+                    page.drawText(`Người nộp: ${folderName}`, {
+                        x: 20,
+                        y: pageHeight - 22,
+                        font: embeddedFont,
+                        size: 12,
+                        color: rgb(0, 97, 164),
+                    });
+                } else {
+                    // Fallback nếu font không được
+                    page.drawText(`Người nộp: ${folderName}`, {
+                        x: 20,
+                        y: pageHeight - 20,
+                        size: 11,
+                        color: rgb(0, 97, 164),
+                    });
+                }
+            } catch (e) {
+                console.warn('Lỗi vẽ header:', e);
+            }
+        }
+        
+        // [IMPROVED] Vẽ ảnh ở phía dưới header
+        page.drawImage(image, {
+            x: (pageWidth - scaledWidth) / 2,
+            y: (availableHeight - scaledHeight) / 2,
+            width: scaledWidth,
+            height: scaledHeight
+        });
     }
     return pdfDoc.save();
 }
@@ -3584,20 +3655,49 @@ async function createPdfFromImages(imageFiles, folderName) {
 async function mergePdfs(pdfBuffers, folderName) {
     const mergedPdf = await PDFDocument.create();
     mergedPdf.registerFontkit(window.fontkit);
+    
+    // [IMPROVED] Thêm header tên người nộp trên mỗi trang
     for (const pdfBuffer of pdfBuffers) {
         try {
             const pdf = await PDFDocument.load(pdfBuffer);
             const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-            copiedPages.forEach(page => mergedPdf.addPage(page));
-        } catch (err) { updateStatus(`✗ Lỗi đọc PDF con. Bỏ qua.`, true); }
+            
+            // [NEW] Thêm header vào mỗi trang
+            for (const page of copiedPages) {
+                try {
+                    if (folderName && customFontBuffer) {
+                        const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
+                        const pageHeight = page.getHeight();
+                        
+                        // Vẽ header với nền nhẹ
+                        page.drawText(`Người nộp: ${folderName}`, {
+                            x: 20,
+                            y: pageHeight - 22,
+                            font: embeddedFont,
+                            size: 12,
+                            color: rgb(0, 97, 164),
+                        });
+                    } else if (folderName) {
+                        // Fallback nếu không có custom font
+                        const pageHeight = page.getHeight();
+                        page.drawText(`Người nộp: ${folderName}`, {
+                            x: 20,
+                            y: pageHeight - 20,
+                            size: 11,
+                            color: rgb(0, 97, 164),
+                        });
+                    }
+                } catch (headerErr) {
+                    console.warn('Lỗi vẽ header trang:', headerErr);
+                }
+                
+                mergedPdf.addPage(page);
+            }
+        } catch (err) {
+            updateStatus(`✗ Lỗi đọc PDF con. Bỏ qua.`, true);
+        }
     }
-    if (mergedPdf.getPageCount() > 0 && folderName && customFontBuffer) {
-        try {
-            const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
-            const firstPage = mergedPdf.getPages()[0];
-            firstPage.drawText(`Người nộp: ${folderName}`, { x: 30, y: firstPage.getHeight() - 15, font: embeddedFont, size: 12, color: rgb(1, 0, 0), strokeColor: rgb(0, 0, 0), strokeWidth: 0.5, renderMode: 'FillAndStroke' });
-        } catch (embedError) { }
-    }
+    
     return mergedPdf.save();
 }
 
