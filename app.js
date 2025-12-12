@@ -2463,126 +2463,59 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     }, 10);
 }
 
-// [NEW] Thay đổi trạng thái và cập nhật lên Drive
+// [NEW] Thay đổi trạng thái và cập nhật local
 async function changeSubmissionStatus(folderId, folderName, newStatus) {
     const key = getStatusCacheKey();
     if (!key) return;
     
-    // 1. Cập nhật trạng thái trong cache localStorage
-    let statusList = JSON.parse(localStorage.getItem(key) || '[]');
-    const itemIndex = statusList.findIndex(item => item.id === folderId);
-    
-    if (itemIndex !== -1) {
-        const oldStatus = statusList[itemIndex].status;
-        statusList[itemIndex].status = newStatus;
-        localStorage.setItem(key, JSON.stringify(statusList));
-        
-        // 2. Cập nhật UI ngay lập tức
-        loadSubmissionStatusFromCache(true);
-        
-        // 3. Cập nhật trên Drive (Sheet Cấu Hình)
-        const classId = classProfileSelectValue ? classProfileSelectValue.value : (classProfileSelect ? classProfileSelect.value : '');
-        const profile = classProfiles.find(p => p.id === classId);
-        
-        if (profile && profile.sheetId) {
-            try {
-                // Tìm folder ID trong Sheet Cấu Hình và cập nhật status
-                await updateSubmissionStatusOnSheet(profile.sheetId, folderId, newStatus);
-                updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus}`);
-            } catch (error) {
-                let errorMsg = 'Lỗi không xác định';
-                if (error?.message) {
-                    errorMsg = error.message;
-                } else if (typeof error === 'string') {
-                    errorMsg = error;
-                }
-                updateStatus(`⚠️ Cập nhật local thành công nhưng lỗi Drive: ${errorMsg}`, true);
-            }
-        } else {
-            updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus} (local)`);
-        }
-    }
-}
-
-// [NEW] Cập nhật status lên Sheet Cấu Hình
-async function updateSubmissionStatusOnSheet(sheetId, folderId, newStatus) {
     try {
-        // Đọc tất cả dữ liệu để tìm folder
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Cấu Hình!A:H'
+        // Bước 1: Xác định status prefix cũ và mới
+        const statusPrefixMap = {
+            'processed': '[Đã xử lý]',
+            'overdue': '[Quá hạn]',
+            'submitted': '',  // Không có prefix cho "Chưa xử lý"
+            'processing': '[Đang xử lý]',
+            'error': '[Lỗi]'
+        };
+        
+        const oldPrefix = Array.from(Object.entries(statusPrefixMap))
+            .find(([_, prefix]) => prefix && folderName.startsWith(prefix))
+            ?.[1] || '';
+        const newPrefix = statusPrefixMap[newStatus] || '';
+        
+        // Bước 2: Xóa prefix cũ khỏi tên folder
+        let cleanName = folderName;
+        if (oldPrefix) {
+            cleanName = folderName.substring(oldPrefix.length).trim();
+        }
+        
+        // Bước 3: Thêm prefix mới (nếu có)
+        const newFolderName = newPrefix ? `${newPrefix} ${cleanName}` : cleanName;
+        
+        // Bước 4: Rename folder trên Google Drive
+        await gapi.client.drive.files.update({
+            fileId: folderId,
+            resource: { name: newFolderName }
         });
         
-        if (!response || !response.result) {
-            throw new Error('Không thể đọc dữ liệu từ Sheet');
+        // Bước 5: Cập nhật localStorage
+        let statusList = JSON.parse(localStorage.getItem(key) || '[]');
+        const itemIndex = statusList.findIndex(item => item.id === folderId);
+        
+        if (itemIndex !== -1) {
+            const oldStatus = statusList[itemIndex].status;
+            statusList[itemIndex].name = cleanName;  // Cập nhật tên không có prefix
+            statusList[itemIndex].status = newStatus;
+            localStorage.setItem(key, JSON.stringify(statusList));
         }
         
-        const rows = response.result.values || [];
-        
-        if (rows.length === 0) {
-            console.warn('[SHEET] Sheet trống, không thể cập nhật');
-            return;
-        }
-        
-        // Tìm hàng có folder ID (cột G - index 6) hoặc folder Name (cột A - index 0)
-        let foundRow = -1;
-        for (let i = 1; i < rows.length; i++) {
-            if (!rows[i]) continue;
-            
-            // So sánh cột G (index 6) với folderId
-            if (rows[i][6] && rows[i][6].toString().trim() === folderId.toString().trim()) {
-                foundRow = i;
-                break;
-            }
-            
-            // Fallback: so sánh cột A (index 0) nếu là folder name
-            if (rows[i][0] && rows[i][0].toString().trim() === folderId.toString().trim()) {
-                foundRow = i;
-                break;
-            }
-        }
-        
-        if (foundRow === -1) {
-            console.warn(`[SHEET] Không tìm thấy folder ${folderId} trong sheet để cập nhật status`);
-            // Không throw error - có thể status chưa được ghi vào sheet
-            return;
-        }
-        
-        // Cập nhật cột H (index 7) với newStatus
-        if (!rows[foundRow][7]) {
-            rows[foundRow][7] = '';
-        }
-        rows[foundRow][7] = newStatus;
-        
-        // Ghi dữ liệu cập nhật
-        const updateResponse = await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: `Cấu Hình!A${foundRow + 1}:H${foundRow + 1}`,
-            valueInputOption: 'RAW',
-            resource: { values: [rows[foundRow]] }
-        });
-        
-        if (!updateResponse || !updateResponse.result) {
-            throw new Error('Cập nhật không thành công');
-        }
-        
-        console.log(`[SHEET] ✓ Cập nhật status hàng ${foundRow + 1}: ${newStatus}`);
-        return updateResponse.result;
+        // Bước 6: Cập nhật UI
+        loadSubmissionStatusFromCache(true);
+        updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
         
     } catch (error) {
-        // Xử lý error một cách an toàn
-        let errorMsg = 'Lỗi không xác định';
-        
-        if (error?.message) {
-            errorMsg = error.message;
-        } else if (error?.result?.error?.message) {
-            errorMsg = error.result.error.message;
-        } else if (typeof error === 'string') {
-            errorMsg = error;
-        }
-        
-        console.error('[SHEET] Lỗi cập nhật status:', errorMsg, error);
-        throw new Error(`${errorMsg}`);
+        const errorMsg = error?.message || (error?.result?.error?.message || 'Lỗi không xác định');
+        updateStatus(`✗ Lỗi khi thay đổi trạng thái: ${errorMsg}`, true);
     }
 }
 
