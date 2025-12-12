@@ -3,7 +3,7 @@
 // ==================================================================
 
 const { jsPDF } = window.jspdf;
-const { PDFDocument, rgb } = window.PDFLib;
+const { PDFDocument, rgb, degrees } = window.PDFLib;
 
 const API_KEY = ""; // Để trống
 const CLIENT_ID = "537125658544-f5j4rh872q8412rkfoffrs7nt7fahjun.apps.googleusercontent.com";
@@ -3722,9 +3722,11 @@ async function createPdfFromImages(imageFiles, folderName) {
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
         // [NEW] Xoay trang nếu AI phát hiện góc
+        // Tesseract trả về góc văn bản HIỆN TẠI, cần xoay NGƯỢC lại để thẳng
         if (rotation !== 0) {
-            page.setRotation(PDFLib.degrees(rotation));
-            console.log(`[PDF] Xoay trang ${rotation}°`);
+            const correctRotation = (360 - rotation) % 360; // Đảo ngược góc
+            page.setRotation(degrees(correctRotation));
+            console.log(`[AI] Phát hiện văn bản nghiêng ${rotation}° → Xoay trang ${correctRotation}°`);
         }
         
         // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
@@ -4665,6 +4667,8 @@ function saveAIAutoRotateSetting(enabled) {
  */
 async function detectTextOrientation(imageBlob) {
     try {
+        console.log('[AI] Bắt đầu phân tích hướng văn bản...');
+        
         // 1. Tạo worker Tesseract
         const worker = await Tesseract.createWorker('osd');
         
@@ -4675,19 +4679,21 @@ async function detectTextOrientation(imageBlob) {
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
+        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}, script=${data.script || 'unknown'}`);
+        
         await worker.terminate();
         
         // Chỉ tin AI nếu confidence > 2
         if (confidence > 2) {
-            console.log(`[AI] Phát hiện góc: ${detectedAngle}°, Độ tin cậy: ${confidence.toFixed(1)}`);
+            console.log(`[AI] ✓ Tin cậy cao → Áp dụng xoay ${detectedAngle}°`);
             return detectedAngle;
         }
         
-        console.log(`[AI] Độ tin cậy thấp (${confidence.toFixed(1)}), giữ nguyên góc`);
+        console.log(`[AI] ⚠ Độ tin cậy thấp → Bỏ qua`);
         return 0;
         
     } catch (err) {
-        console.error('[AI] Lỗi phát hiện hướng:', err);
+        console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
         return 0; // Fallback: không xoay
     }
 }
