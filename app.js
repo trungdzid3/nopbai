@@ -2490,7 +2490,12 @@ async function changeSubmissionStatus(folderId, folderName, newStatus) {
                 await updateSubmissionStatusOnSheet(profile.sheetId, folderId, newStatus);
                 updateStatus(`✓ Đã cập nhật "${folderName}": ${oldStatus} → ${newStatus}`);
             } catch (error) {
-                const errorMsg = error?.message || error?.toString?.() || 'Lỗi không xác định';
+                let errorMsg = 'Lỗi không xác định';
+                if (error?.message) {
+                    errorMsg = error.message;
+                } else if (typeof error === 'string') {
+                    errorMsg = error;
+                }
                 updateStatus(`⚠️ Cập nhật local thành công nhưng lỗi Drive: ${errorMsg}`, true);
             }
         } else {
@@ -2565,9 +2570,19 @@ async function updateSubmissionStatusOnSheet(sheetId, folderId, newStatus) {
         return updateResponse.result;
         
     } catch (error) {
-        const errorMsg = error?.message || error?.toString?.() || 'Lỗi không xác định';
+        // Xử lý error một cách an toàn
+        let errorMsg = 'Lỗi không xác định';
+        
+        if (error?.message) {
+            errorMsg = error.message;
+        } else if (error?.result?.error?.message) {
+            errorMsg = error.result.error.message;
+        } else if (typeof error === 'string') {
+            errorMsg = error;
+        }
+        
         console.error('[SHEET] Lỗi cập nhật status:', errorMsg, error);
-        throw new Error(`[Sheet] ${errorMsg}`);
+        throw new Error(`${errorMsg}`);
     }
 }
 
