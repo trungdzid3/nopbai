@@ -2452,6 +2452,21 @@ function displaySubmissionStatus(statusList) {
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
         
+        // [NEW] Ctrl+Click to multi-select
+        item.addEventListener('click', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const isSelected = item.dataset.selected === "true";
+                item.dataset.selected = isSelected ? "false" : "true";
+                
+                if (isSelected) {
+                    item.classList.remove('ring-2', 'ring-primary', 'bg-primary/10');
+                } else {
+                    item.classList.add('ring-2', 'ring-primary', 'bg-primary/10');
+                }
+            }
+        });
+        
         // Áp dụng class màu dựa trên status
         const statusClasses = getStatusClasses(itemData.status);
         item.classList.add(...statusClasses);
@@ -2465,7 +2480,14 @@ function displaySubmissionStatus(statusList) {
         statusBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2-8.83"></path></svg>`;
         statusBtn.onclick = (e) => {
             e.stopPropagation();
-            showStatusChangeMenu(statusBtn, itemData.id, itemData.name, itemData.status);
+            
+            // Get all selected items including current one
+            const selectedItems = document.querySelectorAll('#submission-status-list li[data-selected="true"]');
+            if (selectedItems.length > 1) {
+                showStatusChangeMenuMultiple(statusBtn, selectedItems, itemData.status);
+            } else {
+                showStatusChangeMenu(statusBtn, itemData.id, itemData.name, itemData.status);
+            }
         };
         
         item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-2"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
@@ -2474,23 +2496,13 @@ function displaySubmissionStatus(statusList) {
     });
     submissionStatusList.appendChild(list);
     
-    // Hiển thị nút bulk status nếu có submissions
-    const bulkBtn = document.getElementById('bulk-status-btn');
-    if (bulkBtn) {
-        if (statusList.length > 0) {
-            bulkBtn.classList.remove('hidden');
-        } else {
-            bulkBtn.classList.add('hidden');
-        }
-    }
-    
     // Cập nhật thống kê sau khi render bảng tình trạng
     if (typeof updateSubmissionStats === 'function') {
         updateSubmissionStats();
     }
 }
 
-// [NEW] Hiển thị menu thay đổi trạng thái
+// [NEW] Hiển thị menu thấy đổi trạng thái
 function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     // Tạo menu popup
     const menu = document.createElement('div');
@@ -2572,6 +2584,62 @@ async function bulkChangeStatus(newStatus) {
     // Refresh UI một lần duy nhất sau khi xong
     loadSubmissionStatusFromCache(true);
     updateStatus(`✓ Hoàn tất: ${successCount} thành công, ${failCount} lỗi`);
+}
+
+// [NEW] Hiển thị menu chọn trạng thái cho nhiều items được chọn
+function showStatusChangeMenuMultiple(button, selectedItems, currentStatus) {
+    const menu = document.createElement('div');
+    menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
+    menu.style.position = 'fixed';
+    menu.style.top = (button.getBoundingClientRect().bottom + 5) + 'px';
+    menu.style.left = (button.getBoundingClientRect().left) + 'px';
+    
+    // Add header showing count
+    const header = document.createElement('div');
+    header.className = 'px-4 py-2 text-xs font-medium text-on-surface-variant border-b border-outline-variant';
+    header.textContent = `Đổi ${selectedItems.length} mục`;
+    menu.appendChild(header);
+    
+    const statusOptions = [
+        { value: 'submitted', label: '📝 Chưa xử lý', icon: '📝' },
+        { value: 'processed', label: '✅ Đã xử lý', icon: '✅' },
+        { value: 'overdue', label: '⏰ Quá hạn', icon: '⏰' },
+        { value: 'error', label: '❌ Lỗi', icon: '❌' }
+    ];
+    
+    statusOptions.forEach(option => {
+        const item = document.createElement('button');
+        item.className = `w-full text-left px-4 py-3 hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2`;
+        item.textContent = option.label;
+        item.onclick = async () => {
+            menu.remove();
+            // Apply to all selected items
+            for (const selectedItem of selectedItems) {
+                const folderId = selectedItem.dataset.folderId;
+                const folderName = selectedItem.dataset.folderName;
+                await changeSubmissionStatus(folderId, folderName, option.value, false);
+            }
+            // Clear selections
+            selectedItems.forEach(item => {
+                item.dataset.selected = "false";
+                item.classList.remove('ring-2', 'ring-primary', 'bg-primary/10');
+            });
+            // Refresh UI once
+            loadSubmissionStatusFromCache(true);
+            updateStatus(`✓ Đã cập nhật ${selectedItems.length} mục`);
+        };
+        menu.appendChild(item);
+    });
+    
+    document.body.appendChild(menu);
+    
+    const closeMenu = () => {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+    }, 10);
 }
 
 // [NEW] Hiển thị menu chọn trạng thái cho bulk change
@@ -4836,10 +4904,16 @@ async function updateSubmissionStats() {
             }
         });
         
-        // 5. Cập nhật UI với thống kê chi tiết
-        const statsText = `${totalSubmitted}/${totalStudents} nộp | ${onTimeCount} đúng hạn | ${overdueCount} quá hạn`;
+        // 5. Cập nhật UI với thống kê chi tiết (màu theo trạng thái)
+        const statsHTML = `
+            <span class="text-on-surface">${totalSubmitted}/${totalStudents}</span>
+            <span class="mx-1 text-outline">|</span>
+            <span class="text-green-600 dark:text-green-400">${onTimeCount} đúng hạn</span>
+            <span class="mx-1 text-outline">|</span>
+            <span class="text-orange-600 dark:text-orange-400">${overdueCount} quá hạn</span>
+        `;
         if (statsDiv) {
-            statsDiv.innerHTML = `<span class="text-xs font-medium">${statsText}</span>`;
+            statsDiv.innerHTML = statsHTML;
             statsDiv.classList.remove('hidden');
         }
         
