@@ -644,6 +644,27 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
 
+        /* Toggle Switch - Fluent Style */
+        body[data-design="fluent"] .m3-toggle-switch {
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.3) 0%, rgba(100, 116, 139, 0.4) 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+        
+        body[data-design="fluent"] input:checked ~ .m3-toggle-switch {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+        
+        body[data-design="fluent"].dark .m3-toggle-switch {
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.5) 0%, rgba(15, 23, 42, 0.6) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        body[data-design="fluent"].dark input:checked ~ .m3-toggle-switch {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.5), 0 0 24px rgba(139, 92, 246, 0.3);
+        }
+
         /* Status List - Morphing Cards */
         body[data-design="fluent"] #submission-status-list li {
             background: linear-gradient(135deg, 
@@ -995,6 +1016,25 @@
                 0 0 0 2px var(--clay-primary);
         }
 
+        /* Toggle Switch - Clay Style */
+        body[data-design="clay"] .m3-toggle-switch {
+            background: var(--clay-surface);
+            box-shadow: inset 4px 4px 8px var(--clay-shadow-dark), 
+                        inset -4px -4px 8px var(--clay-shadow-light);
+        }
+        
+        body[data-design="clay"] input:checked ~ .m3-toggle-switch {
+            background: linear-gradient(135deg, var(--clay-primary) 0%, color-mix(in srgb, var(--clay-primary) 80%, #000) 100%);
+            box-shadow: 4px 4px 8px var(--clay-shadow-dark), 
+                        -2px -2px 4px var(--clay-shadow-light),
+                        inset -2px -2px 4px rgba(255,255,255,0.3);
+        }
+        
+        body[data-design="clay"] .m3-toggle-thumb {
+            box-shadow: 3px 3px 6px var(--clay-shadow-dark), 
+                        -3px -3px 6px var(--clay-shadow-light);
+        }
+
         /* Status List - Bubbly Items */
         body[data-design="clay"] #submission-status-list li {
             background: var(--clay-surface);
@@ -1318,6 +1358,31 @@
         body.dark[data-design="apple"] .m3-input::placeholder,
         body.dark[data-design="apple"] .m3-select::placeholder {
             color: rgba(235, 235, 245, 0.3);
+        }
+
+        /* Toggle Switch - Apple/Liquid Glass Style */
+        body[data-design="apple"] .m3-toggle-switch {
+            background-color: color-mix(in srgb, var(--c-glass) 20%, transparent);
+            backdrop-filter: blur(10px);
+        }
+        
+        body[data-design="apple"].dark .m3-toggle-switch,
+        body.dark[data-design="apple"] .m3-toggle-switch {
+            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            backdrop-filter: blur(20px) saturate(var(--saturation));
+            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) 10%, transparent),
+                        inset 0 -1px 1px color-mix(in srgb, var(--c-dark) 20%, transparent);
+        }
+        
+        body[data-design="apple"] input:checked ~ .m3-toggle-switch {
+            background: linear-gradient(135deg, var(--c-action) 0%, color-mix(in srgb, var(--c-action) 80%, var(--c-light)) 100%);
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--c-action) 40%, transparent),
+                        inset 0 1px 1px color-mix(in srgb, var(--c-light) 30%, transparent);
+        }
+        
+        body[data-design="apple"] .m3-toggle-thumb {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.1);
         }
 
         /* List Items (Liquid Glass Style) */
@@ -1806,6 +1871,24 @@
             border-color: #00d2ff;
             box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
             transform: translateY(-1px);
+        }
+
+        /* Toggle Switch - Prism Style */
+        body[data-design="prism"] .m3-toggle-switch {
+            background: linear-gradient(135deg, rgba(19, 27, 50, 0.8), rgba(14, 22, 39, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        body[data-design="prism"] input:checked ~ .m3-toggle-switch {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            border-color: #00d2ff;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        body[data-design="prism"] .m3-toggle-thumb {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         }
 
         /* Status List */
@@ -4448,8 +4531,8 @@
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                     <input type="checkbox" id="ai_auto_rotate_enabled" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-surface-variant rounded-full peer peer-checked:bg-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30 transition-all">
-                                        <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition-transform peer-checked:translate-x-5 translate-x-0.5 translate-y-0.5"></div>
+                                    <div class="m3-toggle-switch w-11 h-6 bg-surface-variant rounded-full peer peer-checked:bg-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30 transition-all">
+                                        <div class="m3-toggle-thumb w-5 h-5 bg-white rounded-full shadow-md transform transition-transform peer-checked:translate-x-5 translate-x-0.5 translate-y-0.5"></div>
                                     </div>
                                 </label>
                             </div>
