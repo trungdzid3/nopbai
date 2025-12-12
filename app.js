@@ -2043,7 +2043,10 @@ function gisLoaded() {
                     // Critical fix: Set the token for the GAPI client
                     gapi.client.setToken(tokenResponse);
                     updateStatus("✓ Đã đăng nhập.");
-                    if (!LOGIN_HINT) fetchAndSaveEmailHint();
+                    
+                    // Luôn lưu email hint mỗi lần đăng nhập thành công
+                    fetchAndSaveEmailHint();
+                    
                     const savedAutoRefreshState = localStorage.getItem('autoRefreshState');
                     if (savedAutoRefreshState === 'on') startAutoRefresh();
                 }
@@ -2072,18 +2075,35 @@ function gisLoaded() {
 
 async function fetchAndSaveEmailHint() {
     try {
-        const accessToken = gapi.client.getToken().access_token;
+        const token = gapi.client.getToken();
+        if (!token || !token.access_token) {
+            console.warn('[EMAIL] Chưa có access token');
+            return;
+        }
+        
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Authorization': `Bearer ${token.access_token}` }
         });
-        if (!userInfoResponse.ok) throw new Error('Không thể lấy thông tin người dùng.');
+        
+        if (!userInfoResponse.ok) {
+            const errorText = await userInfoResponse.text();
+            throw new Error(`HTTP ${userInfoResponse.status}: ${errorText}`);
+        }
+        
         const userInfo = await userInfoResponse.json();
+        
         if (userInfo.email) {
             LOGIN_HINT = userInfo.email;
             localStorage.setItem('login_hint_email', userInfo.email);
+            console.log(`[EMAIL] ✓ Đã lưu: ${userInfo.email}`);
             updateStatus(`✓ Đã lưu gợi ý đăng nhập: ${userInfo.email}`);
+        } else {
+            console.warn('[EMAIL] Không tìm thấy email trong userInfo:', userInfo);
         }
-    } catch (error) { updateStatus(`✗ Không thể lấy email hint: ${error.message}`, true); }
+    } catch (error) { 
+        console.error('[EMAIL] Lỗi:', error);
+        updateStatus(`✗ Không thể lưu email hint: ${error.message}`, true); 
+    }
 }
 
 function checkInitStatus() {
