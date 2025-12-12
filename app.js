@@ -3685,18 +3685,29 @@ async function createPdfFromImages(imageFiles, folderName) {
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(window.fontkit);
     const accessToken = gapi.client.getToken().access_token;
+    
+    // Tăng tốc độ xử lý: tải song song
     const CONCURRENCY_LIMIT = 4;
     updateStatus(`→ Xử lý ${imageFiles.length} ảnh (${CONCURRENCY_LIMIT} luồng)...`);
+    
     const processedImages = new Array(imageFiles.length).fill(null);
     let taskIndex = -1;
-    const getNextTask = () => { taskIndex++; return taskIndex < imageFiles.length ? { file: imageFiles[taskIndex], index: taskIndex } : null; };
+    
+    const getNextTask = () => {
+        taskIndex++;
+        return taskIndex < imageFiles.length ? { file: imageFiles[taskIndex], index: taskIndex } : null;
+    };
+
     const processImage = async (file, index) => {
         try {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
             if (!res.ok) throw new Error(`Tải thất bại`);
+            
             const originalBuffer = await res.arrayBuffer();
             
-            // [NEW] Phát hiện góc xoay bằng AI (nếu bật)
+            // [AI] Phát hiện góc xoay
             let rotationAngle = 0;
             if (isAIAutoRotateEnabled() && (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png')) {
                 updateStatus(`  🤖 AI kiểm tra chiều "${file.name}"...`);
@@ -3711,83 +3722,127 @@ async function createPdfFromImages(imageFiles, folderName) {
             } else if (file.mimeType === 'image/png') {
                 image = await pdfDoc.embedPng(originalBuffer);
             } else {
+                // Fallback cho ảnh khác
                 try {
                     const pngBuffer = await convertImageToPng(originalBuffer, file.mimeType);
                     image = await pdfDoc.embedPng(pngBuffer);
-                } catch (e) { throw new Error(`Chuyển đổi thất bại`); }
+                } catch (e) {
+                    throw new Error(`Chuyển đổi thất bại`);
+                }
             }
             processedImages[index] = { image, rotation: rotationAngle };
-        } catch (error) { updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true); }
+            
+        } catch (error) {
+            updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true);
+        }
     };
-    const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; await processImage(task.file, task.index); } };
+
+    const worker = async () => {
+        while (true) {
+            const task = getNextTask();
+            if (!task) break;
+            await processImage(task.file, task.index);
+        }
+    };
+
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(null).map(worker));
     updateStatus(`✓ Xử lý ảnh xong, đang gộp PDF...`);
     
-    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh + xoay nếu cần
+    // --- BƯỚC VẼ VÀO PDF (ĐÃ SỬA LỖI TỌA ĐỘ) ---
     for (const imageData of processedImages) {
         if (!imageData) continue;
         const { image, rotation } = imageData;
         
-        const A4_SHORT = 595.28, A4_LONG = 841.89;
-        const isLandscape = image.width > image.height;
+        // 1. Xác định kích thước thực tế sau khi xoay để tính khổ giấy
+        // Nếu xoay 90 hoặc 270 độ, chiều rộng và chiều cao sẽ hoán đổi
+        const isRotatedSideways = rotation === 90 || rotation === 270;
+        const effectiveWidth = isRotatedSideways ? image.height : image.width;
+        const effectiveHeight = isRotatedSideways ? image.width : image.height;
+
+        // 2. Chọn khổ giấy dựa trên kích thước ĐÃ XOAY
+        const A4_SHORT = 595.28;
+        const A4_LONG = 841.89;
+        // Nếu ảnh (sau khi xoay) là ngang -> trang PDF ngang
+        const isLandscape = effectiveWidth > effectiveHeight;
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
         
-        // [NEW] Chừa 25px ở trên cho header (tên người nộp)
         const headerHeight = 25;
         const availableHeight = pageHeight - headerHeight;
         
-        // Thu nhỏ ảnh vừa vào không gian còn lại
-        const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
+        // 3. Tính tỷ lệ scale để vừa trang
+        const ratio = Math.min(pageWidth / effectiveWidth, availableHeight / effectiveHeight);
+        
+        // scaledWidth/Height là kích thước của ảnh gốc khi co giãn (chưa tính xoay)
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
         
+        // finalDisplayWidth/Height là không gian chiếm dụng trên trang PDF
+        const finalDisplayWidth = isRotatedSideways ? scaledHeight : scaledWidth;
+        const finalDisplayHeight = isRotatedSideways ? scaledWidth : scaledHeight;
+
+        // 4. Tính toán tọa độ trung tâm
+        const centerX = (pageWidth - finalDisplayWidth) / 2;
+        const centerY = (availableHeight - finalDisplayHeight) / 2;
+
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
+        // Header (Tên học sinh)
         if (folderName) {
             try {
-                // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
                 if (customFontBuffer) {
                     const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
                     page.drawText(`${folderName}`, {
-                        x: 15,
-                        y: pageHeight - 18,
-                        font: embeddedFont,
-                        size: 11,
-                        color: rgb(1, 0, 0),
+                        x: 15, y: pageHeight - 18,
+                        font: embeddedFont, size: 11, color: rgb(1, 0, 0),
                     });
                 } else {
-                    // Fallback: dùng font mặc định
                     page.drawText(`${folderName}`, {
-                        x: 15,
-                        y: pageHeight - 18,
-                        size: 11,
-                        color: rgb(1, 0, 0),
+                        x: 15, y: pageHeight - 18, size: 11, color: rgb(1, 0, 0),
                     });
                 }
             } catch (headerErr) {
-                // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý ảnh
-                console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
+                console.warn(`[PDF] Bỏ qua header: ${headerErr.message}`);
             }
         }
         
-        // [IMPROVED] Vẽ ảnh ở phía dưới header
+        // 5. [QUAN TRỌNG] ĐIỀU CHỈNH TỌA ĐỘ VẼ DỰA TRÊN GÓC XOAY
+        // PDF-Lib xoay quanh điểm neo (x, y). Ta cần dịch chuyển điểm neo này
+        // để sau khi xoay, ảnh nằm đúng vị trí trung tâm.
+        let drawX = centerX;
+        let drawY = centerY;
+
+        if (rotation === 90) {
+            // Xoay 90: Ảnh dựng đứng lên, đáy quay sang phải
+            drawX = centerX + scaledHeight;
+            drawY = centerY;
+        } else if (rotation === 180) {
+            // Xoay 180: Ảnh lộn ngược, điểm neo chạy lên góc trên phải
+            drawX = centerX + scaledWidth;
+            drawY = centerY + scaledHeight;
+        } else if (rotation === 270) {
+            // Xoay 270: Ảnh cắm đầu xuống, đáy quay sang trái
+            // Cần đẩy điểm neo lên cao (cộng thêm chiều rộng của ảnh gốc - giờ là chiều cao hiển thị)
+            drawX = centerX;
+            drawY = centerY + scaledWidth;
+        }
+
+        // 6. Vẽ ảnh
         const drawOptions = {
-            x: (pageWidth - scaledWidth) / 2,
-            y: (availableHeight - scaledHeight) / 2,
+            x: drawX,
+            y: drawY,
             width: scaledWidth,
-            height: scaledHeight
+            height: scaledHeight,
+            rotate: degrees(rotation)
         };
         
-        // [AI] Áp dụng xoay nếu phát hiện (chỉ xoay 90, 180, 270)
-        if (rotation === 90 || rotation === 180 || rotation === 270) {
-            drawOptions.rotate = degrees(rotation);
-            console.log(`[AI] Xoay ảnh ${rotation}°`);
-        }
-        
         page.drawImage(image, drawOptions);
+        
+        if (rotation !== 0) {
+            console.log(`[PDF] Đã vẽ ảnh xoay ${rotation} độ tại (${Math.round(drawX)}, ${Math.round(drawY)})`);
+        }
     }
+    
     return pdfDoc.save();
 }
 
