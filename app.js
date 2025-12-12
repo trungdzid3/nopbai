@@ -4843,7 +4843,7 @@ async function updateSubmissionStats() {
             statsDiv.classList.remove('hidden');
         }
         
-        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
+        console.log(`[STATS] ${activeAssignment.name}: ${totalSubmitted}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
     } catch (err) {
         console.error('[STATS] Lỗi cập nhật thống kê:', err);
         if (statsDiv) statsDiv.classList.add('hidden');
