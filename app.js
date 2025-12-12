@@ -3718,7 +3718,6 @@ async function createPdfFromImages(imageFiles, folderName) {
         const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
-        }
         
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
