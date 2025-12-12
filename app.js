@@ -4695,8 +4695,15 @@ async function detectTextOrientation(imageBlob) {
         // Resize ảnh xuống 800px để AI xử lý nhanh hơn
         const resizedBlob = await resizeImageBlob(imageBlob, 800);
         
-        // 1. Tạo worker Tesseract
-        const worker = await Tesseract.createWorker('osd');
+        // [FIX] Khởi tạo với 'eng' để tránh lỗi "LSTM requested but not present"
+        // 'eng' chứa mô hình LSTM chuẩn giúp engine khởi động không bị crash
+        const worker = await Tesseract.createWorker('eng');
+        
+        // [FIX] Quan trọng: Đặt chế độ PSM thành '0' (OSD_ONLY)
+        // Chế độ này bảo Tesseract: "Đừng đọc chữ, chỉ tìm hướng thôi"
+        await worker.setParameters({
+            tessedit_pageseg_mode: '0', 
+        });
         
         // 2. Nhận diện orientation
         const { data } = await worker.recognize(resizedBlob);
@@ -4705,17 +4712,17 @@ async function detectTextOrientation(imageBlob) {
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}, script=${data.script || 'unknown'}`);
+        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // Hạ ngưỡng confidence xuống 0.5 để xử lý được chữ viết tay
-        if (confidence > 0.5) {
+        // Ngưỡng tin cậy (có thể điều chỉnh, thường OSD trả về số khá cao nếu ảnh rõ)
+        if (confidence > 2) {
             console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
             return detectedAngle;
         }
         
-        console.log(`[AI] ⚠ Độ tin cậy thấp → Bỏ qua`);
+        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Bỏ qua`);
         return 0;
         
     } catch (err) {
