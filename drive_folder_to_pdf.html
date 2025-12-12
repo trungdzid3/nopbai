@@ -4627,6 +4627,41 @@
                     });
             });
         }
+        
+        // Settings Modal Tab Navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.m3-settings-nav-button');
+            const tabPanels = document.querySelectorAll('.m3-settings-panel');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('data-target');
+                    
+                    // Update button states
+                    tabButtons.forEach(btn => {
+                        btn.setAttribute('data-active', 'false');
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-on-surface-variant');
+                    });
+                    
+                    button.setAttribute('data-active', 'true');
+                    button.classList.remove('border-transparent', 'text-on-surface-variant');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Update panel visibility
+                    tabPanels.forEach(panel => {
+                        panel.classList.add('hidden');
+                        panel.setAttribute('data-active', 'false');
+                    });
+                    
+                    const targetPanel = document.getElementById(targetId);
+                    if (targetPanel) {
+                        targetPanel.classList.remove('hidden');
+                        targetPanel.setAttribute('data-active', 'true');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 
