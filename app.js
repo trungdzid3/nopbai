@@ -2444,7 +2444,7 @@ function displaySubmissionStatus(statusList) {
     // Hiển thị nút bulk status nếu có submissions
     const bulkBtn = document.getElementById('bulk-status-btn');
     if (bulkBtn) {
-        if (sortedItems.length > 0) {
+        if (statusList.length > 0) {
             bulkBtn.classList.remove('hidden');
         } else {
             bulkBtn.classList.add('hidden');
