@@ -4693,8 +4693,8 @@ async function detectTextOrientation(imageBlob) {
     try {
         console.log('[AI] Bắt đầu phân tích hướng văn bản...');
         
-        // Resize ảnh xuống 800px để AI xử lý nhanh hơn
-        const resizedBlob = await resizeImageBlob(imageBlob, 800);
+        // [FIX] Dùng kích thước 1600px
+        const resizedBlob = await resizeImageBlob(imageBlob, 1600);
         
         // 1. Khởi tạo worker với 'osd' và Legacy core
         // detect() chỉ hoạt động với Legacy model, không dùng LSTM
@@ -4711,19 +4711,29 @@ async function detectTextOrientation(imageBlob) {
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(2)}, script=${data.script || 'unknown'}`);
+        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // Ngưỡng tin cậy - hạ xuống 1.5 cho chữ viết tay
-        // Chỉ áp dụng xoay 90, 180, 270 (không xoay nếu AI nói 0)
-        if (confidence > 1.5 && detectedAngle !== 0) {
-            console.log(`[AI] ✓ Tin cậy ${confidence.toFixed(2)} → Áp dụng xoay ${detectedAngle}°`);
-            return detectedAngle;
-        }
+        // --- LOGIC LỌC THÔNG MINH ---
         
-        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence.toFixed(2)}) hoặc góc=0 → Bỏ qua`);
-        return 0;
+        // 1. Nếu độ tin cậy quá thấp (< 4), bỏ qua ngay lập tức
+        if (confidence < 4) {
+            console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Giữ nguyên`);
+            return 0;
+        }
+
+        // 2. Xử lý riêng lỗi "180 độ giả" (False Positive)
+        // Chữ viết tay thường bị AI nhầm là lộn ngược.
+        // Chỉ tin là lộn ngược (180) nếu AI cực kỳ chắc chắn (> 12 điểm)
+        if (detectedAngle === 180 && confidence < 12) {
+            console.log(`[AI] ⚠ Nghi ngờ góc 180° giả (confidence ${confidence} < 12) → Giữ nguyên`);
+            return 0;
+        }
+
+        // 3. Với góc 90 hoặc 270 (ảnh ngang), chỉ cần confidence > 4 là đủ
+        console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
+        return detectedAngle;
         
     } catch (err) {
         console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
@@ -4748,10 +4758,14 @@ async function resizeImageBlob(blob, maxWidth) {
             let width = img.width;
             let height = img.height;
             
-            // Chỉ resize nếu ảnh lớn hơn maxWidth
-            if (width > maxWidth) {
-                const ratio = maxWidth / width;
-                width = maxWidth;
+            // [FIX] Tăng lên 1600 để AI nhìn rõ nét chữ viết tay hơn
+            // 800px là quá nhỏ với tài liệu A4, dẫn đến lỗi "Too few characters"
+            const targetWidth = 1600;
+            
+            // Chỉ resize nếu ảnh lớn hơn targetWidth
+            if (width > targetWidth) {
+                const ratio = targetWidth / width;
+                width = targetWidth;
                 height = height * ratio;
             }
             
@@ -4759,9 +4773,10 @@ async function resizeImageBlob(blob, maxWidth) {
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
             
+            // Tăng chất lượng JPEG lên 0.95
             canvas.toBlob((resizedBlob) => {
                 resolve(resizedBlob || blob);
-            }, blob.type || 'image/jpeg', 0.9);
+            }, blob.type || 'image/jpeg', 0.95);
         };
         
         img.onerror = () => resolve(blob); // Fallback: dùng ảnh gốc
