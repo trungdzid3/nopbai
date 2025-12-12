@@ -3779,12 +3779,30 @@ async function createPdfFromImages(imageFiles, folderName) {
         
         // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
-            page.drawText(`${folderName}`, {
-                x: 15,
-                y: pageHeight - 18,
-                size: 11,
-                color: rgb(0, 0, 0),
-            });
+            try {
+                // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
+                if (customFontBuffer) {
+                    const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
+                    page.drawText(`${folderName}`, {
+                        x: 15,
+                        y: pageHeight - 18,
+                        font: embeddedFont,
+                        size: 11,
+                        color: rgb(0, 0, 0),
+                    });
+                } else {
+                    // Fallback: dùng font mặc định
+                    page.drawText(`${folderName}`, {
+                        x: 15,
+                        y: pageHeight - 18,
+                        size: 11,
+                        color: rgb(0, 0, 0),
+                    });
+                }
+            } catch (headerErr) {
+                // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý ảnh
+                console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
+            }
         }
         
         // [IMPROVED] Vẽ ảnh ở phía dưới header
@@ -3814,15 +3832,28 @@ async function mergePdfs(pdfBuffers, folderName) {
                     try {
                         const pageHeight = page.getHeight();
                         
-                        // Vẽ header tên người nộp ở đầu trang - đơn giản
-                        page.drawText(`${folderName}`, {
-                            x: 15,
-                            y: pageHeight - 18,
-                            size: 11,
-                            color: rgb(0, 0, 0),
-                        });
+                        // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
+                        if (customFontBuffer) {
+                            const embeddedFont = await mergedPdf.embedFont(customFontBuffer);
+                            page.drawText(`${folderName}`, {
+                                x: 15,
+                                y: pageHeight - 18,
+                                font: embeddedFont,
+                                size: 11,
+                                color: rgb(0, 0, 0),
+                            });
+                        } else {
+                            // Fallback: dùng font mặc định
+                            page.drawText(`${folderName}`, {
+                                x: 15,
+                                y: pageHeight - 18,
+                                size: 11,
+                                color: rgb(0, 0, 0),
+                            });
+                        }
                     } catch (headerErr) {
-                        console.error('Lỗi vẽ header:', headerErr);
+                        // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý trang
+                        console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
                     }
                 }
                 
