@@ -31,6 +31,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
 
     <style>
         /* ==================================================================
@@ -162,28 +163,30 @@
        ================================================================== */
 
         body[data-design="apple"] {
-            --font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-family: "DM Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
 
             /* Liquid Glass Variables */
             --c-glass: #bbbbbc;
             --c-light: #fff;
             --c-dark: #000;
-            --c-content: #1d1d1f;
-            --c-action: #8B5CF6;
-            /* Violet */
-            --c-bg: transparent;
+            
+            --c-content: #224;
+            --c-action: #0052f5;
+            
+            --c-bg: #E8E8E9;
+            
+            --glass-reflex-dark: 1;
+            --glass-reflex-light: 1;
+            
+            --saturation: 150%;
 
-            /* Add new interactive colors */
+            /* Additional existing variables */
             --lg-red: #FF3B30;
             --lg-purple: #BF5AF2;
             --lg-orange: #FF9500;
 
-            --glass-reflex-dark: 1;
-            --glass-reflex-light: 1;
-            --saturation: 150%;
-
             /* Override Material Colors to Liquid Logic */
-            --m3-background: transparent;
+            --m3-background: var(--c-bg);
             --m3-surface: color-mix(in srgb, var(--c-glass) 12%, transparent);
             --m3-surface-container: color-mix(in srgb, var(--c-glass) 25%, transparent);
             --m3-surface-container-highest: color-mix(in srgb, var(--c-glass) 12%, transparent);
@@ -197,47 +200,40 @@
 
             /* Shapes */
             --radius-card: 28px;
-            --radius-btn: 20px;
-            /* Squircle */
+            --radius-btn: 99em;
             --radius-input: 14px;
+            
+            transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1), color 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark,
         body.dark[data-design="apple"] {
-            /* iOS Dark Mode Colors */
-            --c-glass: #2C2C2E;
+            /* Dark Mode Variables */
+            --c-glass: #bbbbbc;
             --c-light: #fff;
             --c-dark: #000;
-            --c-content: #FFFFFF;
-            --c-content-secondary: #EBEBF5;
-            --c-action: #BF5AF2;
-            --c-bg: #000000;
             
-            /* Glass effect parameters for dark */
-            --glass-reflex-dark: 0.8;
-            --glass-reflex-light: 0.15;
-            --saturation: 100%;
+            --c-content: #e1e1e1;
+            --c-action: #03d5ff;
+            
+            --c-bg: #1b1b1d;
+            
+            --glass-reflex-dark: 2;
+            --glass-reflex-light: 0.3;
+            
+            --saturation: 150%;
 
             /* Override Material Colors for Dark Mode */
-            --m3-background: #000000;
-            --m3-surface: rgba(44, 44, 46, 0.72);
-            --m3-surface-container: rgba(58, 58, 60, 0.72);
-            --m3-surface-container-highest: rgba(44, 44, 46, 0.72);
-            --m3-surface-variant: rgba(58, 58, 60, 0.72);
-            --m3-surface-container-low: rgba(28, 28, 30, 0.72);
+            --m3-background: var(--c-bg);
+            --m3-surface: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            --m3-surface-container: color-mix(in srgb, var(--c-glass) 12%, transparent);
             
-            --m3-on-surface: #FFFFFF;
-            --m3-on-surface-variant: rgba(235, 235, 245, 0.6);
-            --m3-on-background: #FFFFFF;
+            --m3-on-surface: var(--c-content);
+            --m3-on-surface-variant: color-mix(in srgb, var(--c-content) 60%, transparent);
+            --m3-on-background: var(--c-content);
             
-            --m3-outline: rgba(255, 255, 255, 0.16);
-            --m3-outline-variant: rgba(255, 255, 255, 0.08);
+            --m3-outline: color-mix(in srgb, var(--c-content) 20%, transparent);
             
-            --m3-primary: #BF5AF2;
-            --m3-on-primary: #FFFFFF;
-            --m3-error: #FF453A;
-            
-            /* iOS specific dark colors */
             --lg-red: #FF453A;
             --lg-purple: #BF5AF2;
             --lg-orange: #FF9F0A;
@@ -251,14 +247,39 @@
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: linear-gradient(135deg, #F9F5FF 0%, #FFF5F9 100%);
+            background: var(--c-bg);
             opacity: 1;
-            transition: background 0.4s ease, opacity 0.4s ease;
+            transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark::before,
         body.dark[data-design="apple"]::before {
-            background: #000000;
+            background: var(--c-bg);
+        }
+
+        /* Apply Liquid Glass Effect to Cards and Containers */
+        body[data-design="apple"] .m3-setting-card,
+        body[data-design="apple"] .m3-modal-content,
+        body[data-design="apple"] aside,
+        body[data-design="apple"] header {
+            background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            backdrop-filter: blur(8px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(8px) saturate(var(--saturation));
+            border: none;
+            box-shadow: 
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
+                inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 90%), transparent), 
+                inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 80%), transparent), 
+                inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 60%), transparent), 
+                inset -0.3px -1px 4px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 12%), transparent), 
+                inset -1.5px 2.5px 0px -2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent), 
+                inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent), 
+                inset 2px -6.5px 1px -4px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent), 
+                0px 1px 5px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 10%), transparent), 
+                0px 6px 16px 0px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent);
+            transition: 
+                background-color 400ms cubic-bezier(1, 0.0, 0.4, 1),
+                box-shadow 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         /* ==================================================================
