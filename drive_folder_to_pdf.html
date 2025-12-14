@@ -165,15 +165,15 @@
         body[data-design="apple"] {
             --font-family: "DM Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
 
-            /* Liquid Glass Variables */
+            /* Liquid Glass Variables (Restored Colors) */
             --c-glass: #bbbbbc;
             --c-light: #fff;
             --c-dark: #000;
             
-            --c-content: #224;
-            --c-action: #0052f5;
+            --c-content: #1d1d1f;
+            --c-action: #8B5CF6; /* Violet */
             
-            --c-bg: #E8E8E9;
+            --c-bg: transparent;
             
             --glass-reflex-dark: 1;
             --glass-reflex-light: 1;
@@ -186,7 +186,7 @@
             --lg-orange: #FF9500;
 
             /* Override Material Colors to Liquid Logic */
-            --m3-background: var(--c-bg);
+            --m3-background: transparent;
             --m3-surface: color-mix(in srgb, var(--c-glass) 12%, transparent);
             --m3-surface-container: color-mix(in srgb, var(--c-glass) 25%, transparent);
             --m3-surface-container-highest: color-mix(in srgb, var(--c-glass) 12%, transparent);
@@ -199,40 +199,40 @@
             --m3-outline-variant: color-mix(in srgb, var(--c-content) 10%, transparent);
 
             /* Shapes */
-            --radius-card: 28px;
+            --radius-card: 32px;
             --radius-btn: 99em;
-            --radius-input: 14px;
+            --radius-input: 16px;
             
             transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1), color 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark,
         body.dark[data-design="apple"] {
-            /* Dark Mode Variables */
-            --c-glass: #bbbbbc;
+            /* Dark Mode Variables (Restored Colors) */
+            --c-glass: #2C2C2E;
             --c-light: #fff;
             --c-dark: #000;
             
-            --c-content: #e1e1e1;
-            --c-action: #03d5ff;
+            --c-content: #FFFFFF;
+            --c-action: #BF5AF2;
             
-            --c-bg: #1b1b1d;
+            --c-bg: #000000;
             
-            --glass-reflex-dark: 2;
-            --glass-reflex-light: 0.3;
+            --glass-reflex-dark: 0.8;
+            --glass-reflex-light: 0.15;
             
-            --saturation: 150%;
+            --saturation: 100%;
 
             /* Override Material Colors for Dark Mode */
-            --m3-background: var(--c-bg);
-            --m3-surface: color-mix(in srgb, var(--c-glass) 12%, transparent);
-            --m3-surface-container: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            --m3-background: #000000;
+            --m3-surface: color-mix(in srgb, var(--c-glass) 60%, transparent);
+            --m3-surface-container: color-mix(in srgb, var(--c-glass) 60%, transparent);
             
             --m3-on-surface: var(--c-content);
-            --m3-on-surface-variant: color-mix(in srgb, var(--c-content) 60%, transparent);
+            --m3-on-surface-variant: rgba(235, 235, 245, 0.6);
             --m3-on-background: var(--c-content);
             
-            --m3-outline: color-mix(in srgb, var(--c-content) 20%, transparent);
+            --m3-outline: rgba(255, 255, 255, 0.16);
             
             --lg-red: #FF453A;
             --lg-purple: #BF5AF2;
@@ -247,14 +247,14 @@
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: var(--c-bg);
+            background: linear-gradient(135deg, #F9F5FF 0%, #FFF5F9 100%);
             opacity: 1;
             transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark::before,
         body.dark[data-design="apple"]::before {
-            background: var(--c-bg);
+            background: #000000;
         }
 
         /* Apply Liquid Glass Effect to Cards and Containers */
