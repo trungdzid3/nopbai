@@ -4369,101 +4369,97 @@ function setLayout(layout) {
     document.body.setAttribute('data-layout', layout);
     localStorage.setItem('preferredLayout', layout);
     
-    const assignmentContainer = document.getElementById('assignment_types_container');
-    const statsContainer = document.getElementById('submission-stats');
-    const sidebarContent = document.querySelector('aside .flex.flex-col.h-full'); // Container inside aside
-    const mainContent = document.querySelector('main .max-w-5xl'); // Container inside main
-    
-    // Elements to move
-    const assignmentWrapper = document.getElementById('assignment-wrapper'); // We need to wrap assignment buttons to move them easily
+    // Trigger resize event to ensure charts/grids redraw correctly
+    window.dispatchEvent(new Event('resize'));
     
     if (layout === 'pro') {
-        // --- PRO MODE: Move Assignments to Sidebar ---
-        if (sidebarContent && assignmentContainer) {
-            // Create a wrapper if not exists in sidebar for assignments
-            let sidebarAssignmentArea = document.getElementById('sidebar-assignment-area');
-            if (!sidebarAssignmentArea) {
-                sidebarAssignmentArea = document.createElement('div');
-                sidebarAssignmentArea.id = 'sidebar-assignment-area';
-                sidebarAssignmentArea.className = 'flex-1 overflow-y-auto px-4 py-2 space-y-2';
-                // Insert after the class selector (which is usually first or second child)
-                // Assuming class selector is in the top part
-                const classSelectorArea = sidebarContent.querySelector('.px-6.pt-6');
-                if (classSelectorArea) {
-                    classSelectorArea.after(sidebarAssignmentArea);
-                } else {
-                    sidebarContent.appendChild(sidebarAssignmentArea);
-                }
-            }
-            
-            // Move Assignment Container to Sidebar
-            sidebarAssignmentArea.appendChild(assignmentContainer);
-            
-            // Change styling for vertical list
-            assignmentContainer.classList.remove('flex-wrap', 'gap-2');
-            assignmentContainer.classList.add('flex-col', 'space-y-2');
-            
-            // Update button styles for vertical list
-            const buttons = assignmentContainer.querySelectorAll('button');
-            buttons.forEach(btn => {
-                btn.classList.remove('rounded-full');
-                btn.classList.add('rounded-xl', 'w-full', 'text-left', 'justify-start');
-            });
-        }
-        
-        // Move Stats to Sidebar Bottom
-        if (sidebarContent && statsContainer) {
-            // Insert before the bottom user profile/settings area
-            const bottomArea = sidebarContent.querySelector('.mt-auto');
-            if (bottomArea) {
-                sidebarContent.insertBefore(statsContainer, bottomArea);
-            }
-            statsContainer.classList.remove('mb-6');
-            statsContainer.classList.add('mb-2', 'mx-4');
-        }
-        
-    } else {
-        // --- STANDARD MODE: Move back to Main ---
-        if (mainContent && assignmentContainer) {
-            // Find the original place (usually after the header/toolbar)
-            // We'll append to a specific placeholder or just top of main content wrapper
-            const standardPlaceholder = document.getElementById('standard-assignment-placeholder');
-            if (standardPlaceholder) {
-                standardPlaceholder.appendChild(assignmentContainer);
-            } else {
-                // Fallback: Insert after the first child (Toolbar)
-                mainContent.insertBefore(assignmentContainer, mainContent.children[1]); 
-            }
-            
-            // Reset styling
-            assignmentContainer.classList.add('flex-wrap', 'gap-2');
-            assignmentContainer.classList.remove('flex-col', 'space-y-2');
-            
-            // Reset button styles
-            const buttons = assignmentContainer.querySelectorAll('button');
-            buttons.forEach(btn => {
-                btn.classList.add('rounded-full');
-                btn.classList.remove('rounded-xl', 'w-full', 'text-left', 'justify-start');
-            });
-            
-            // Remove sidebar area if empty
-            const sidebarAssignmentArea = document.getElementById('sidebar-assignment-area');
-            if (sidebarAssignmentArea) sidebarAssignmentArea.remove();
-        }
-        
-        // Move Stats back
-        if (mainContent && statsContainer) {
-             const standardStatsPlaceholder = document.getElementById('standard-stats-placeholder');
-             if (standardStatsPlaceholder) {
-                 standardStatsPlaceholder.appendChild(statsContainer);
-             } else {
-                 // Fallback
-                 mainContent.insertBefore(statsContainer, document.getElementById('submission-status-list'));
-             }
-             statsContainer.classList.add('mb-6');
-             statsContainer.classList.remove('mb-2', 'mx-4');
-        }
+        updateProDashboard();
     }
+}
+
+function updateProDashboard() {
+    // 1. Update User Info
+    const userAvatar = document.getElementById('pro-user-avatar');
+    const userIcon = document.getElementById('pro-user-icon');
+    const userName = document.getElementById('pro-user-name');
+    const userEmail = document.getElementById('pro-user-email');
+    
+    if (gisInited && gapi.client.getToken()) {
+        userName.textContent = "Admin"; // Placeholder
+        userEmail.textContent = "Đã đăng nhập";
+        if (userIcon) userIcon.classList.remove('hidden');
+        if (userAvatar) userAvatar.classList.add('hidden');
+    } else {
+        userName.textContent = "Khách";
+        userEmail.textContent = "Chưa đăng nhập";
+    }
+
+    // 2. Update Stats
+    const statsClasses = document.getElementById('pro-stats-classes');
+    if (statsClasses) statsClasses.textContent = classProfiles.length;
+
+    // 3. Render Class Cards
+    const grid = document.getElementById('pro-classes-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    if (classProfiles.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-12 text-on-surface-variant opacity-60">
+                <p>Chưa có lớp học nào. Hãy thêm lớp mới!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    classProfiles.forEach((profile, index) => {
+        const card = document.createElement('div');
+        card.className = 'bg-surface p-5 rounded-[24px] border border-outline-variant hover:elevation-2 transition-all cursor-pointer group relative overflow-hidden';
+        
+        // Random gradient for card header/bg
+        const gradients = [
+            'from-blue-500/10 to-cyan-500/10',
+            'from-purple-500/10 to-pink-500/10',
+            'from-orange-500/10 to-red-500/10',
+            'from-green-500/10 to-emerald-500/10'
+        ];
+        const gradient = gradients[index % gradients.length];
+        
+        card.innerHTML = `
+            <div class="absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative z-10 flex flex-col gap-3">
+                <div class="flex items-start justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </div>
+                    <button class="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); editClassProfile(${index})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-lg text-on-surface line-clamp-1">${profile.name}</h3>
+                    <p class="text-xs text-on-surface-variant font-mono mt-1 truncate opacity-70">${profile.id}</p>
+                </div>
+                
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-xs px-2 py-1 rounded-md bg-surface-container text-on-surface-variant">
+                        ${profile.assignmentTypes ? profile.assignmentTypes.length : 0} loại bài tập
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        card.onclick = () => {
+            loadClassProfile(index);
+            // Visual feedback
+            document.querySelectorAll('#pro-classes-grid > div').forEach(c => c.classList.remove('ring-2', 'ring-primary'));
+            card.classList.add('ring-2', 'ring-primary');
+        };
+        
+        grid.appendChild(card);
+    });
 }
 
 customColorInput.addEventListener('input', () => {
@@ -5285,9 +5281,47 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initAIAutoRotateCheckbox();
         initBulkStatusButton();
+        initProLayoutListeners();
     });
 } else {
     initAIAutoRotateCheckbox();
     initBulkStatusButton();
+    initProLayoutListeners();
+}
+
+function initProLayoutListeners() {
+    const proRefreshBtn = document.getElementById('pro-refresh-btn');
+    if (proRefreshBtn) {
+        proRefreshBtn.addEventListener('click', () => {
+            if (activeAssignment) {
+                checkSubmissionStatus(activeAssignment);
+            } else {
+                logStatus("Đang làm mới dữ liệu...", "info");
+            }
+        });
+    }
+    
+    const proThemeToggle = document.getElementById('pro-theme-toggle');
+    if (proThemeToggle) {
+        proThemeToggle.addEventListener('click', () => {
+            const currentTheme = localStorage.getItem('theme') || 'system';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme, localStorage.getItem('accentColor') || 'blue');
+        });
+    }
+    
+    // Sidebar Navigation
+    const navItems = document.querySelectorAll('.pro-nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(n => {
+                n.classList.remove('active', 'bg-surface', 'text-on-surface');
+                n.classList.add('text-on-surface-variant');
+            });
+            
+            item.classList.add('active', 'bg-surface', 'text-on-surface');
+            item.classList.remove('text-on-surface-variant');
+        });
+    });
 }
 
