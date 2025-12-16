@@ -450,11 +450,7 @@ function handleAssignmentTypeChange(name, folderId) {
     activeAssignment = { name, folderId, sheetName: name }; // sheetName = name của assignment
     updateAssignmentSelectionUI();
     updateStatus(`→ Đổi sang loại bài tập: ${name}`);
-    
-    // [UPDATE] Trigger immediate refresh instead of just loading cache
-    // loadSubmissionStatusFromCache(); -> OLD
-    checkSubmissionStatus(); // -> NEW: Fetch fresh data immediately
-    
+    loadSubmissionStatusFromCache();
     // Cập nhật thống kê số lượng nộp bài
     updateSubmissionStats();
     // Removed runAutoScan() - no longer scan on assignment change
@@ -1980,12 +1976,8 @@ function checkSystemReady() {
         submissionStatusPlaceholder.style.setProperty('display', 'none', 'important');
         submissionStatusPlaceholder.classList.add('hidden'); // Đảm bảo hoàn toàn ẩn
 
-        // [UPDATE] Trigger immediate refresh on app start/login if context exists
-        if (classProfileSelect.value && activeAssignment) {
-             checkSubmissionStatus();
-        } else {
-             loadSubmissionStatusFromCache(true);
-        }
+        // Load submission status from cache when logged in
+        loadSubmissionStatusFromCache(true);
 
         // Auto-scan classes from Drive after login (silent mode)
         if (inpRootFolderId && inpRootFolderId.value.trim()) {
@@ -2320,25 +2312,11 @@ async function handleProcessClick() {
             else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'submitted';
             else currentStatus = 'submitted';
 
-            syncedStatusList.push({ 
-                id: folder.id, 
-                name: cleanName, 
-                status: currentStatus,
-                createdTime: folder.createdTime || new Date().toISOString()
-            });
+            syncedStatusList.push({ id: folder.id, name: cleanName, status: currentStatus });
         });
 
         updateStatus("→ Đồng bộ hóa danh sách...");
-        
-        // Sắp xếp theo: 1) status group, 2) thời gian tạo (mới nhất trước)
-        const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
-        syncedStatusList.sort((a, b) => {
-            const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
-            if (statusDiff !== 0) return statusDiff;
-            // Trong cùng group, sắp xếp theo thời gian (mới nhất trước)
-            return new Date(b.createdTime) - new Date(a.createdTime);
-        });
-        
+        syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
         saveSubmissionStatusToCache(syncedStatusList);
         displaySubmissionStatus(syncedStatusList);
 
@@ -2371,15 +2349,13 @@ function getStatusClasses(status) {
     
     switch (status) {
         case 'processed':
-            return ['bg-green-50', 'text-green-800', 'dark:bg-green-900/20', 'dark:text-green-300', 'border-l-4', 'border-green-500'];
+            return ['bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary'];
         case 'overdue':
-            return ['bg-orange-50', 'text-orange-800', 'dark:bg-orange-900/20', 'dark:text-orange-300', 'border-l-4', 'border-orange-500'];
+            return ['bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200'];
         case 'processing':
-            return ['bg-blue-50', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-300', 'animate-pulse', 'border-l-4', 'border-blue-500'];
+            return ['bg-secondary-container', 'text-on-secondary-container', 'animate-pulse'];
         case 'error':
-            return ['bg-red-50', 'text-red-800', 'dark:bg-red-900/20', 'dark:text-red-300', 'border-l-4', 'border-red-500'];
-        case 'submitted':
-            return ['bg-slate-50', 'text-slate-800', 'dark:bg-slate-800/30', 'dark:text-slate-300', 'border-l-4', 'border-slate-400'];
+            return ['bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200'];
         default:
             return ['bg-surface-container', 'text-on-surface'];
     }
@@ -2388,14 +2364,11 @@ function getStatusClasses(status) {
 // Helper: Lấy tất cả class có thể có để remove
 function getAllStatusClasses() {
     return [
-        'bg-green-50', 'text-green-800', 'dark:bg-green-900/20', 'dark:text-green-300', 'border-green-500',
-        'bg-orange-50', 'text-orange-800', 'dark:bg-orange-900/20', 'dark:text-orange-300', 'border-orange-500',
-        'bg-blue-50', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-300', 'border-blue-500',
-        'bg-red-50', 'text-red-800', 'dark:bg-red-900/20', 'dark:text-red-300', 'border-red-500',
-        'bg-slate-50', 'text-slate-800', 'dark:bg-slate-800/30', 'dark:text-slate-300', 'border-slate-400',
         'bg-primary-container', 'text-on-primary-container', 'dark:bg-primary-container/40', 'dark:text-primary',
+        'bg-orange-100', 'text-orange-900', 'dark:bg-orange-900/30', 'dark:text-orange-200',
         'bg-secondary-container', 'text-on-secondary-container', 'animate-pulse',
-        'bg-surface-container', 'text-on-surface', 'border-l-4'
+        'bg-red-100', 'text-red-900', 'dark:bg-red-900/30', 'dark:text-red-200',
+        'bg-surface-container', 'text-on-surface'
     ];
 }
 
@@ -2408,27 +2381,8 @@ function displaySubmissionStatus(statusList) {
 
     const list = document.createElement('ul');
     list.className = 'space-y-2';
-    
-    // Group items by status
-    const statusLabels = {
-        'submitted': '📝 Chưa xử lý',
-        'processed': '✅ Đã xử lý',
-        'overdue': '⏰ Quá hạn',
-        'error': '❌ Lỗi'
-    };
-    
-    let lastStatus = null;
 
     statusList.forEach(itemData => {
-        // Add group header if status changed
-        if (lastStatus !== itemData.status) {
-            const header = document.createElement('li');
-            header.className = 'text-xs font-bold text-on-surface-variant uppercase tracking-wide pt-3 pb-1 px-2 border-b border-outline-variant';
-            header.textContent = statusLabels[itemData.status] || itemData.status;
-            list.appendChild(header);
-            lastStatus = itemData.status;
-        }
-        
         const item = document.createElement('li');
         const sanitizedName = itemData.name.replace(/[^a-zA-Z0-9]/g, '-');
         item.id = `status-${sanitizedName}`;
@@ -2465,21 +2419,6 @@ function displaySubmissionStatus(statusList) {
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
         
-        // [NEW] Ctrl+Click to multi-select
-        item.addEventListener('click', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const isSelected = item.dataset.selected === "true";
-                item.dataset.selected = isSelected ? "false" : "true";
-                
-                if (isSelected) {
-                    item.classList.remove('ring-2', 'ring-primary', 'bg-primary/10');
-                } else {
-                    item.classList.add('ring-2', 'ring-primary', 'bg-primary/10');
-                }
-            }
-        });
-        
         // Áp dụng class màu dựa trên status
         const statusClasses = getStatusClasses(itemData.status);
         item.classList.add(...statusClasses);
@@ -2493,14 +2432,7 @@ function displaySubmissionStatus(statusList) {
         statusBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2-8.83"></path></svg>`;
         statusBtn.onclick = (e) => {
             e.stopPropagation();
-            
-            // Get all selected items including current one
-            const selectedItems = document.querySelectorAll('#submission-status-list li[data-selected="true"]');
-            if (selectedItems.length > 1) {
-                showStatusChangeMenuMultiple(statusBtn, selectedItems, itemData.status);
-            } else {
-                showStatusChangeMenu(statusBtn, itemData.id, itemData.name, itemData.status);
-            }
+            showStatusChangeMenu(statusBtn, itemData.id, itemData.name, itemData.status);
         };
         
         item.innerHTML = `<span class="font-medium text-sm flex-1 truncate pr-2">${itemData.name}</span><div class="flex items-center gap-2"><span class="text-sm font-medium flex-shrink-0">${statusText}</span></div>`;
@@ -2515,7 +2447,7 @@ function displaySubmissionStatus(statusList) {
     }
 }
 
-// [NEW] Hiển thị menu thấy đổi trạng thái
+// [NEW] Hiển thị menu thay đổi trạng thái
 function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     // Tạo menu popup
     const menu = document.createElement('div');
@@ -2554,149 +2486,8 @@ function showStatusChangeMenu(button, folderId, folderName, currentStatus) {
     }, 10);
 }
 
-// [NEW] Thay đổi trạng thái hàng loạt cho tất cả submissions
-async function bulkChangeStatus(newStatus) {
-    const key = getStatusCacheKey();
-    if (!key) {
-        updateStatus('✗ Chưa chọn lớp và bài tập', true);
-        return;
-    }
-    
-    const statusList = JSON.parse(localStorage.getItem(key) || '[]');
-    if (statusList.length === 0) {
-        updateStatus('✗ Không có học sinh nào để cập nhật', true);
-        return;
-    }
-    
-    const statusMap = {
-        'processed': '✅ Đã xử lý',
-        'overdue': '⏰ Quá hạn',
-        'submitted': '📝 Chưa xử lý',
-        'error': '❌ Lỗi'
-    };
-    
-    if (!confirm(`Đổi trạng thái của ${statusList.length} học sinh thành "${statusMap[newStatus]}"?`)) {
-        return;
-    }
-    
-    updateStatus(`→ Đang cập nhật ${statusList.length} học sinh...`);
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const item of statusList) {
-        try {
-            await changeSubmissionStatus(item.id, item.name, newStatus, false);
-            successCount++;
-        } catch (err) {
-            failCount++;
-            console.error(`Lỗi cập nhật ${item.name}:`, err);
-        }
-    }
-    
-    // Refresh UI một lần duy nhất sau khi xong
-    loadSubmissionStatusFromCache(true);
-    updateStatus(`✓ Hoàn tất: ${successCount} thành công, ${failCount} lỗi`);
-}
-
-// [NEW] Hiển thị menu chọn trạng thái cho nhiều items được chọn
-function showStatusChangeMenuMultiple(button, selectedItems, currentStatus) {
-    const menu = document.createElement('div');
-    menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
-    menu.style.position = 'fixed';
-    menu.style.top = (button.getBoundingClientRect().bottom + 5) + 'px';
-    menu.style.left = (button.getBoundingClientRect().left) + 'px';
-    
-    // Add header showing count
-    const header = document.createElement('div');
-    header.className = 'px-4 py-2 text-xs font-medium text-on-surface-variant border-b border-outline-variant';
-    header.textContent = `Đổi ${selectedItems.length} mục`;
-    menu.appendChild(header);
-    
-    const statusOptions = [
-        { value: 'submitted', label: '📝 Chưa xử lý', icon: '📝' },
-        { value: 'processed', label: '✅ Đã xử lý', icon: '✅' },
-        { value: 'overdue', label: '⏰ Quá hạn', icon: '⏰' },
-        { value: 'error', label: '❌ Lỗi', icon: '❌' }
-    ];
-    
-    statusOptions.forEach(option => {
-        const item = document.createElement('button');
-        item.className = `w-full text-left px-4 py-3 hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2`;
-        item.textContent = option.label;
-        item.onclick = async () => {
-            menu.remove();
-            // Apply to all selected items
-            for (const selectedItem of selectedItems) {
-                const folderId = selectedItem.dataset.folderId;
-                const folderName = selectedItem.dataset.folderName;
-                await changeSubmissionStatus(folderId, folderName, option.value, false);
-            }
-            // Clear selections
-            selectedItems.forEach(item => {
-                item.dataset.selected = "false";
-                item.classList.remove('ring-2', 'ring-primary', 'bg-primary/10');
-            });
-            // Refresh UI once
-            loadSubmissionStatusFromCache(true);
-            updateStatus(`✓ Đã cập nhật ${selectedItems.length} mục`);
-        };
-        menu.appendChild(item);
-    });
-    
-    document.body.appendChild(menu);
-    
-    const closeMenu = () => {
-        menu.remove();
-        document.removeEventListener('click', closeMenu);
-    };
-    setTimeout(() => {
-        document.addEventListener('click', closeMenu);
-    }, 10);
-}
-
-// [NEW] Hiển thị menu chọn trạng thái cho bulk change
-function showBulkStatusMenu() {
-    const button = document.getElementById('bulk-status-btn');
-    if (!button) return;
-    
-    const menu = document.createElement('div');
-    menu.className = 'absolute z-50 bg-surface rounded-2xl shadow-lg border border-outline-variant mt-1 min-w-48';
-    menu.style.position = 'fixed';
-    menu.style.top = (button.getBoundingClientRect().bottom + 5) + 'px';
-    menu.style.left = (button.getBoundingClientRect().left) + 'px';
-    
-    const statusOptions = [
-        { value: 'submitted', label: '📝 Chưa xử lý' },
-        { value: 'processed', label: '✅ Đã xử lý' },
-        { value: 'overdue', label: '⏰ Quá hạn' },
-        { value: 'error', label: '❌ Lỗi' }
-    ];
-    
-    statusOptions.forEach(option => {
-        const item = document.createElement('button');
-        item.className = 'w-full text-left px-4 py-3 hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2 first:rounded-t-2xl last:rounded-b-2xl';
-        item.textContent = option.label;
-        item.onclick = async () => {
-            menu.remove();
-            await bulkChangeStatus(option.value);
-        };
-        menu.appendChild(item);
-    });
-    
-    document.body.appendChild(menu);
-    
-    const closeMenu = () => {
-        menu.remove();
-        document.removeEventListener('click', closeMenu);
-    };
-    setTimeout(() => {
-        document.addEventListener('click', closeMenu);
-    }, 10);
-}
-
 // [NEW] Thay đổi trạng thái và cập nhật local
-async function changeSubmissionStatus(folderId, folderName, newStatus, refreshUI = true) {
+async function changeSubmissionStatus(folderId, folderName, newStatus) {
     const key = getStatusCacheKey();
     if (!key) return;
     
@@ -2741,11 +2532,9 @@ async function changeSubmissionStatus(folderId, folderName, newStatus, refreshUI
             localStorage.setItem(key, JSON.stringify(statusList));
         }
         
-        // Bước 6: Cập nhật UI (nếu cần)
-        if (refreshUI) {
-            loadSubmissionStatusFromCache(true);
-            updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
-        }
+        // Bước 6: Cập nhật UI
+        loadSubmissionStatusFromCache(true);
+        updateStatus(`✓ Đã cập nhật "${folderName}" → "${newFolderName}"`);
         
     } catch (error) {
         const errorMsg = error?.message || (error?.result?.error?.message || 'Lỗi không xác định');
@@ -3446,48 +3235,14 @@ async function scanAndSyncClasses(silent = false) {
     const selectedId = classProfileSelectValue ? classProfileSelectValue.value : classProfileSelect.value;
     if (selectedId) {
         const currentProfile = classProfiles.find(p => p.id === selectedId);
-        
-        // LOGIC MỚI: Kiểm tra kỹ lưỡng trước khi tạo lại
-        if (currentProfile) {
-            let sheetExists = false;
-            
-            // 1. Kiểm tra ID hiện tại (nếu có)
-            if (currentProfile.sheetId) {
-                sheetExists = await checkSheetExists(currentProfile.sheetId);
-            }
-            
-            // 2. Nếu ID không tồn tại (hoặc sai), quét folder để tìm file thực tế
-            if (!sheetExists) {
-                const classFolderId = currentProfile.classFolderId || currentProfile.id;
-                if (classFolderId) {
-                    if (!silent) updateStatus(`🔍 Đang quét folder lớp để tìm Sheet...`);
-                    const { sheetFile } = await scanClassFolder(classFolderId);
-                    
-                    if (sheetFile) {
-                        console.log(`[SCAN] Tìm thấy Sheet có sẵn: ${sheetFile.name} (${sheetFile.id})`);
-                        // Cập nhật profile với ID tìm thấy
-                        currentProfile.sheetId = sheetFile.id;
-                        currentProfile.sheetUrl = sheetFile.webViewLink;
-                        
-                        // Save to localStorage
-                        const idx = classProfiles.findIndex(p => p.id === currentProfile.id);
-                        if (idx !== -1) {
-                            classProfiles[idx] = currentProfile;
-                            localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
-                        }
-                        
-                        if (!silent) updateStatus(`✅ Đã liên kết lại với Sheet: ${sheetFile.name}`);
-                        sheetExists = true;
-                    }
-                }
-            }
-            
-            // 3. Chỉ tạo mới nếu thực sự không tìm thấy gì
+        if (currentProfile && currentProfile.sheetId) {
+            const sheetExists = await checkSheetExists(currentProfile.sheetId);
             if (!sheetExists) {
                 try {
-                    if (!silent) updateStatus(`⚠️ Không tìm thấy Sheet nào. Đang tạo mới cho lớp "${currentProfile.name}"`);
+                    if (!silent) updateStatus(`⚠️ Phát hiện Sheet bị xóa cho lớp "${currentProfile.name}"`);
                     await recreateClassSheet(currentProfile);
                     if (!silent) updateStatus('✅ Đã tạo lại Sheet thành công!');
+                    // Reload để cập nhật UI
                     loadClassProfiles();
                 } catch (e) {
                     updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
@@ -3817,89 +3572,11 @@ function loadSubmissionStatusFromCache(silent = false) {
     const cachedData = localStorage.getItem(key);
     if (cachedData) {
         try {
-            let statusList = JSON.parse(cachedData);
-            
-            // Sắp xếp lại theo: 1) status group, 2) thời gian tạo
-            const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
-            statusList.sort((a, b) => {
-                const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
-                if (statusDiff !== 0) return statusDiff;
-                // Trong cùng group, sắp xếp theo thời gian (mới nhất trước)
-                const aTime = a.createdTime || new Date().toISOString();
-                const bTime = b.createdTime || new Date().toISOString();
-                return new Date(bTime) - new Date(aTime);
-            });
-            
-            displaySubmissionStatus(statusList);
+            const statusList = JSON.parse(cachedData); displaySubmissionStatus(statusList);
             if (!silent) updateStatus("✓ Tải trạng thái từ cache.");
         } catch (e) { localStorage.removeItem(key); submissionStatusList.innerHTML = defaultText; }
     } else submissionStatusList.innerHTML = defaultText;
 }
-
-async function checkSubmissionStatus(assignment = null) {
-    if (assignment) activeAssignment = assignment;
-    if (!activeAssignment) return;
-    
-    // Show loading state if list is empty or hidden
-    if (submissionStatusList.children.length === 0 || submissionStatusList.classList.contains('hidden')) {
-         submissionStatusList.innerHTML = '<div class="text-outline text-center p-4">Đang tải dữ liệu...</div>';
-         submissionStatusList.classList.remove('hidden');
-    }
-    
-    try {
-        const parentFolderIdToProcess = activeAssignment.folderId;
-        
-        // Use findAllSubfolders to get current folders in Drive
-        const allFoldersFromDrive = await findAllSubfolders([{
-            id: parentFolderIdToProcess,
-            name: 'root'
-        }]);
-        
-        const key = getStatusCacheKey();
-        const cachedData = localStorage.getItem(key);
-        const masterStatusList = cachedData ? JSON.parse(cachedData) : [];
-        const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
-        
-        const syncedStatusList = [];
-        
-        allFoldersFromDrive.forEach(folder => {
-            // Filter out "File responses" folder
-            if (folder.name.toLowerCase().includes('file responses')) return;
-
-            const isProcessed = folder.name.includes('[Đã xử lý]');
-            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
-            const cleanName = sanitizeFolderDisplayName(folder.name);
-            
-            const existingItem = statusMap.get(cleanName);
-            
-            let currentStatus;
-            if (isProcessed) currentStatus = 'processed';
-            else if (isOverdue) currentStatus = 'overdue';
-            else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'submitted';
-            else currentStatus = 'submitted';
-            
-            syncedStatusList.push({
-                id: folder.id,
-                name: cleanName,
-                status: currentStatus,
-                createdTime: folder.createdTime || new Date().toISOString()
-            });
-        });
-        
-        // Sort
-        syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
-        
-        saveSubmissionStatusToCache(syncedStatusList);
-        displaySubmissionStatus(syncedStatusList);
-        updateStatus(`✓ Đã cập nhật trạng thái: ${syncedStatusList.length} bài nộp.`);
-        
-    } catch (error) {
-        console.error("Lỗi checkSubmissionStatus:", error);
-        updateStatus("✗ Lỗi cập nhật trạng thái", true);
-        loadSubmissionStatusFromCache(); // Fallback
-    }
-}
-
 function updateSingleStatusInCache(folderName, newStatus) {
     const key = getStatusCacheKey(); if (!key) return;
     const cachedData = localStorage.getItem(key);
@@ -4008,29 +3685,18 @@ async function createPdfFromImages(imageFiles, folderName) {
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(window.fontkit);
     const accessToken = gapi.client.getToken().access_token;
-    
-    // Tăng tốc độ xử lý: tải song song
     const CONCURRENCY_LIMIT = 4;
     updateStatus(`→ Xử lý ${imageFiles.length} ảnh (${CONCURRENCY_LIMIT} luồng)...`);
-    
     const processedImages = new Array(imageFiles.length).fill(null);
     let taskIndex = -1;
-    
-    const getNextTask = () => {
-        taskIndex++;
-        return taskIndex < imageFiles.length ? { file: imageFiles[taskIndex], index: taskIndex } : null;
-    };
-
+    const getNextTask = () => { taskIndex++; return taskIndex < imageFiles.length ? { file: imageFiles[taskIndex], index: taskIndex } : null; };
     const processImage = async (file, index) => {
         try {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
             if (!res.ok) throw new Error(`Tải thất bại`);
-            
             const originalBuffer = await res.arrayBuffer();
             
-            // [AI] Phát hiện góc xoay
+            // [NEW] Phát hiện góc xoay bằng AI (nếu bật)
             let rotationAngle = 0;
             if (isAIAutoRotateEnabled() && (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png')) {
                 updateStatus(`  🤖 AI kiểm tra chiều "${file.name}"...`);
@@ -4045,127 +3711,83 @@ async function createPdfFromImages(imageFiles, folderName) {
             } else if (file.mimeType === 'image/png') {
                 image = await pdfDoc.embedPng(originalBuffer);
             } else {
-                // Fallback cho ảnh khác
                 try {
                     const pngBuffer = await convertImageToPng(originalBuffer, file.mimeType);
                     image = await pdfDoc.embedPng(pngBuffer);
-                } catch (e) {
-                    throw new Error(`Chuyển đổi thất bại`);
-                }
+                } catch (e) { throw new Error(`Chuyển đổi thất bại`); }
             }
             processedImages[index] = { image, rotation: rotationAngle };
-            
-        } catch (error) {
-            updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true);
-        }
+        } catch (error) { updateStatus(`  ✗ Lỗi ảnh ${file.name}: ${error.message}`, true); }
     };
-
-    const worker = async () => {
-        while (true) {
-            const task = getNextTask();
-            if (!task) break;
-            await processImage(task.file, task.index);
-        }
-    };
-
+    const worker = async () => { while (true) { const task = getNextTask(); if (!task) break; await processImage(task.file, task.index); } };
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(null).map(worker));
     updateStatus(`✓ Xử lý ảnh xong, đang gộp PDF...`);
     
-    // --- BƯỚC VẼ VÀO PDF (ĐÃ SỬA LỖI TỌA ĐỘ) ---
+    // [IMPROVED] Thêm header trên mỗi trang + thu nhỏ ảnh + xoay nếu cần
     for (const imageData of processedImages) {
         if (!imageData) continue;
         const { image, rotation } = imageData;
         
-        // 1. Xác định kích thước thực tế sau khi xoay để tính khổ giấy
-        // Nếu xoay 90 hoặc 270 độ, chiều rộng và chiều cao sẽ hoán đổi
-        const isRotatedSideways = rotation === 90 || rotation === 270;
-        const effectiveWidth = isRotatedSideways ? image.height : image.width;
-        const effectiveHeight = isRotatedSideways ? image.width : image.height;
-
-        // 2. Chọn khổ giấy dựa trên kích thước ĐÃ XOAY
-        const A4_SHORT = 595.28;
-        const A4_LONG = 841.89;
-        // Nếu ảnh (sau khi xoay) là ngang -> trang PDF ngang
-        const isLandscape = effectiveWidth > effectiveHeight;
+        const A4_SHORT = 595.28, A4_LONG = 841.89;
+        const isLandscape = image.width > image.height;
         const pageWidth = isLandscape ? A4_LONG : A4_SHORT;
         const pageHeight = isLandscape ? A4_SHORT : A4_LONG;
         
+        // [NEW] Chừa 25px ở trên cho header (tên người nộp)
         const headerHeight = 25;
         const availableHeight = pageHeight - headerHeight;
         
-        // 3. Tính tỷ lệ scale để vừa trang
-        const ratio = Math.min(pageWidth / effectiveWidth, availableHeight / effectiveHeight);
-        
-        // scaledWidth/Height là kích thước của ảnh gốc khi co giãn (chưa tính xoay)
+        // Thu nhỏ ảnh vừa vào không gian còn lại
+        const ratio = Math.min(pageWidth / image.width, availableHeight / image.height);
         const scaledWidth = image.width * ratio;
         const scaledHeight = image.height * ratio;
         
-        // finalDisplayWidth/Height là không gian chiếm dụng trên trang PDF
-        const finalDisplayWidth = isRotatedSideways ? scaledHeight : scaledWidth;
-        const finalDisplayHeight = isRotatedSideways ? scaledWidth : scaledHeight;
-
-        // 4. Tính toán tọa độ trung tâm
-        const centerX = (pageWidth - finalDisplayWidth) / 2;
-        const centerY = (availableHeight - finalDisplayHeight) / 2;
-
         const page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // Header (Tên học sinh)
+        // [NEW] Xoay trang nếu AI phát hiện góc
+        // Tesseract trả về góc văn bản HIỆN TẠI, cần xoay NGƯỢC lại để thẳng
+        if (rotation !== 0) {
+            const correctRotation = (360 - rotation) % 360; // Đảo ngược góc
+            page.setRotation(degrees(correctRotation));
+            console.log(`[AI] Phát hiện văn bản nghiêng ${rotation}° → Xoay trang ${correctRotation}°`);
+        }
+        
+        // [IMPROVED] Vẽ header (tên người nộp) ở ĐẦU mỗi trang
         if (folderName) {
             try {
+                // Cố gắng dùng custom font nếu có (hỗ trợ tiếng Việt)
                 if (customFontBuffer) {
                     const embeddedFont = await pdfDoc.embedFont(customFontBuffer);
                     page.drawText(`${folderName}`, {
-                        x: 15, y: pageHeight - 18,
-                        font: embeddedFont, size: 11, color: rgb(1, 0, 0),
+                        x: 15,
+                        y: pageHeight - 18,
+                        font: embeddedFont,
+                        size: 11,
+                        color: rgb(1, 0, 0),
                     });
                 } else {
+                    // Fallback: dùng font mặc định
                     page.drawText(`${folderName}`, {
-                        x: 15, y: pageHeight - 18, size: 11, color: rgb(1, 0, 0),
+                        x: 15,
+                        y: pageHeight - 18,
+                        size: 11,
+                        color: rgb(1, 0, 0),
                     });
                 }
             } catch (headerErr) {
-                console.warn(`[PDF] Bỏ qua header: ${headerErr.message}`);
+                // Bỏ qua lỗi encoding ký tự đặc biệt - tiếp tục xử lý ảnh
+                console.warn(`[PDF] Bỏ qua header do lỗi: ${headerErr.message}`);
             }
         }
         
-        // 5. [QUAN TRỌNG] ĐIỀU CHỈNH TỌA ĐỘ VẼ DỰA TRÊN GÓC XOAY
-        // PDF-Lib xoay quanh điểm neo (x, y). Ta cần dịch chuyển điểm neo này
-        // để sau khi xoay, ảnh nằm đúng vị trí trung tâm.
-        let drawX = centerX;
-        let drawY = centerY;
-
-        if (rotation === 90) {
-            // Xoay 90: Ảnh dựng đứng lên, đáy quay sang phải
-            drawX = centerX + scaledHeight;
-            drawY = centerY;
-        } else if (rotation === 180) {
-            // Xoay 180: Ảnh lộn ngược, điểm neo chạy lên góc trên phải
-            drawX = centerX + scaledWidth;
-            drawY = centerY + scaledHeight;
-        } else if (rotation === 270) {
-            // Xoay 270: Ảnh cắm đầu xuống, đáy quay sang trái
-            // Cần đẩy điểm neo lên cao (cộng thêm chiều rộng của ảnh gốc - giờ là chiều cao hiển thị)
-            drawX = centerX;
-            drawY = centerY + scaledWidth;
-        }
-
-        // 6. Vẽ ảnh
-        const drawOptions = {
-            x: drawX,
-            y: drawY,
+        // [IMPROVED] Vẽ ảnh ở phía dưới header
+        page.drawImage(image, {
+            x: (pageWidth - scaledWidth) / 2,
+            y: (availableHeight - scaledHeight) / 2,
             width: scaledWidth,
-            height: scaledHeight,
-            rotate: degrees(rotation)
-        };
-        
-        page.drawImage(image, drawOptions);
-        
-        if (rotation !== 0) {
-            console.log(`[PDF] Đã vẽ ảnh xoay ${rotation} độ tại (${Math.round(drawX)}, ${Math.round(drawY)})`);
-        }
+            height: scaledHeight
+        });
     }
-    
     return pdfDoc.save();
 }
 
@@ -4399,140 +4021,7 @@ function initTheme() {
     
     // Then apply theme
     applyTheme(theme, accent);
-
-    // [NEW] Init Layout
-    initLayout();
 }
-
-// [NEW] Layout Switcher Logic
-function initLayout() {
-    const savedLayout = localStorage.getItem('preferredLayout') || 'standard';
-    setLayout(savedLayout);
-    
-    const layoutButtons = document.querySelectorAll('.layout-btn');
-    layoutButtons.forEach(btn => {
-        const isActive = btn.dataset.value === savedLayout;
-        btn.dataset.active = isActive;
-        btn.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
-        if (isActive) btn.classList.add('m3-button-filled');
-        else btn.classList.add('m3-button-outlined');
-        
-        btn.onclick = () => {
-            setLayout(btn.dataset.value);
-            // Update UI
-            layoutButtons.forEach(b => {
-                b.dataset.active = (b === btn);
-                b.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
-                if (b === btn) b.classList.add('m3-button-filled');
-                else b.classList.add('m3-button-outlined');
-            });
-        };
-    });
-}
-
-function setLayout(layout) {
-    document.body.setAttribute('data-layout', layout);
-    localStorage.setItem('preferredLayout', layout);
-    
-    // Trigger resize event to ensure charts/grids redraw correctly
-    window.dispatchEvent(new Event('resize'));
-    
-    if (layout === 'pro') {
-        updateProDashboard();
-    }
-}
-
-function updateProDashboard() {
-    // 1. Update Stats
-    const statsClasses = document.getElementById('pro-stats-classes');
-    if (statsClasses) statsClasses.textContent = classProfiles.length;
-    
-    const statsSubmitted = document.getElementById('pro-stats-submitted');
-    const statsPending = document.getElementById('pro-stats-pending');
-    
-    // Calculate stats from cache if available
-    let submittedCount = 0;
-    let pendingCount = 0;
-    
-    if (activeAssignment) {
-        const key = getStatusCacheKey();
-        const cachedData = localStorage.getItem(key);
-        if (cachedData) {
-            try {
-                const statusList = JSON.parse(cachedData);
-                submittedCount = statusList.filter(item => item.status === 'submitted' || item.status === 'processed').length;
-                pendingCount = statusList.filter(item => item.status === 'submitted').length;
-            } catch (e) {}
-        }
-    }
-    
-    if (statsSubmitted) statsSubmitted.textContent = submittedCount;
-    if (statsPending) statsPending.textContent = pendingCount;
-
-    // 3. Render Class Cards
-    const grid = document.getElementById('pro-classes-grid');
-    if (!grid) return;
-    
-    grid.innerHTML = '';
-    
-    if (classProfiles.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-12 text-on-surface-variant opacity-60">
-                <p>Chưa có lớp học nào. Hãy thêm lớp mới!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    classProfiles.forEach((profile, index) => {
-        const card = document.createElement('div');
-        card.className = 'bg-surface p-5 rounded-[24px] border border-outline-variant hover:elevation-2 transition-all cursor-pointer group relative overflow-hidden';
-        
-        // Random gradient for card header/bg
-        const gradients = [
-            'from-blue-500/10 to-cyan-500/10',
-            'from-purple-500/10 to-pink-500/10',
-            'from-orange-500/10 to-red-500/10',
-            'from-green-500/10 to-emerald-500/10'
-        ];
-        const gradient = gradients[index % gradients.length];
-        
-        card.innerHTML = `
-            <div class="absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative z-10 flex flex-col gap-3">
-                <div class="flex items-start justify-between">
-                    <div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    </div>
-                    <button class="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); editClassProfile(${index})">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </button>
-                </div>
-                
-                <div>
-                    <h3 class="font-bold text-lg text-on-surface line-clamp-1">${profile.name}</h3>
-                    <p class="text-xs text-on-surface-variant font-mono mt-1 truncate opacity-70">${profile.id}</p>
-                </div>
-                
-                <div class="mt-2 flex items-center gap-2">
-                    <span class="text-xs px-2 py-1 rounded-md bg-surface-container text-on-surface-variant">
-                        ${profile.assignmentTypes ? profile.assignmentTypes.length : 0} loại bài tập
-                    </span>
-                </div>
-            </div>
-        `;
-        
-        card.onclick = () => {
-            loadClassProfile(index);
-            // Visual feedback
-            document.querySelectorAll('#pro-classes-grid > div').forEach(c => c.classList.remove('ring-2', 'ring-primary'));
-            card.classList.add('ring-2', 'ring-primary');
-        };
-        
-        grid.appendChild(card);
-    });
-}
-
 customColorInput.addEventListener('input', () => {
     applyTheme(localStorage.getItem('theme') || 'system', customColorInput.value);
 });
@@ -5131,38 +4620,22 @@ async function updateSubmissionStats() {
         // 3. Đếm tổng số học sinh từ sheet
         const totalStudents = await countStudentsInSheet(profile.sheetId, sheetNameToUse);
         
-        // 4. Đếm số người nộp theo trạng thái
+        // 4. Đếm số người nộp từ bảng tình trạng (loại bỏ "overdue")
         const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
-        let totalSubmitted = 0;
-        let overdueCount = 0;
-        let onTimeCount = 0;
-        
+        let submittedCount = 0;
         submissionItems.forEach(item => {
             const status = item.dataset.status;
-            if (status) {
-                totalSubmitted++;
-                if (status === 'overdue') {
-                    overdueCount++;
-                } else if (status !== 'error') {
-                    onTimeCount++;
-                }
+            if (status && status !== 'overdue') {
+                submittedCount++;
             }
         });
         
-        // 5. Cập nhật UI với thống kê chi tiết (màu theo trạng thái)
-        const statsHTML = `
-            <span class="text-on-surface">${totalSubmitted}/${totalStudents}</span>
-            <span class="mx-1 text-outline">|</span>
-            <span class="text-green-600 dark:text-green-400">${onTimeCount} đúng hạn</span>
-            <span class="mx-1 text-outline">|</span>
-            <span class="text-orange-600 dark:text-orange-400">${overdueCount} quá hạn</span>
-        `;
-        if (statsDiv) {
-            statsDiv.innerHTML = statsHTML;
-            statsDiv.classList.remove('hidden');
-        }
+        // 5. Cập nhật UI
+        if (submittedCountSpan) submittedCountSpan.textContent = submittedCount;
+        if (totalStudentsSpan) totalStudentsSpan.textContent = totalStudents;
+        if (statsDiv) statsDiv.classList.remove('hidden');
         
-        console.log(`[STATS] ${activeAssignment.name}: ${totalSubmitted}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
+        console.log(`[STATS] ${activeAssignment.name}: ${submittedCount}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
     } catch (err) {
         console.error('[STATS] Lỗi cập nhật thống kê:', err);
         if (statsDiv) statsDiv.classList.add('hidden');
@@ -5212,71 +4685,51 @@ function saveAIAutoRotateSetting(enabled) {
 
 /**
  * Phát hiện góc xoay của ảnh bằng AI OCR (Tesseract.js)
- * LOGIC MỚI: Ngưỡng thích ứng (Adaptive Threshold)
+ * @param {Blob} imageBlob - Ảnh cần kiểm tra
+ * @returns {Promise<number>} - Góc cần xoay: 0, 90, 180, 270
  */
 async function detectTextOrientation(imageBlob) {
     let worker = null;
     try {
         console.log('[AI] Bắt đầu phân tích hướng văn bản...');
         
-        // Giữ nguyên resize 1600px để đảm bảo AI nhìn thấy dòng kẻ
-        const resizedBlob = await resizeImageBlob(imageBlob, 1600);
+        // Resize ảnh xuống 800px để AI xử lý nhanh hơn
+        const resizedBlob = await resizeImageBlob(imageBlob, 800);
         
-        worker = await Tesseract.createWorker('osd', 1, {
-            legacyCore: true,
-            legacyLang: true
-        });
+        // 1. Khởi tạo worker với ngôn ngữ 'eng'
+        // Vẫn dùng 'eng' để có model LSTM chuẩn, tránh lỗi "LSTM not present"
+        worker = await Tesseract.createWorker('eng');
         
-        // Dùng detect() để tránh lỗi crash
+        // 2. QUAN TRỌNG: Dùng hàm detect() thay vì recognize()
+        // Hàm này chuyên dùng cho OSD (Orientation & Script Detection)
+        // Nó tự động xử lý chế độ quét phù hợp mà không gây crash
         const result = await worker.detect(resizedBlob);
         const data = result.data;
         
+        // 3. Kết quả
         const detectedAngle = data.orientation_degrees || 0;
         const confidence = data.orientation_confidence || 0;
         
-        console.log(`[AI] Kết quả thô: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
+        console.log(`[AI] Kết quả: góc=${detectedAngle}°, confidence=${confidence.toFixed(1)}`);
         
         await worker.terminate();
         
-        // --- LOGIC QUYẾT ĐỊNH THÔNG MINH ---
-
-        // 1. Nếu góc là 0 (Ảnh thẳng)
-        if (detectedAngle === 0) {
-            // Không cần làm gì, nhưng log ra để biết
-            console.log(`[AI] Ảnh thẳng (0°) → Giữ nguyên`);
-            return 0;
+        // Ngưỡng tin cậy (detection confidence thường thấp hơn recognition, > 2 là khá ổn)
+        if (confidence > 2) {
+            console.log(`[AI] ✓ Tin cậy → Áp dụng xoay ${detectedAngle}°`);
+            return detectedAngle;
         }
-
-        // 2. Nếu góc là 90 hoặc 270 (Ảnh nằm ngang)
-        // Với chữ viết tay, confidence tầm 2.5 - 3.0 là đã rất đáng tin cậy cho góc ngang
-        if (detectedAngle === 90 || detectedAngle === 270) {
-            if (confidence > 2.0) { // Hạ ngưỡng xuống 2.0
-                console.log(`[AI] ✓ Phát hiện ảnh ngang (${detectedAngle}°), độ tin cậy ${confidence.toFixed(1)} > 2.0 → XOAY`);
-                return detectedAngle;
-            } else {
-                console.log(`[AI] ⚠ Ảnh ngang nhưng tin cậy thấp (${confidence.toFixed(1)}) → Bỏ qua`);
-                return 0;
-            }
-        }
-
-        // 3. Nếu góc là 180 (Ảnh lộn ngược)
-        // Đây là trường hợp AI hay nhầm nhất với chữ viết tay. Phải thật khắt khe.
-        if (detectedAngle === 180) {
-            if (confidence > 10.0) { // Ngưỡng cao
-                console.log(`[AI] ✓ Ảnh lộn ngược chắc chắn (${confidence.toFixed(1)}) → XOAY`);
-                return 180;
-            } else {
-                console.log(`[AI] ⚠ Nghi ngờ góc 180° giả (tin cậy ${confidence.toFixed(1)} < 10) → Giữ nguyên`);
-                return 0;
-            }
-        }
-
-        return 0; // Mặc định an toàn
+        
+        console.log(`[AI] ⚠ Độ tin cậy thấp (${confidence}) → Bỏ qua`);
+        return 0;
         
     } catch (err) {
-        console.error('[AI] ✗ Lỗi:', err);
-        if (worker) { try { await worker.terminate(); } catch(e) {} }
-        return 0; 
+        console.error('[AI] ✗ Lỗi phát hiện hướng:', err);
+        // Đảm bảo kill worker nếu có lỗi để giải phóng RAM
+        if (worker) {
+            try { await worker.terminate(); } catch(e) {}
+        }
+        return 0; // Fallback: không xoay
     }
 }
 
@@ -5293,14 +4746,10 @@ async function resizeImageBlob(blob, maxWidth) {
             let width = img.width;
             let height = img.height;
             
-            // [FIX] Tăng lên 1600 để AI nhìn rõ nét chữ viết tay hơn
-            // 800px là quá nhỏ với tài liệu A4, dẫn đến lỗi "Too few characters"
-            const targetWidth = 1600;
-            
-            // Chỉ resize nếu ảnh lớn hơn targetWidth
-            if (width > targetWidth) {
-                const ratio = targetWidth / width;
-                width = targetWidth;
+            // Chỉ resize nếu ảnh lớn hơn maxWidth
+            if (width > maxWidth) {
+                const ratio = maxWidth / width;
+                width = maxWidth;
                 height = height * ratio;
             }
             
@@ -5308,10 +4757,9 @@ async function resizeImageBlob(blob, maxWidth) {
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Tăng chất lượng JPEG lên 0.95
             canvas.toBlob((resizedBlob) => {
                 resolve(resizedBlob || blob);
-            }, blob.type || 'image/jpeg', 0.95);
+            }, blob.type || 'image/jpeg', 0.9);
         };
         
         img.onerror = () => resolve(blob); // Fallback: dùng ảnh gốc
@@ -5336,63 +4784,10 @@ function initAIAutoRotateCheckbox() {
     });
 }
 
-// Init bulk status button
-function initBulkStatusButton() {
-    const bulkBtn = document.getElementById('bulk-status-btn');
-    if (bulkBtn) {
-        bulkBtn.onclick = (e) => {
-            e.stopPropagation();
-            showBulkStatusMenu();
-        };
-    }
-}
-
 // Gọi init khi DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initAIAutoRotateCheckbox();
-        initBulkStatusButton();
-        initProLayoutListeners();
-    });
+    document.addEventListener('DOMContentLoaded', initAIAutoRotateCheckbox);
 } else {
     initAIAutoRotateCheckbox();
-    initBulkStatusButton();
-    initProLayoutListeners();
-}
-
-function initProLayoutListeners() {
-    const proRefreshBtn = document.getElementById('pro-refresh-btn');
-    if (proRefreshBtn) {
-        proRefreshBtn.addEventListener('click', () => {
-            if (activeAssignment) {
-                checkSubmissionStatus(activeAssignment);
-            } else {
-                logStatus("Đang làm mới dữ liệu...", "info");
-            }
-        });
-    }
-    
-    const proThemeToggle = document.getElementById('pro-theme-toggle');
-    if (proThemeToggle) {
-        proThemeToggle.addEventListener('click', () => {
-            const currentTheme = localStorage.getItem('theme') || 'system';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme, localStorage.getItem('accentColor') || 'blue');
-        });
-    }
-    
-    // Sidebar Navigation
-    const navItems = document.querySelectorAll('.pro-nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            navItems.forEach(n => {
-                n.classList.remove('active', 'bg-surface', 'text-on-surface');
-                n.classList.add('text-on-surface-variant');
-            });
-            
-            item.classList.add('active', 'bg-surface', 'text-on-surface');
-            item.classList.remove('text-on-surface-variant');
-        });
-    });
 }
 
