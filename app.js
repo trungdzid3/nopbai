@@ -2400,16 +2400,17 @@ async function handleProcessClick() {
         const key = getStatusCacheKey();
         const cachedData = localStorage.getItem(key);
         const masterStatusList = cachedData ? JSON.parse(cachedData) : [];
-        const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
+        const statusMap = new Map(masterStatusList.map(item => [getNormalizedKey(item.name), item]));
 
-        // Use Map to deduplicate by cleanName - keep only the most recent status
+        // Use Map to deduplicate by normalized cleanName - keep only the highest priority status
         const folderMap = new Map();
         
         filteredFolders.forEach(folder => {
             const isProcessed = folder.name.includes('[Đã xử lý]');
             const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
             const cleanName = sanitizeFolderDisplayName(folder.name);
-            const existingItem = statusMap.get(cleanName);
+            const normalizedKey = getNormalizedKey(cleanName);
+            const existingItem = statusMap.get(normalizedKey);
             let currentStatus;
 
             if (isProcessed) currentStatus = 'processed';
@@ -2417,30 +2418,36 @@ async function handleProcessClick() {
             else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'error';
             else currentStatus = 'submitted';
 
-            // Check if we already have this cleanName
-            const existing = folderMap.get(cleanName);
+            // Check if we already have this normalized key
+            const existing = folderMap.get(normalizedKey);
             if (!existing) {
                 // First occurrence - add it
-                folderMap.set(cleanName, { 
+                folderMap.set(normalizedKey, { 
                     id: folder.id, 
                     name: cleanName, 
                     status: currentStatus,
                     createdTime: folder.createdTime || new Date().toISOString()
                 });
             } else {
-                // Duplicate found - prioritize 'processed' status over others
+                // Duplicate found - prioritize status: processed > overdue > error > submitted
                 const statusPriority = { 'processed': 3, 'overdue': 2, 'error': 1, 'submitted': 0 };
                 const currentPriority = statusPriority[currentStatus] || 0;
                 const existingPriority = statusPriority[existing.status] || 0;
                 
                 if (currentPriority > existingPriority) {
-                    // Update with higher priority status
-                    folderMap.set(cleanName, {
+                    // Update with higher priority status, but keep the better formatted name
+                    folderMap.set(normalizedKey, {
                         id: folder.id,
-                        name: cleanName,
+                        name: cleanName, // Use current cleanName which might be better formatted
                         status: currentStatus,
                         createdTime: folder.createdTime || existing.createdTime || new Date().toISOString()
                     });
+                } else if (currentPriority === existingPriority) {
+                    // Same priority - keep the one with ID (prefer already processed one)
+                    // This handles case where both are "processed" but from different sources
+                    if (currentStatus === 'processed' && existing.status === 'processed') {
+                        // Keep the existing one to avoid switching IDs
+                    }
                 }
             }
         });
@@ -3022,11 +3029,14 @@ async function processFoldersConcurrently(folders, folderTypeName) {
         const existingCache = cachedData ? JSON.parse(cachedData) : [];
         const cacheMap = new Map(existingCache.map(item => [item.id, item]));
         
-        const syncedStatusList = [];
+        // Use Map with normalized keys to deduplicate
+        const folderMap = new Map();
+        
         filteredFolders.forEach(folder => {
             const isProcessed = folder.name.includes('[Đã xử lý]');
             const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
             const cleanName = sanitizeFolderDisplayName(folder.name);
+            const normalizedKey = getNormalizedKey(cleanName);
             const cached = cacheMap.get(folder.id);
             
             let currentStatus;
@@ -3035,13 +3045,34 @@ async function processFoldersConcurrently(folders, folderTypeName) {
             else if (cached && cached.status === 'error' && !isProcessed) currentStatus = 'error';
             else currentStatus = 'submitted';
             
-            syncedStatusList.push({ 
-                id: folder.id, 
-                name: cleanName, 
-                status: currentStatus,
-                createdTime: cached?.createdTime || folder.createdTime || new Date().toISOString()
-            });
+            // Check for duplicates by normalized key
+            const existing = folderMap.get(normalizedKey);
+            if (!existing) {
+                folderMap.set(normalizedKey, { 
+                    id: folder.id, 
+                    name: cleanName, 
+                    status: currentStatus,
+                    createdTime: cached?.createdTime || folder.createdTime || new Date().toISOString()
+                });
+            } else {
+                // Duplicate - prioritize status
+                const statusPriority = { 'processed': 3, 'overdue': 2, 'error': 1, 'submitted': 0 };
+                const currentPriority = statusPriority[currentStatus] || 0;
+                const existingPriority = statusPriority[existing.status] || 0;
+                
+                if (currentPriority > existingPriority) {
+                    folderMap.set(normalizedKey, {
+                        id: folder.id,
+                        name: cleanName,
+                        status: currentStatus,
+                        createdTime: cached?.createdTime || folder.createdTime || existing.createdTime || new Date().toISOString()
+                    });
+                }
+            }
         });
+        
+        // Convert Map to Array
+        const syncedStatusList = Array.from(folderMap.values());
         
         // Sort
         const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
@@ -3158,7 +3189,24 @@ function sanitizeFolderDisplayName(name) {
     if (!name) return '';
     // Remove all bracketed/parenthesized content including prefixes and suffixes
     // e.g., "[Đã xử lý] Nguyễn Văn A (Quá hạn)" -> "Nguyễn Văn A"
-    return name.replace(/\s*[\[\(][^\]\)]*[\]\)]\s*/g, '').trim();
+    let cleaned = name.replace(/\s*[\[\(][^\]\)]*[\]\)]\s*/g, '').trim();
+    
+    // Normalize whitespace: replace multiple spaces with single space
+    cleaned = cleaned.replace(/\s+/g, ' ');
+    
+    // Normalize case: Convert to lowercase for comparison (but keep original for display)
+    // We'll use this normalized version as the key for deduplication
+    return cleaned;
+}
+
+/**
+ * Tạo key chuẩn hóa để so sánh và deduplicate tên folders
+ * Loại bỏ case sensitivity và khoảng trắng thừa
+ */
+function getNormalizedKey(name) {
+    if (!name) return '';
+    // Convert to lowercase and remove extra spaces for comparison
+    return name.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 // --- [NEW] Auto-Detection Functions ---
@@ -3928,20 +3976,39 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
             };
         });
         
-        // Merge with existing cache, avoiding duplicates
-        const mergedCache = [...newCacheData];
+        // Merge with existing cache using normalized keys to avoid duplicates
+        const mergedMap = new Map();
+        
+        // First add all existing items
+        newCacheData.forEach(item => {
+            const normalizedKey = getNormalizedKey(item.name);
+            mergedMap.set(normalizedKey, item);
+        });
+        
+        // Then add/update with new items (with status priority)
         itemsToAdd.forEach(newItem => {
-            const existingIndex = mergedCache.findIndex(i => i.id === newItem.id);
-            if (existingIndex >= 0) {
-                // Update existing entry
-                mergedCache[existingIndex] = newItem;
+            const normalizedKey = getNormalizedKey(newItem.name);
+            const existing = mergedMap.get(normalizedKey);
+            
+            if (!existing) {
+                // New item - add it
+                mergedMap.set(normalizedKey, newItem);
             } else {
-                // Add new entry
-                mergedCache.push(newItem);
+                // Duplicate - prioritize status
+                const statusPriority = { 'processed': 3, 'overdue': 2, 'error': 1, 'submitted': 0 };
+                const newPriority = statusPriority[newItem.status] || 0;
+                const existingPriority = statusPriority[existing.status] || 0;
+                
+                if (newPriority > existingPriority) {
+                    mergedMap.set(normalizedKey, newItem);
+                }
             }
         });
         
-        // Sort by status then by name
+        // Convert back to array
+        const mergedCache = Array.from(mergedMap.values());
+        
+        // Sort by status then by time
         const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
         mergedCache.sort((a, b) => {
             const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
