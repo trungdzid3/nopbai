@@ -3835,6 +3835,71 @@ function loadSubmissionStatusFromCache(silent = false) {
         } catch (e) { localStorage.removeItem(key); submissionStatusList.innerHTML = defaultText; }
     } else submissionStatusList.innerHTML = defaultText;
 }
+
+async function checkSubmissionStatus(assignment = null) {
+    if (assignment) activeAssignment = assignment;
+    if (!activeAssignment) return;
+    
+    // Show loading state if list is empty or hidden
+    if (submissionStatusList.children.length === 0 || submissionStatusList.classList.contains('hidden')) {
+         submissionStatusList.innerHTML = '<div class="text-outline text-center p-4">Đang tải dữ liệu...</div>';
+         submissionStatusList.classList.remove('hidden');
+    }
+    
+    try {
+        const parentFolderIdToProcess = activeAssignment.folderId;
+        
+        // Use findAllSubfolders to get current folders in Drive
+        const allFoldersFromDrive = await findAllSubfolders([{
+            id: parentFolderIdToProcess,
+            name: 'root'
+        }]);
+        
+        const key = getStatusCacheKey();
+        const cachedData = localStorage.getItem(key);
+        const masterStatusList = cachedData ? JSON.parse(cachedData) : [];
+        const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
+        
+        const syncedStatusList = [];
+        
+        allFoldersFromDrive.forEach(folder => {
+            // Filter out "File responses" folder
+            if (folder.name.toLowerCase().includes('file responses')) return;
+
+            const isProcessed = folder.name.includes('[Đã xử lý]');
+            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
+            const cleanName = sanitizeFolderDisplayName(folder.name);
+            
+            const existingItem = statusMap.get(cleanName);
+            
+            let currentStatus;
+            if (isProcessed) currentStatus = 'processed';
+            else if (isOverdue) currentStatus = 'overdue';
+            else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'submitted';
+            else currentStatus = 'submitted';
+            
+            syncedStatusList.push({
+                id: folder.id,
+                name: cleanName,
+                status: currentStatus,
+                createdTime: folder.createdTime || new Date().toISOString()
+            });
+        });
+        
+        // Sort
+        syncedStatusList.sort((a, b) => a.name.localeCompare(b.name));
+        
+        saveSubmissionStatusToCache(syncedStatusList);
+        displaySubmissionStatus(syncedStatusList);
+        updateStatus(`✓ Đã cập nhật trạng thái: ${syncedStatusList.length} bài nộp.`);
+        
+    } catch (error) {
+        console.error("Lỗi checkSubmissionStatus:", error);
+        updateStatus("✗ Lỗi cập nhật trạng thái", true);
+        loadSubmissionStatusFromCache(); // Fallback
+    }
+}
+
 function updateSingleStatusInCache(folderName, newStatus) {
     const key = getStatusCacheKey(); if (!key) return;
     const cachedData = localStorage.getItem(key);
