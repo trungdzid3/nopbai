@@ -2402,7 +2402,9 @@ async function handleProcessClick() {
         const masterStatusList = cachedData ? JSON.parse(cachedData) : [];
         const statusMap = new Map(masterStatusList.map(item => [item.name, item]));
 
-        const syncedStatusList = [];
+        // Use Map to deduplicate by cleanName - keep only the most recent status
+        const folderMap = new Map();
+        
         filteredFolders.forEach(folder => {
             const isProcessed = folder.name.includes('[Đã xử lý]');
             const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
@@ -2412,16 +2414,39 @@ async function handleProcessClick() {
 
             if (isProcessed) currentStatus = 'processed';
             else if (isOverdue) currentStatus = 'overdue';
-            else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'submitted';
+            else if (existingItem && existingItem.status === 'error' && !isProcessed) currentStatus = 'error';
             else currentStatus = 'submitted';
 
-            syncedStatusList.push({ 
-                id: folder.id, 
-                name: cleanName, 
-                status: currentStatus,
-                createdTime: folder.createdTime || new Date().toISOString()
-            });
+            // Check if we already have this cleanName
+            const existing = folderMap.get(cleanName);
+            if (!existing) {
+                // First occurrence - add it
+                folderMap.set(cleanName, { 
+                    id: folder.id, 
+                    name: cleanName, 
+                    status: currentStatus,
+                    createdTime: folder.createdTime || new Date().toISOString()
+                });
+            } else {
+                // Duplicate found - prioritize 'processed' status over others
+                const statusPriority = { 'processed': 3, 'overdue': 2, 'error': 1, 'submitted': 0 };
+                const currentPriority = statusPriority[currentStatus] || 0;
+                const existingPriority = statusPriority[existing.status] || 0;
+                
+                if (currentPriority > existingPriority) {
+                    // Update with higher priority status
+                    folderMap.set(cleanName, {
+                        id: folder.id,
+                        name: cleanName,
+                        status: currentStatus,
+                        createdTime: folder.createdTime || existing.createdTime || new Date().toISOString()
+                    });
+                }
+            }
         });
+        
+        // Convert Map to Array
+        const syncedStatusList = Array.from(folderMap.values());
 
         updateStatus("→ Đồng bộ hóa danh sách...");
         
@@ -2979,6 +3004,61 @@ async function processFoldersConcurrently(folders, folderTypeName) {
     const workerPromises = Array(CONCURRENCY_LIMIT).fill(null).map(worker);
     await Promise.all(workerPromises);
 
+    // Reload lại danh sách từ Drive để gộp các folder đã xử lý vào đúng nhóm
+    updateStatus("→ Đang đồng bộ lại danh sách...");
+    try {
+        const parentFolderIdToProcess = activeAssignment.folderId;
+        const allFoldersFromDrive = await executeWithTokenRefresh(() =>
+            findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }])
+        );
+        
+        const filteredFolders = allFoldersFromDrive.filter(folder => 
+            !folder.name.toLowerCase().includes('file responses')
+        );
+        
+        // Rebuild status list from Drive (merge with cache to preserve any additional data)
+        const key = getStatusCacheKey();
+        const cachedData = localStorage.getItem(key);
+        const existingCache = cachedData ? JSON.parse(cachedData) : [];
+        const cacheMap = new Map(existingCache.map(item => [item.id, item]));
+        
+        const syncedStatusList = [];
+        filteredFolders.forEach(folder => {
+            const isProcessed = folder.name.includes('[Đã xử lý]');
+            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
+            const cleanName = sanitizeFolderDisplayName(folder.name);
+            const cached = cacheMap.get(folder.id);
+            
+            let currentStatus;
+            if (isProcessed) currentStatus = 'processed';
+            else if (isOverdue) currentStatus = 'overdue';
+            else if (cached && cached.status === 'error' && !isProcessed) currentStatus = 'error';
+            else currentStatus = 'submitted';
+            
+            syncedStatusList.push({ 
+                id: folder.id, 
+                name: cleanName, 
+                status: currentStatus,
+                createdTime: cached?.createdTime || folder.createdTime || new Date().toISOString()
+            });
+        });
+        
+        // Sort
+        const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
+        syncedStatusList.sort((a, b) => {
+            const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+            if (statusDiff !== 0) return statusDiff;
+            return new Date(b.createdTime) - new Date(a.createdTime);
+        });
+        
+        saveSubmissionStatusToCache(syncedStatusList);
+        displaySubmissionStatus(syncedStatusList);
+        updateStatus("✓ Đã đồng bộ danh sách.");
+    } catch (error) {
+        console.error('Lỗi khi đồng bộ danh sách:', error);
+        updateStatus('⚠ Không thể đồng bộ danh sách, vui lòng tải lại trang.', true);
+    }
+
     updateStatus("✅ HOÀN TẤT TẤT CẢ!");
     processButton.disabled = false;
     processButton.querySelector('span').textContent = "Bắt đầu Xử lý";
@@ -3076,6 +3156,8 @@ async function findAllSubfolders(parentFolders) {
 
 function sanitizeFolderDisplayName(name) {
     if (!name) return '';
+    // Remove all bracketed/parenthesized content including prefixes and suffixes
+    // e.g., "[Đã xử lý] Nguyễn Văn A (Quá hạn)" -> "Nguyễn Văn A"
     return name.replace(/\s*[\[\(][^\]\)]*[\]\)]\s*/g, '').trim();
 }
 
@@ -3801,7 +3883,7 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
     if (failedMoves.length > 0) failedMoves.forEach(fail => updateStatus(`✗ Lỗi di chuyển "${fail.item.name}": ${fail.reason?.result?.error?.message}`, true));
     if (successfulMoves.length > 0) {
         updateStatus(`✓ Đã di chuyển thành công ${successfulMoves.length} học sinh.`);
-        const activeClassId = classProfileSelect.value;
+        const activeClassId = classProfileSelectValue.value;
         const oldKey = getStatusCacheKey(activeClassId, oldParentId);
         const newKey = getStatusCacheKey(activeClassId, newParentId);
 
@@ -3810,11 +3892,66 @@ async function moveFolders(items, oldParentId, newParentId, newParentName) {
         const updatedOldCache = oldCacheData.filter(i => !movedIds.has(i.id));
         saveSubmissionStatusToCache(updatedOldCache, oldKey);
 
+        // Fetch actual folder info from Drive to get updated names and determine correct status
+        updateStatus('→ Đang cập nhật thông tin thư mục từ Drive...');
+        const folderInfoPromises = successfulMoves.map(item => 
+            executeWithTokenRefresh(() =>
+                gapi.client.drive.files.get({
+                    fileId: item.id,
+                    fields: 'id, name'
+                })
+            ).catch(err => {
+                console.error(`Lỗi lấy thông tin folder ${item.id}:`, err);
+                return { result: { id: item.id, name: item.name } }; // fallback to old name
+            })
+        );
+        const folderInfos = await Promise.all(folderInfoPromises);
+        
         const newCacheData = JSON.parse(localStorage.getItem(newKey) || '[]');
-        const itemsToAdd = successfulMoves.map(item => ({ ...item, status: 'submitted' }));
-        const updatedNewCache = [...newCacheData, ...itemsToAdd].sort((a, b) => a.name.localeCompare(b.name));
-        saveSubmissionStatusToCache(updatedNewCache, newKey);
+        const itemsToAdd = folderInfos.map(response => {
+            const folder = response.result;
+            // Determine status based on actual folder name from Drive
+            const isProcessed = folder.name.includes('[Đã xử lý]');
+            const isOverdue = !isProcessed && folder.name.toLowerCase().includes('quá hạn');
+            const cleanName = sanitizeFolderDisplayName(folder.name);
+            
+            let status;
+            if (isProcessed) status = 'processed';
+            else if (isOverdue) status = 'overdue';
+            else status = 'submitted';
+            
+            return { 
+                id: folder.id, 
+                name: cleanName, 
+                status: status,
+                createdTime: new Date().toISOString()
+            };
+        });
+        
+        // Merge with existing cache, avoiding duplicates
+        const mergedCache = [...newCacheData];
+        itemsToAdd.forEach(newItem => {
+            const existingIndex = mergedCache.findIndex(i => i.id === newItem.id);
+            if (existingIndex >= 0) {
+                // Update existing entry
+                mergedCache[existingIndex] = newItem;
+            } else {
+                // Add new entry
+                mergedCache.push(newItem);
+            }
+        });
+        
+        // Sort by status then by name
+        const statusOrder = { 'submitted': 0, 'processed': 1, 'overdue': 2, 'error': 3 };
+        mergedCache.sort((a, b) => {
+            const statusDiff = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+            if (statusDiff !== 0) return statusDiff;
+            return new Date(b.createdTime || 0) - new Date(a.createdTime || 0);
+        });
+        
+        saveSubmissionStatusToCache(mergedCache, newKey);
         loadSubmissionStatusFromCache();
+        updateStatus(`✓ Đã cập nhật trạng thái cho ${itemsToAdd.length} mục.`);
     }
     selectedItems.clear();
     processButton.disabled = false;
