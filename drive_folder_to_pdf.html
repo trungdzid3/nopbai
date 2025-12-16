@@ -31,6 +31,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         /* ==================================================================
@@ -162,25 +164,29 @@
        ================================================================== */
 
         body[data-design="apple"] {
-            --font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-family: "DM Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
 
-            /* Liquid Glass Variables */
+            /* Liquid Glass Variables (Restored Colors) */
             --c-glass: #bbbbbc;
             --c-light: #fff;
             --c-dark: #000;
+            
             --c-content: #1d1d1f;
-            --c-action: #8B5CF6;
-            /* Violet */
+            --c-action: #8B5CF6; /* Violet */
+            
             --c-bg: transparent;
+            
+            --glass-reflex-dark: 1;
+            --glass-reflex-light: 1;
+            
+            --saturation: 150%;
 
-            /* Add new interactive colors */
+            /* Additional existing variables */
             --lg-red: #FF3B30;
             --lg-purple: #BF5AF2;
             --lg-orange: #FF9500;
-
-            --glass-reflex-dark: 1;
-            --glass-reflex-light: 1;
-            --saturation: 150%;
+            --lg-blue: #007AFF;
+            --lg-green: #34C759;
 
             /* Override Material Colors to Liquid Logic */
             --m3-background: transparent;
@@ -196,48 +202,41 @@
             --m3-outline-variant: color-mix(in srgb, var(--c-content) 10%, transparent);
 
             /* Shapes */
-            --radius-card: 28px;
-            --radius-btn: 20px;
-            /* Squircle */
-            --radius-input: 14px;
+            --radius-card: 32px;
+            --radius-btn: 99em;
+            --radius-input: 16px;
+            
+            transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1), color 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark,
         body.dark[data-design="apple"] {
-            /* iOS Dark Mode Colors */
+            /* Dark Mode Variables (Restored Colors) */
             --c-glass: #2C2C2E;
             --c-light: #fff;
             --c-dark: #000;
+            
             --c-content: #FFFFFF;
-            --c-content-secondary: #EBEBF5;
             --c-action: #BF5AF2;
+            
             --c-bg: #000000;
             
-            /* Glass effect parameters for dark */
             --glass-reflex-dark: 0.8;
             --glass-reflex-light: 0.15;
+            
             --saturation: 100%;
 
             /* Override Material Colors for Dark Mode */
             --m3-background: #000000;
-            --m3-surface: rgba(44, 44, 46, 0.72);
-            --m3-surface-container: rgba(58, 58, 60, 0.72);
-            --m3-surface-container-highest: rgba(44, 44, 46, 0.72);
-            --m3-surface-variant: rgba(58, 58, 60, 0.72);
-            --m3-surface-container-low: rgba(28, 28, 30, 0.72);
+            --m3-surface: color-mix(in srgb, var(--c-glass) 60%, transparent);
+            --m3-surface-container: color-mix(in srgb, var(--c-glass) 60%, transparent);
             
-            --m3-on-surface: #FFFFFF;
+            --m3-on-surface: var(--c-content);
             --m3-on-surface-variant: rgba(235, 235, 245, 0.6);
-            --m3-on-background: #FFFFFF;
+            --m3-on-background: var(--c-content);
             
             --m3-outline: rgba(255, 255, 255, 0.16);
-            --m3-outline-variant: rgba(255, 255, 255, 0.08);
             
-            --m3-primary: #BF5AF2;
-            --m3-on-primary: #FFFFFF;
-            --m3-error: #FF453A;
-            
-            /* iOS specific dark colors */
             --lg-red: #FF453A;
             --lg-purple: #BF5AF2;
             --lg-orange: #FF9F0A;
@@ -253,12 +252,30 @@
             z-index: -1;
             background: linear-gradient(135deg, #F9F5FF 0%, #FFF5F9 100%);
             opacity: 1;
-            transition: background 0.4s ease, opacity 0.4s ease;
+            transition: background 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         body[data-design="apple"].dark::before,
         body.dark[data-design="apple"]::before {
             background: #000000;
+        }
+
+        /* Apply Liquid Glass Effect to Cards and Containers */
+        body[data-design="apple"] .m3-setting-card,
+        body[data-design="apple"] .m3-modal-content,
+        body[data-design="apple"] aside,
+        body[data-design="apple"] .mobile-header {
+            background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+            backdrop-filter: blur(16px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(16px) saturate(var(--saturation));
+            border: 1px solid color-mix(in srgb, var(--c-light) 20%, transparent);
+            box-shadow: 
+                0 8px 32px 0 color-mix(in srgb, var(--c-dark) 4%, transparent),
+                inset 0 0 0 1px color-mix(in srgb, var(--c-light) 10%, transparent);
+            transition: 
+                background-color 400ms cubic-bezier(1, 0.0, 0.4, 1),
+                box-shadow 400ms cubic-bezier(1, 0.0, 0.4, 1),
+                border-color 400ms cubic-bezier(1, 0.0, 0.4, 1);
         }
 
         /* ==================================================================
@@ -722,40 +739,95 @@
                 0 8px 24px rgba(16, 185, 129, 0.15);
         }
 
+        /* Fluent Status Colors - Submitted (Fluent Blue theme-aligned) */
+        body[data-design="fluent"] #submission-status-list li[data-status="submitted"] {
+            background: linear-gradient(135deg, 
+                rgba(100, 149, 237, 0.2) 0%,
+                rgba(147, 171, 255, 0.15) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: 4px solid #6495ed;
+            border-right: 1px solid rgba(100, 149, 237, 0.2);
+            box-shadow: 0 2px 8px rgba(100, 149, 237, 0.15), inset 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        body[data-design="fluent"] #submission-status-list li[data-status="submitted"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(100, 149, 237, 0.3) 0%,
+                rgba(147, 171, 255, 0.23) 100%);
+            box-shadow: 
+                0 4px 16px rgba(100, 149, 237, 0.25),
+                0 8px 24px rgba(100, 149, 237, 0.15),
+                inset 0 0 1px rgba(255, 255, 255, 0.15);
+        }
+
+        /* Fluent Status Colors - Processed (Purple) */
         body[data-design="fluent"] #submission-status-list li[data-status="processed"] {
-            border-left-color: #8b5cf6;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+            background: linear-gradient(135deg, 
+                rgba(168, 85, 247, 0.25) 0%,
+                rgba(196, 181, 253, 0.18) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: 4px solid #a855f7;
+            border-right: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2), inset 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
         body[data-design="fluent"] #submission-status-list li[data-status="processed"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(168, 85, 247, 0.35) 0%,
+                rgba(196, 181, 253, 0.26) 100%);
             box-shadow: 
-                0 4px 16px rgba(139, 92, 246, 0.25),
-                0 8px 24px rgba(139, 92, 246, 0.15);
+                0 4px 16px rgba(168, 85, 247, 0.3),
+                0 8px 24px rgba(168, 85, 247, 0.2),
+                inset 0 0 1px rgba(255, 255, 255, 0.15);
         }
 
+        /* Fluent Status Colors - Overdue (Orange) */
         body[data-design="fluent"] #submission-status-list li[data-status="overdue"] {
-            border-left-color: #f59e0b;
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.25) 0%,
+                rgba(253, 186, 116, 0.18) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: 4px solid #fb923c;
+            border-right: 1px solid rgba(251, 146, 60, 0.2);
+            box-shadow: 0 2px 8px rgba(251, 146, 60, 0.2), inset 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
         body[data-design="fluent"] #submission-status-list li[data-status="overdue"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.35) 0%,
+                rgba(253, 186, 116, 0.26) 100%);
             box-shadow: 
-                0 4px 16px rgba(245, 158, 11, 0.25),
-                0 8px 24px rgba(245, 158, 11, 0.15);
+                0 4px 16px rgba(251, 146, 60, 0.3),
+                0 8px 24px rgba(251, 146, 60, 0.2),
+                inset 0 0 1px rgba(255, 255, 255, 0.15);
         }
 
+        /* Fluent Status Colors - Error (Red) */
         body[data-design="fluent"] #submission-status-list li[data-status="error"] {
-            border-left-color: #ef4444;
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.25) 0%,
+                rgba(252, 165, 165, 0.18) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: 4px solid #ef4444;
+            border-right: 1px solid rgba(239, 68, 68, 0.2);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2), inset 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
         body[data-design="fluent"] #submission-status-list li[data-status="error"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.35) 0%,
+                rgba(252, 165, 165, 0.26) 100%);
             box-shadow: 
-                0 4px 16px rgba(239, 68, 68, 0.25),
-                0 8px 24px rgba(239, 68, 68, 0.15);
+                0 4px 16px rgba(239, 68, 68, 0.3),
+                0 8px 24px rgba(239, 68, 68, 0.2),
+                inset 0 0 1px rgba(255, 255, 255, 0.15);
         }
 
-        /* Dark Mode Status List */
+        /* Dark Mode Status List - Fluent */
         body[data-design="fluent"].dark #submission-status-list li {
             background: linear-gradient(135deg, 
                 rgba(30, 27, 75, 0.5) 0%,
@@ -772,28 +844,68 @@
             border-color: rgba(255, 255, 255, 0.15);
         }
 
+        body[data-design="fluent"].dark #submission-status-list li[data-status="submitted"] {
+            background: linear-gradient(135deg, 
+                rgba(100, 116, 139, 0.25) 0%,
+                rgba(71, 85, 105, 0.2) 100%);
+            border-left-color: #94a3b8;
+        }
+
         body[data-design="fluent"].dark #submission-status-list li[data-status="submitted"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(100, 116, 139, 0.35) 0%,
+                rgba(71, 85, 105, 0.3) 100%);
             box-shadow: 
-                0 4px 16px rgba(16, 185, 129, 0.3),
-                0 8px 24px rgba(16, 185, 129, 0.2),
-                0 0 20px rgba(16, 185, 129, 0.1);
+                0 4px 16px rgba(100, 116, 139, 0.3),
+                0 8px 24px rgba(100, 116, 139, 0.2),
+                0 0 20px rgba(100, 116, 139, 0.1);
+        }
+
+        body[data-design="fluent"].dark #submission-status-list li[data-status="processed"] {
+            background: linear-gradient(135deg, 
+                rgba(168, 85, 247, 0.25) 0%,
+                rgba(147, 51, 234, 0.2) 100%);
+            border-left-color: #d8b4fe;
         }
 
         body[data-design="fluent"].dark #submission-status-list li[data-status="processed"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(168, 85, 247, 0.35) 0%,
+                rgba(147, 51, 234, 0.3) 100%);
             box-shadow: 
-                0 4px 16px rgba(139, 92, 246, 0.3),
-                0 8px 24px rgba(139, 92, 246, 0.2),
-                0 0 20px rgba(139, 92, 246, 0.1);
+                0 4px 16px rgba(168, 85, 247, 0.3),
+                0 8px 24px rgba(168, 85, 247, 0.2),
+                0 0 20px rgba(168, 85, 247, 0.1);
+        }
+
+        body[data-design="fluent"].dark #submission-status-list li[data-status="overdue"] {
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.25) 0%,
+                rgba(249, 115, 22, 0.2) 100%);
+            border-left-color: #fdba74;
         }
 
         body[data-design="fluent"].dark #submission-status-list li[data-status="overdue"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.35) 0%,
+                rgba(249, 115, 22, 0.3) 100%);
             box-shadow: 
-                0 4px 16px rgba(245, 158, 11, 0.3),
-                0 8px 24px rgba(245, 158, 11, 0.2),
-                0 0 20px rgba(245, 158, 11, 0.1);
+                0 4px 16px rgba(251, 146, 60, 0.3),
+                0 8px 24px rgba(251, 146, 60, 0.2),
+                0 0 20px rgba(251, 146, 60, 0.1);
+        }
+
+        body[data-design="fluent"].dark #submission-status-list li[data-status="error"] {
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.25) 0%,
+                rgba(220, 38, 38, 0.2) 100%);
+            border-left-color: #fca5a5;
         }
 
         body[data-design="fluent"].dark #submission-status-list li[data-status="error"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.35) 0%,
+                rgba(220, 38, 38, 0.3) 100%);
             box-shadow: 
                 0 4px 16px rgba(239, 68, 68, 0.3),
                 0 8px 24px rgba(239, 68, 68, 0.2),
@@ -1397,111 +1509,257 @@
 
         /* Copy exact styling from .m3-button-outlined */
         body[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(180, 200, 230, 0.35) 0%,
+                rgba(200, 220, 245, 0.28) 50%,
+                rgba(220, 210, 235, 0.32) 100%);
             color: var(--c-content);
-            border: none;
-            backdrop-filter: blur(5px) url(#liquid-filter);
+            border: 1.5px solid rgba(200, 220, 250, 0.5);
+            backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5),
+                        inset 0 -2px 4px rgba(100, 150, 200, 0.12),
+                        inset 0 0 20px rgba(150, 190, 255, 0.1),
+                        0 6px 20px rgba(120, 160, 200, 0.2),
+                        0 2px 8px rgba(100, 150, 200, 0.15);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="submitted"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"] {
-            background-color: color-mix(in srgb, var(--c-glass) 10%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(100, 130, 180, 0.32) 0%,
+                rgba(120, 150, 200, 0.28) 50%,
+                rgba(110, 140, 190, 0.30) 100%);
             color: var(--c-content);
-            border: 1px solid color-mix(in srgb, var(--c-light) 8%, transparent);
-            backdrop-filter: blur(30px) saturate(var(--saturation));
-            -webkit-backdrop-filter: blur(30px) saturate(var(--saturation));
-            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 15%), transparent),
-                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
-                        0 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
-                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 20%), transparent);
+            border: 1.5px solid rgba(150, 180, 220, 0.4);
+            backdrop-filter: blur(40px) saturate(230%);
+            -webkit-backdrop-filter: blur(40px) saturate(230%);
+            box-shadow: inset 0 2px 4px rgba(200, 220, 255, 0.25),
+                        inset 0 -2px 4px rgba(50, 80, 150, 0.15),
+                        inset 0 0 20px rgba(100, 150, 220, 0.1),
+                        0 6px 20px rgba(80, 120, 180, 0.28),
+                        0 2px 8px rgba(50, 100, 180, 0.2);
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="submitted"]:hover {
-            background-color: color-mix(in srgb, var(--c-glass) 25%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(180, 200, 230, 0.48) 0%,
+                rgba(200, 220, 245, 0.40) 50%,
+                rgba(220, 210, 235, 0.45) 100%);
+            box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.6),
+                        inset 0 -2px 4px rgba(100, 150, 200, 0.15),
+                        inset 0 0 25px rgba(150, 190, 255, 0.15),
+                        0 8px 24px rgba(120, 160, 200, 0.3),
+                        0 4px 12px rgba(100, 150, 200, 0.22);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="submitted"]:hover,
         body.dark[data-design="apple"] #submission-status-list li[data-status="submitted"]:hover {
-            background-color: color-mix(in srgb, var(--c-glass) 15%, transparent);
-            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 20%), transparent),
-                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent),
-                        0 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent),
-                        0 8px 24px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 30%), transparent);
-            border-color: color-mix(in srgb, var(--c-light) 12%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(100, 130, 180, 0.45) 0%,
+                rgba(120, 150, 200, 0.40) 50%,
+                rgba(110, 140, 190, 0.43) 100%);
+            box-shadow: inset 0 2px 6px rgba(200, 220, 255, 0.3),
+                        inset 0 -2px 4px rgba(20, 50, 120, 0.2),
+                        inset 0 0 25px rgba(100, 150, 220, 0.15),
+                        0 8px 24px rgba(80, 120, 180, 0.38),
+                        0 4px 12px rgba(50, 100, 180, 0.28);
+            border-color: rgba(180, 210, 255, 0.5);
         }
 
-        /* Copy exact styling from .m3-button-filled */
+        /* Liquid Glass Status Colors - Processed (Purple) */
         body[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
-            color: var(--c-content);
-            border: none;
+            background: linear-gradient(135deg, 
+                rgba(147, 112, 219, 0.22) 0%,
+                rgba(186, 85, 211, 0.15) 50%,
+                rgba(160, 82, 200, 0.1) 100%);
+            backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            border: 1px solid rgba(147, 112, 219, 0.35);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                inset 1px 1px 0 0 rgba(255, 255, 255, 0.25),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.1),
+                inset 0 -2px 4px -1px rgba(147, 112, 219, 0.2),
+                0 6px 16px rgba(147, 112, 219, 0.28),
+                0 0 20px rgba(147, 112, 219, 0.12);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="processed"] {
-            background-color: var(--c-action);
-            color: var(--c-light);
-            backdrop-filter: blur(20px) saturate(var(--saturation));
-            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
+            background: linear-gradient(135deg, 
+                rgba(147, 112, 219, 0.28) 0%,
+                rgba(186, 85, 211, 0.2) 50%,
+                rgba(160, 82, 200, 0.15) 100%);
+            backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            -webkit-backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            border: 1px solid rgba(147, 112, 219, 0.4);
             box-shadow:
-                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 35%), transparent),
-                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 25%), transparent),
-                0px 12px 30px color-mix(in srgb, var(--c-action) 50%, transparent),
-                0px 6px 16px color-mix(in srgb, var(--c-action) 35%, transparent),
-                0px 2px 8px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 40%), transparent);
+                inset 0 0 0 1px rgba(200, 150, 255, 0.2),
+                inset 1px 1px 2px 0 rgba(200, 150, 255, 0.15),
+                inset -1px -1px 2px 0 rgba(0, 0, 0, 0.3),
+                inset 0 -4px 8px -2px rgba(147, 112, 219, 0.35),
+                0 8px 20px rgba(147, 112, 219, 0.35),
+                0 0 30px rgba(147, 112, 219, 0.2);
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
-            background-color: color-mix(in srgb, var(--c-action) 40%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(147, 112, 219, 0.26) 0%,
+                rgba(186, 85, 211, 0.18) 50%,
+                rgba(160, 82, 200, 0.12) 100%);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+                inset 1px 1px 2px 0 rgba(255, 255, 255, 0.28),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.12),
+                inset 0 -2px 6px -1px rgba(147, 112, 219, 0.25),
+                0 8px 20px rgba(147, 112, 219, 0.32),
+                0 0 24px rgba(147, 112, 219, 0.15);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="processed"]:hover,
         body.dark[data-design="apple"] #submission-status-list li[data-status="processed"]:hover {
-            background-color: color-mix(in srgb, var(--c-action) 90%, var(--c-dark));
+            background: linear-gradient(135deg, 
+                rgba(147, 112, 219, 0.32) 0%,
+                rgba(186, 85, 211, 0.25) 50%,
+                rgba(160, 82, 200, 0.2) 100%);
             box-shadow:
-                inset 0 1px 0 0 color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 45%), transparent),
-                inset 0 -1px 0 0 color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent),
-                0px 16px 40px color-mix(in srgb, var(--c-action) 70%, transparent),
-                0px 8px 20px color-mix(in srgb, var(--c-action) 50%, transparent),
-                0px 4px 12px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 50%), transparent);
+                inset 0 0 0 1px rgba(220, 180, 255, 0.25),
+                inset 1px 1px 4px 0 rgba(220, 180, 255, 0.2),
+                inset -1px -1px 4px 0 rgba(0, 0, 0, 0.35),
+                inset 0 -4px 10px -2px rgba(147, 112, 219, 0.4),
+                0 10px 24px rgba(147, 112, 219, 0.4),
+                0 0 32px rgba(147, 112, 219, 0.25);
         }
 
+        /* Liquid Glass Status Colors - Overdue (Orange) */
         body[data-design="apple"] #submission-status-list li[data-status="overdue"] {
-            background-color: color-mix(in srgb, var(--c-action) 20%, transparent);
-            backdrop-filter: blur(5px) url(#liquid-filter);
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.22) 0%,
+                rgba(253, 186, 116, 0.15) 50%,
+                rgba(249, 115, 22, 0.1) 100%);
+            backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            border: 1px solid rgba(251, 146, 60, 0.35);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                inset 1px 1px 0 0 rgba(255, 255, 255, 0.25),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.1),
+                inset 0 -2px 4px -1px rgba(251, 146, 60, 0.2),
+                0 6px 16px rgba(251, 146, 60, 0.28),
+                0 0 20px rgba(251, 146, 60, 0.12);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="overdue"],
         body.dark[data-design="apple"] #submission-status-list li[data-status="overdue"] {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
-            backdrop-filter: blur(20px) saturate(var(--saturation));
-            -webkit-backdrop-filter: blur(20px) saturate(var(--saturation));
-            box-shadow: inset 0 1px 1px color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 18%), transparent),
-                        inset 0 -1px 2px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 28%), transparent),
-                        0 2px 10px color-mix(in srgb, var(--c-action) 20%, transparent),
-                        0 4px 16px color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 35%), transparent);
-            border: 1px solid color-mix(in srgb, var(--c-action) 25%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.28) 0%,
+                rgba(253, 186, 116, 0.2) 50%,
+                rgba(249, 115, 22, 0.15) 100%);
+            backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            -webkit-backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            border: 1px solid rgba(251, 146, 60, 0.4);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 200, 150, 0.2),
+                inset 1px 1px 2px 0 rgba(255, 200, 150, 0.15),
+                inset -1px -1px 2px 0 rgba(0, 0, 0, 0.3),
+                inset 0 -4px 8px -2px rgba(251, 146, 60, 0.35),
+                0 8px 20px rgba(251, 146, 60, 0.35),
+                0 0 30px rgba(251, 146, 60, 0.2);
         }
 
         body[data-design="apple"] #submission-status-list li[data-status="overdue"]:hover {
-            background-color: color-mix(in srgb, var(--c-action) 30%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.26) 0%,
+                rgba(253, 186, 116, 0.18) 50%,
+                rgba(249, 115, 22, 0.12) 100%);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+                inset 1px 1px 2px 0 rgba(255, 255, 255, 0.28),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.12),
+                inset 0 -2px 6px -1px rgba(251, 146, 60, 0.25),
+                0 8px 20px rgba(251, 146, 60, 0.32),
+                0 0 24px rgba(251, 146, 60, 0.15);
         }
 
         body[data-design="apple"].dark #submission-status-list li[data-status="overdue"]:hover,
         body.dark[data-design="apple"] #submission-status-list li[data-status="overdue"]:hover {
-            background-color: color-mix(in srgb, var(--c-action) 45%, transparent);
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.32) 0%,
+                rgba(253, 186, 116, 0.25) 50%,
+                rgba(249, 115, 22, 0.2) 100%);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 220, 180, 0.25),
+                inset 1px 1px 4px 0 rgba(255, 220, 180, 0.2),
+                inset -1px -1px 4px 0 rgba(0, 0, 0, 0.35),
+                inset 0 -4px 10px -2px rgba(251, 146, 60, 0.4),
+                0 10px 24px rgba(251, 146, 60, 0.4),
+                0 0 32px rgba(251, 146, 60, 0.25);
         }
 
-        body[data-design="apple"] #submission-status-list li[data-status="processing"] {
-            background: color-mix(in srgb, var(--c-action) 10%, transparent);
-            border: 1.5px solid color-mix(in srgb, var(--c-action) 20%, transparent);
-            font-weight: 500;
-        }
-
+        /* Liquid Glass Status Colors - Error (Red) */
         body[data-design="apple"] #submission-status-list li[data-status="error"] {
-            background: color-mix(in srgb, var(--lg-red) 15%, transparent);
-            border: 1.5px solid color-mix(in srgb, var(--lg-red) 30%, transparent);
-            font-weight: 500;
+            background: linear-gradient(135deg, 
+                rgba(220, 38, 38, 0.22) 0%,
+                rgba(191, 18, 27, 0.15) 50%,
+                rgba(153, 27, 27, 0.1) 100%);
+            backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(240%) brightness(1.1);
+            border: 1px solid rgba(220, 38, 38, 0.35);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                inset 1px 1px 0 0 rgba(255, 255, 255, 0.25),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.1),
+                inset 0 -2px 4px -1px rgba(220, 38, 38, 0.2),
+                0 6px 16px rgba(220, 38, 38, 0.28),
+                0 0 20px rgba(220, 38, 38, 0.12);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="error"],
+        body.dark[data-design="apple"] #submission-status-list li[data-status="error"] {
+            background: linear-gradient(135deg, 
+                rgba(220, 38, 38, 0.28) 0%,
+                rgba(191, 18, 27, 0.2) 50%,
+                rgba(153, 27, 27, 0.15) 100%);
+            backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            -webkit-backdrop-filter: blur(40px) saturate(250%) brightness(1.15);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 100, 100, 0.2),
+                inset 1px 1px 2px 0 rgba(255, 100, 100, 0.15),
+                inset -1px -1px 2px 0 rgba(0, 0, 0, 0.3),
+                inset 0 -4px 8px -2px rgba(220, 38, 38, 0.35),
+                0 8px 20px rgba(220, 38, 38, 0.35),
+                0 0 30px rgba(220, 38, 38, 0.2);
+        }
+
+        body[data-design="apple"] #submission-status-list li[data-status="error"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(220, 38, 38, 0.26) 0%,
+                rgba(191, 18, 27, 0.18) 50%,
+                rgba(153, 27, 27, 0.12) 100%);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+                inset 1px 1px 2px 0 rgba(255, 255, 255, 0.28),
+                inset -1px -1px 0 0 rgba(0, 0, 0, 0.12),
+                inset 0 -2px 6px -1px rgba(220, 38, 38, 0.25),
+                0 8px 20px rgba(220, 38, 38, 0.32),
+                0 0 24px rgba(220, 38, 38, 0.15);
+        }
+
+        body[data-design="apple"].dark #submission-status-list li[data-status="error"]:hover,
+        body.dark[data-design="apple"] #submission-status-list li[data-status="error"]:hover {
+            background: linear-gradient(135deg, 
+                rgba(220, 38, 38, 0.32) 0%,
+                rgba(191, 18, 27, 0.25) 50%,
+                rgba(153, 27, 27, 0.2) 100%);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 120, 120, 0.25),
+                inset 1px 1px 4px 0 rgba(255, 120, 120, 0.2),
+                inset -1px -1px 4px 0 rgba(0, 0, 0, 0.35),
+                inset 0 -4px 10px -2px rgba(220, 38, 38, 0.4),
+                0 10px 24px rgba(220, 38, 38, 0.4),
+                0 0 32px rgba(220, 38, 38, 0.25);
         }
 
         /* Selected State (Material 3) */
@@ -1934,45 +2192,298 @@
         }
 
         /* ==================================================================
+       2.7.5. GIAO DIỆN QUANTUM (Sci-Fi Dashboard)
+       ================================================================== */
+        body[data-design="quantum"] {
+            --font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+            --q-bg: #050505;
+            --q-surface: #0a0a0a;
+            --q-primary: #00f3ff;
+            --q-secondary: #7000ff;
+            --q-text: #e0e0e0;
+            --q-border: rgba(0, 243, 255, 0.3);
+            --q-glow: 0 0 10px rgba(0, 243, 255, 0.5);
+            
+            --m3-background: var(--q-bg);
+            --m3-surface: var(--q-surface);
+            --m3-surface-container: #0f0f0f;
+            --m3-surface-container-highest: #141414;
+            --m3-on-surface: var(--q-text);
+            --m3-on-surface-variant: #a0a0a0;
+            --m3-outline: var(--q-border);
+            --m3-primary: var(--q-primary);
+            
+            --radius-card: 4px;
+            --radius-btn: 2px;
+            --radius-input: 2px;
+        }
+
+        body[data-design="quantum"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        body[data-design="quantum"]::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Quantum Cards */
+        body[data-design="quantum"] .m3-setting-card,
+        body[data-design="quantum"] .m3-modal-content,
+        body[data-design="quantum"] aside {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid var(--q-border);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            position: relative;
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 20px), 
+                calc(100% - 20px) 100%, 
+                0 100%
+            );
+            border-radius: 0 !important;
+        }
+
+        /* Corner accents */
+        body[data-design="quantum"] .m3-setting-card::after,
+        body[data-design="quantum"] .m3-modal-content::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-top: 2px solid var(--q-primary);
+            border-left: 2px solid var(--q-primary);
+            pointer-events: none;
+        }
+        
+        body[data-design="quantum"] .m3-setting-card::before,
+        body[data-design="quantum"] .m3-modal-content::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            border-bottom: 2px solid var(--q-primary);
+            border-right: 2px solid var(--q-primary);
+            pointer-events: none;
+            /* Adjust for clip-path */
+            transform: translate(-5px, -5px); 
+        }
+
+        /* Buttons */
+        body[data-design="quantum"] .m3-button-filled {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--q-primary);
+            color: var(--q-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            transition: all 0.3s ease;
+            border-radius: 2px !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body[data-design="quantum"] .m3-button-filled::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        body[data-design="quantum"] .m3-button-filled:hover::before {
+            left: 100%;
+        }
+
+        body[data-design="quantum"] .m3-button-filled:hover {
+            background: var(--q-primary);
+            color: #000;
+            box-shadow: 0 0 25px var(--q-primary);
+            text-shadow: none;
+        }
+
+        /* Tonal/Outlined Buttons */
+        body[data-design="quantum"] .m3-button-tonal,
+        body[data-design="quantum"] .m3-button-outlined {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--q-text);
+            border-radius: 2px !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        body[data-design="quantum"] .m3-button-tonal:hover,
+        body[data-design="quantum"] .m3-button-outlined:hover {
+            border-color: var(--q-primary);
+            color: var(--q-primary);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        /* Inputs */
+        body[data-design="quantum"] .m3-input,
+        body[data-design="quantum"] .m3-select {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-left: 3px solid var(--q-primary);
+            color: var(--q-primary);
+            font-family: 'Rajdhani', monospace;
+            border-radius: 0 !important;
+        }
+
+        body[data-design="quantum"] .m3-input:focus,
+        body[data-design="quantum"] .m3-select:focus {
+            background: rgba(0, 243, 255, 0.05);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
+            border-color: var(--q-primary);
+        }
+
+        /* Status List */
+        body[data-design="quantum"] #submission-status-list li {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid transparent;
+            color: var(--q-text);
+            border-radius: 0 !important;
+            margin-bottom: 8px !important;
+            position: relative;
+        }
+        
+        body[data-design="quantum"] #submission-status-list li::before {
+            content: "[ ]";
+            margin-right: 10px;
+            color: #555;
+            font-family: monospace;
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="submitted"] { 
+            border-left-color: #00ff00; 
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="submitted"]::before {
+            content: "[OK]";
+            color: #00ff00;
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="processed"] { 
+            border-left-color: var(--q-primary); 
+            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="processed"]::before {
+            content: "[PROC]";
+            color: var(--q-primary);
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="error"] { 
+            border-left-color: #ff0000; 
+            box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="error"]::before {
+            content: "[ERR]";
+            color: #ff0000;
+        }
+
+        /* Headers */
+        body[data-design="quantum"] h1, 
+        body[data-design="quantum"] h2, 
+        body[data-design="quantum"] h3 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--q-primary);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        /* ==================================================================
        2.8. SETTINGS MODAL - THEME-SPECIFIC STYLING
        ================================================================== */
        
         /* Apple/Liquid Glass Settings Modal */
         body[data-design="apple"] #settings_modal .m3-modal-content {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(40px) saturate(180%);
-            -webkit-backdrop-filter: blur(40px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.5) 0%,
+                rgba(230, 240, 255, 0.45) 25%,
+                rgba(245, 245, 250, 0.48) 75%,
+                rgba(255, 245, 245, 0.45) 100%);
+            backdrop-filter: blur(70px) saturate(250%) brightness(1.2) contrast(1.1);
+            -webkit-backdrop-filter: blur(70px) saturate(250%) brightness(1.2) contrast(1.1);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+                0 12px 50px rgba(100, 150, 255, 0.12),
+                0 2px 10px rgba(200, 200, 255, 0.08),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9),
+                inset 0 -2px 4px rgba(100, 150, 200, 0.1),
+                inset 0 0 60px rgba(200, 220, 255, 0.15);
         }
         
         body[data-design="apple"].dark #settings_modal .m3-modal-content {
-            background: rgba(28, 28, 30, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: linear-gradient(135deg, 
+                rgba(28, 28, 35, 0.52) 0%,
+                rgba(60, 80, 120, 0.48) 25%,
+                rgba(40, 40, 50, 0.50) 75%,
+                rgba(50, 60, 100, 0.48) 100%);
+            backdrop-filter: blur(70px) saturate(240%) brightness(1.15);
+            -webkit-backdrop-filter: blur(70px) saturate(240%) brightness(1.15);
+            border: 1px solid rgba(150, 180, 255, 0.35);
             box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                0 12px 50px rgba(50, 100, 200, 0.25),
+                inset 0 2px 4px rgba(200, 220, 255, 0.15),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 0 80px rgba(100, 150, 255, 0.12);
         }
         
         body[data-design="apple"] #settings_modal .m3-setting-card {
-            background: rgba(255, 255, 255, 0.55);
-            backdrop-filter: blur(20px) saturate(150%);
-            border: 1px solid rgba(255, 255, 255, 0.45);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(220, 235, 255, 0.35) 50%,
+                rgba(245, 240, 255, 0.38) 100%);
+            backdrop-filter: blur(40px) saturate(200%) brightness(1.12);
+            -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.12);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 20px;
             box-shadow: 
-                0 2px 8px rgba(0, 0, 0, 0.06),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+                0 4px 12px rgba(100, 150, 255, 0.08),
+                inset 0 2px 4px rgba(255, 255, 255, 0.8),
+                inset 0 -1px 2px rgba(150, 180, 220, 0.08),
+                inset 0 0 40px rgba(200, 220, 255, 0.1);
         }
         
         body[data-design="apple"].dark #settings_modal .m3-setting-card {
-            background: rgba(58, 58, 60, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: linear-gradient(135deg, 
+                rgba(58, 68, 100, 0.38) 0%,
+                rgba(80, 100, 150, 0.35) 50%,
+                rgba(70, 80, 130, 0.36) 100%);
+            backdrop-filter: blur(40px) saturate(210%) brightness(1.08);
+            -webkit-backdrop-filter: blur(40px) saturate(210%) brightness(1.08);
+            border: 1px solid rgba(150, 180, 255, 0.3);
             box-shadow: 
-                0 2px 8px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                0 4px 12px rgba(50, 100, 200, 0.12),
+                inset 0 2px 4px rgba(200, 220, 255, 0.2),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.15),
+                inset 0 0 40px rgba(100, 150, 255, 0.08);
         }
         
         /* Fluent Settings Modal */
@@ -3675,6 +4186,8 @@
                 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
+
+
         /* ==================================================================
        4. TABLE STYLES (Material 3)
        ================================================================== */
@@ -3967,6 +4480,70 @@
         body.dark[data-design="apple"] #class_form_modal h3 {
             color: rgba(255, 255, 255, 0.98) !important;
         }
+
+        /* --- LIQUID GLASS GUIDE MODAL --- */
+        body[data-design="apple"] #guide_modal .m3-modal-content {
+            background-color: color-mix(in srgb, var(--c-glass) 16%, var(--c-light));
+            backdrop-filter: blur(24px) saturate(var(--saturation));
+            -webkit-backdrop-filter: blur(24px) saturate(var(--saturation));
+            border: 1px solid color-mix(in srgb, var(--c-light) 40%, transparent);
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.2),
+                inset 0 0 0 1px rgba(255,255,255,0.5);
+        }
+        
+        body[data-design="apple"].dark #guide_modal .m3-modal-content {
+            background-color: color-mix(in srgb, var(--c-glass) 20%, var(--c-dark));
+            border: 1px solid color-mix(in srgb, var(--c-light) 10%, transparent);
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.4),
+                inset 0 0 0 1px rgba(255,255,255,0.1);
+        }
+
+        body[data-design="apple"] .guide-step {
+            background-color: transparent !important;
+            border-width: 1px !important;
+            border-style: solid !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            backdrop-filter: blur(4px);
+        }
+
+        body[data-design="apple"] .guide-step-blue {
+            background-color: color-mix(in srgb, var(--lg-blue) 8%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-blue) 30%, transparent) !important;
+        }
+        body[data-design="apple"] .guide-step-green {
+            background-color: color-mix(in srgb, var(--lg-green) 8%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-green) 30%, transparent) !important;
+        }
+        body[data-design="apple"] .guide-step-purple {
+            background-color: color-mix(in srgb, var(--lg-purple) 8%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-purple) 30%, transparent) !important;
+        }
+        body[data-design="apple"] .guide-step-orange {
+            background-color: color-mix(in srgb, var(--lg-orange) 8%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-orange) 30%, transparent) !important;
+        }
+
+        /* Dark mode adjustments for steps */
+        body[data-design="apple"].dark .guide-step-blue {
+            background-color: color-mix(in srgb, var(--lg-blue) 15%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-blue) 40%, transparent) !important;
+        }
+        body[data-design="apple"].dark .guide-step-green {
+            background-color: color-mix(in srgb, var(--lg-green) 15%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-green) 40%, transparent) !important;
+        }
+        body[data-design="apple"].dark .guide-step-purple {
+            background-color: color-mix(in srgb, var(--lg-purple) 15%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-purple) 40%, transparent) !important;
+        }
+        body[data-design="apple"].dark .guide-step-orange {
+            background-color: color-mix(in srgb, var(--lg-orange) 15%, transparent) !important;
+            border-color: color-mix(in srgb, var(--lg-orange) 40%, transparent) !important;
+        }
+
+
     </style>
 </head>
 
@@ -4078,61 +4655,64 @@
             </footer>
         </aside>
 
-        <!-- MAIN CONTENT (GIỮ NGUYÊN CẤU TRÚC, THÊM TOOLBAR LÊN TRÊN) -->
-        <main class="flex-1 p-4 md:p-6 overflow-y-auto" style="width: 100%;">
-            <div class="max-w-7xl mx-auto flex flex-col h-full">
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 p-0 overflow-hidden relative" style="width: 100%;">
+            
+            <!-- MAIN CONTENT CONTAINER -->
+            <div class="h-full flex flex-col p-4 md:p-6 overflow-y-auto">
+                <div class="max-w-7xl mx-auto flex flex-col h-full w-full">
 
-                <!-- [MỚI] QUICK ACTIONS TOOLBAR (Chèn vào vị trí trên cùng) -->
-                <div id="quick_actions_toolbar"
-                    class="bg-surface-variant elevation-2 p-4 rounded-[28px] mb-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-colors duration-300">
-                    <div class="flex items-center gap-3 px-2">
-                        <span class="text-sm font-medium text-on-surface-variant">Truy cập nhanh:</span>
-                        <button id="btn_open_drive"
-                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
-                                </path>
-                            </svg>
-                            Folder Lớp
-                        </button>
-                        <button id="btn_open_sheet"
-                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="3" y1="9" x2="21" y2="9"></line>
-                                <line x1="9" y1="21" x2="9" y2="9"></line>
-                            </svg>
-                            Sheet Điểm
-                        </button>
-                        <button id="btn_open_form"
-                            class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                            Form Nộp
-                        </button>
+                    <!-- [MỚI] QUICK ACTIONS TOOLBAR (Chèn vào vị trí trên cùng) -->
+                    <div id="quick_actions_toolbar"
+                        class="bg-surface-variant elevation-2 p-4 rounded-[28px] mb-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-colors duration-300">
+                        <div class="flex items-center gap-3 px-2">
+                            <span class="text-sm font-medium text-on-surface-variant">Truy cập nhanh:</span>
+                            <button id="btn_open_drive"
+                                class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                    </path>
+                                </svg>
+                                Folder Lớp
+                            </button>
+                            <button id="btn_open_sheet"
+                                class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                                </svg>
+                                Sheet Điểm
+                            </button>
+                            <button id="btn_open_form"
+                                class="m3-button m3-button-filled font-medium py-2 px-4 rounded-full text-sm smooth-transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                Form Nộp
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="btn_sync_link"
+                                class="m3-button m3-button-filled font-semibold py-2 px-5 rounded-full text-sm smooth-transition flex items-center gap-2 hidden"
+                                title="Đồng bộ lại folder, form, sheet và ghi vào config">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Đồng bộ
+                            </button>
+                            <span id="system_status_text" class="text-xs text-on-surface-variant opacity-70">Chờ chọn lớp...</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btn_sync_link"
-                            class="m3-button m3-button-filled font-semibold py-2 px-5 rounded-full text-sm smooth-transition flex items-center gap-2 hidden"
-                            title="Đồng bộ lại folder, form, sheet và ghi vào config">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2.5">
-                                <polyline points="23 4 23 10 17 10"></polyline>
-                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                            </svg>
-                            Đồng bộ
-                        </button>
-                        <span id="system_status_text" class="text-xs text-on-surface-variant opacity-70">Chờ chọn lớp...</span>
-                    </div>
-                </div>
 
                 <!-- CẤU TRÚC CŨ (2 CỘT) -->
                 <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-[400px]">
@@ -4154,8 +4734,7 @@
                             class="flex-1 bg-surface-variant rounded-[28px] p-4 elevation-2 flex flex-col min-h-0 transition-colors duration-300">
                             <div class="flex items-center justify-between mb-2 px-2">
                                 <h2 class="text-lg font-medium text-on-surface-variant">Tình trạng Nộp bài</h2>
-                                <div id="submission-stats" class="hidden text-sm font-semibold text-on-surface-variant bg-primary-container text-on-primary-container px-3 py-1 rounded-full">
-                                    <span id="submitted-count">0</span>/<span id="total-students">0</span>
+                                <div id="submission-stats" class="hidden text-xs font-semibold px-3 py-1.5 rounded-full bg-surface-container-high">
                                 </div>
                             </div>
                             <div id="submission-status-list"
@@ -4241,7 +4820,7 @@
                 <div class="space-y-6 text-on-surface">
                     
                     <!-- Bước 1: Đăng nhập -->
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-[20px] p-4 border-2 border-blue-300 dark:border-blue-700">
+                    <div class="guide-step guide-step-blue bg-blue-50 dark:bg-blue-900/20 rounded-[20px] p-4 border-2 border-blue-300 dark:border-blue-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-blue-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 1
@@ -4257,7 +4836,7 @@
                     </div>
 
                     <!-- Bước 2: Tạo lớp -->
-                    <div class="bg-green-50 dark:bg-green-900/20 rounded-[20px] p-4 border-2 border-green-300 dark:border-green-700">
+                    <div class="guide-step guide-step-green bg-green-50 dark:bg-green-900/20 rounded-[20px] p-4 border-2 border-green-300 dark:border-green-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-green-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 2
@@ -4278,7 +4857,7 @@
                     </div>
 
                     <!-- Bước 3: Truy cập nhanh -->
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-[20px] p-4 border-2 border-purple-300 dark:border-purple-700">
+                    <div class="guide-step guide-step-purple bg-purple-50 dark:bg-purple-900/20 rounded-[20px] p-4 border-2 border-purple-300 dark:border-purple-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-purple-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 3
@@ -4314,7 +4893,7 @@
                     </div>
 
                     <!-- Bước 4: Xử lý PDF -->
-                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-[20px] p-4 border-2 border-orange-300 dark:border-orange-700">
+                    <div class="guide-step guide-step-orange bg-orange-50 dark:bg-orange-900/20 rounded-[20px] p-4 border-2 border-orange-300 dark:border-orange-700">
                         <div class="flex items-start gap-3">
                             <div class="bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold text-base shadow-md">
                                 4
@@ -4429,6 +5008,18 @@
             <div id="settings-modal-content" class="flex-1 px-6 py-5 overflow-y-auto">
                 <div id="settings-panel-appearance" class="m3-settings-panel space-y-4" data-active="true">
                     <section class="m3-setting-card rounded-2xl">
+                        <h3 class="text-base font-semibold text-on-surface mb-3">Bố cục (Layout)</h3>
+                        <div class="flex gap-2">
+                            <button id="layout-standard" data-value="standard"
+                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Cơ bản</button>
+                            <button id="layout-pro" data-value="pro"
+                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Pro Dashboard</button>
+                        </div>
+                        <p class="text-xs text-on-surface-variant mt-2">
+                            * Pro Dashboard: Chuyển danh sách bài tập sang cột trái, tối ưu không gian cho danh sách nộp bài.
+                        </p>
+                    </section>
+                    <section class="m3-setting-card rounded-2xl">
                         <h3 class="text-base font-semibold text-on-surface mb-3">Phong cách thiết kế</h3>
                         <div class="flex flex-wrap gap-2">
                             <button id="design-material"
@@ -4446,6 +5037,9 @@
                             <button id="design-prism"
                                 class="design-btn m3-button m3-button-tonal text-xs py-2 px-3 rounded-full"
                                 data-value="prism">Prism</button>
+                            <button id="design-quantum"
+                                class="design-btn m3-button m3-button-tonal text-xs py-2 px-3 rounded-full"
+                                data-value="quantum">Quantum</button>
                         </div>
                     </section>
                     <section class="m3-setting-card rounded-2xl">
