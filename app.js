@@ -4443,25 +4443,31 @@ function setLayout(layout) {
 }
 
 function updateProDashboard() {
-    // 1. Update User Info
-    const userAvatar = document.getElementById('pro-user-avatar');
-    const userIcon = document.getElementById('pro-user-icon');
-    const userName = document.getElementById('pro-user-name');
-    const userEmail = document.getElementById('pro-user-email');
-    
-    if (gisInited && gapi.client.getToken()) {
-        userName.textContent = "Admin"; // Placeholder
-        userEmail.textContent = "Đã đăng nhập";
-        if (userIcon) userIcon.classList.remove('hidden');
-        if (userAvatar) userAvatar.classList.add('hidden');
-    } else {
-        userName.textContent = "Khách";
-        userEmail.textContent = "Chưa đăng nhập";
-    }
-
-    // 2. Update Stats
+    // 1. Update Stats
     const statsClasses = document.getElementById('pro-stats-classes');
     if (statsClasses) statsClasses.textContent = classProfiles.length;
+    
+    const statsSubmitted = document.getElementById('pro-stats-submitted');
+    const statsPending = document.getElementById('pro-stats-pending');
+    
+    // Calculate stats from cache if available
+    let submittedCount = 0;
+    let pendingCount = 0;
+    
+    if (activeAssignment) {
+        const key = getStatusCacheKey();
+        const cachedData = localStorage.getItem(key);
+        if (cachedData) {
+            try {
+                const statusList = JSON.parse(cachedData);
+                submittedCount = statusList.filter(item => item.status === 'submitted' || item.status === 'processed').length;
+                pendingCount = statusList.filter(item => item.status === 'submitted').length;
+            } catch (e) {}
+        }
+    }
+    
+    if (statsSubmitted) statsSubmitted.textContent = submittedCount;
+    if (statsPending) statsPending.textContent = pendingCount;
 
     // 3. Render Class Cards
     const grid = document.getElementById('pro-classes-grid');
