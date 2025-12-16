@@ -3138,12 +3138,13 @@ async function markFolderAsScanned(folderId, formFile, sheetFile) {
                     appProperties: {
                         scanned: 'true',
                         formId: formFile.id,
-                    formLink: formFile.webViewLink,
-                    sheetId: sheetFile.id,
-                    sheetLink: sheetFile.webViewLink
+                        formLink: formFile.webViewLink,
+                        sheetId: sheetFile.id,
+                        sheetLink: sheetFile.webViewLink
+                    }
                 }
-            }
-        });
+            })
+        );
         console.log(`[METADATA] Đã đánh dấu folder ${folderId} là đã quét`);
     } catch (err) {
         console.error(`[METADATA] Lỗi đánh dấu folder ${folderId}:`, err);
