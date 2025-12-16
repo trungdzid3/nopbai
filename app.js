@@ -586,7 +586,9 @@ async function reprocessAndDownload(folderId, folderName) {
 
     try {
         const folderTypeName = activeAssignment ? activeAssignment.name : "Bài tập";
-        const wasSuccessful = await processSingleFolder(folderId, folderName, folderTypeName);
+        const wasSuccessful = await executeWithTokenRefresh(() => 
+            processSingleFolder(folderId, folderName, folderTypeName)
+        );
 
         if (wasSuccessful) {
             updateStatus(`✓ Tải lại thành công: "${folderName}"`);
@@ -2136,6 +2138,97 @@ function checkInitStatus() {
     }
 }
 
+// ==================================================================
+// TOKEN REFRESH & 401 ERROR HANDLING
+// ==================================================================
+
+/**
+ * Wrapper function để tự động xử lý lỗi 401 (token hết hạn)
+ * 
+ * KHI NÀO LỖI 401 XẢY RA?
+ * - Access token của Google OAuth có thời hạn 1 giờ
+ * - Nếu để ứng dụng mở quá 1 giờ không thao tác, token sẽ hết hạn
+ * - Khi gọi API với token hết hạn, Google trả về lỗi 401 Unauthorized
+ * 
+ * GIẢI PHÁP:
+ * - Function này tự động catch lỗi 401
+ * - Yêu cầu token mới (silent refresh - không cần popup nếu có thể)
+ * - Retry lại request với token mới
+ * - Nếu không thể refresh tự động, yêu cầu đăng nhập lại
+ * 
+ * @param {Function} apiCall - Hàm gọi API cần thực thi
+ * @param {number} retryCount - Số lần retry (mặc định 1)
+ * @returns {Promise} Kết quả của API call
+ */
+async function executeWithTokenRefresh(apiCall, retryCount = 1) {
+    try {
+        return await apiCall();
+    } catch (error) {
+        // Kiểm tra nếu là lỗi 401 (Unauthorized)
+        const is401 = 
+            error.status === 401 || 
+            error.code === 401 ||
+            (error.result && error.result.error && error.result.error.code === 401) ||
+            (error.message && error.message.includes('401'));
+        
+        if (is401 && retryCount > 0) {
+            console.warn('[TOKEN] ⚠️ Phát hiện lỗi 401 (Token hết hạn), đang làm mới...');
+            updateStatus('⟳ Token hết hạn sau 1 giờ không hoạt động, đang làm mới...');
+            
+            // Yêu cầu token mới
+            const refreshed = await refreshAccessToken();
+            
+            if (refreshed) {
+                console.log('[TOKEN] ✓ Token đã được làm mới thành công, đang thử lại request...');
+                updateStatus('✓ Đã làm mới token, tiếp tục xử lý...');
+                // Retry API call với token mới
+                return await apiCall();
+            } else {
+                throw new Error('Không thể làm mới token tự động. Vui lòng đăng nhập lại.');
+            }
+        }
+        
+        // Nếu không phải 401 hoặc đã hết retry, throw error gốc
+        throw error;
+    }
+}
+
+/**
+ * Làm mới access token
+ * @returns {Promise<boolean>} true nếu thành công
+ */
+function refreshAccessToken() {
+    return new Promise((resolve) => {
+        if (!tokenClient) {
+            console.error('[TOKEN] tokenClient chưa được khởi tạo');
+            updateStatus('✗ Không thể làm mới token: Hệ thống chưa sẵn sàng', true);
+            resolve(false);
+            return;
+        }
+        
+        // Request token mới với prompt: 'none' để không hiện popup nếu có thể
+        tokenClient.requestAccessToken({ 
+            prompt: 'none',
+            callback: (response) => {
+                if (response.error) {
+                    console.error('[TOKEN] Lỗi khi làm mới:', response.error);
+                    updateStatus('✗ Không thể làm mới token tự động. Vui lòng đăng nhập lại.', true);
+                    // Hiện nút đăng nhập lại
+                    authButton.style.display = 'block';
+                    signoutButton.style.display = 'none';
+                    processButton.disabled = true;
+                    resolve(false);
+                } else {
+                    gapi.client.setToken(response);
+                    console.log('[TOKEN] ✓ Token đã được làm mới thành công');
+                    updateStatus('✓ Token đã được làm mới');
+                    resolve(true);
+                }
+            }
+        });
+    });
+}
+
 function handleAuthClick() {
     if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
     else updateStatus("✗ Lỗi: Hệ thống Đăng nhập (GIS) chưa sẵn sàng.", true);
@@ -2293,7 +2386,9 @@ async function handleProcessClick() {
         }
         
         updateStatus("→ Đang quét thư mục con...");
-        const allFoldersFromDrive = await findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }]);
+        const allFoldersFromDrive = await executeWithTokenRefresh(() =>
+            findAllSubfolders([{ id: parentFolderIdToProcess, name: 'root' }])
+        );
         
         // Filter out "File responses" folder (case-insensitive)
         const filteredFolders = allFoldersFromDrive.filter(folder => 
@@ -2992,12 +3087,14 @@ async function listFilesInFolder(folderId) {
 
     try {
         do {
-            const response = await gapi.client.drive.files.list({
-                q: `'${folderId}' in parents and trashed=false`,
-                fields: 'nextPageToken, files(id, name, mimeType, webViewLink)',
-                pageSize: 100,
-                pageToken: pageToken
-            });
+            const response = await executeWithTokenRefresh(() => 
+                gapi.client.drive.files.list({
+                    q: `'${folderId}' in parents and trashed=false`,
+                    fields: 'nextPageToken, files(id, name, mimeType, webViewLink)',
+                    pageSize: 100,
+                    pageToken: pageToken
+                })
+            );
 
             if (response.result.files) {
                 response.result.files.forEach(file => {
@@ -3019,10 +3116,12 @@ async function listFilesInFolder(folderId) {
 
 async function getFolderMetadata(folderId) {
     try {
-        const response = await gapi.client.drive.files.get({
-            fileId: folderId,
-            fields: 'appProperties'
-        });
+        const response = await executeWithTokenRefresh(() =>
+            gapi.client.drive.files.get({
+                fileId: folderId,
+                fields: 'appProperties'
+            })
+        );
         return response.result;
     } catch (err) {
         console.error(`[METADATA] Lỗi lấy metadata folder ${folderId}:`, err);
@@ -3032,12 +3131,13 @@ async function getFolderMetadata(folderId) {
 
 async function markFolderAsScanned(folderId, formFile, sheetFile) {
     try {
-        await gapi.client.drive.files.update({
-            fileId: folderId,
-            resource: {
-                appProperties: {
-                    scanned: 'true',
-                    formId: formFile.id,
+        await executeWithTokenRefresh(() =>
+            gapi.client.drive.files.update({
+                fileId: folderId,
+                resource: {
+                    appProperties: {
+                        scanned: 'true',
+                        formId: formFile.id,
                     formLink: formFile.webViewLink,
                     sheetId: sheetFile.id,
                     sheetLink: sheetFile.webViewLink
@@ -4399,12 +4499,138 @@ function initTheme() {
     
     // Then apply theme
     applyTheme(theme, accent);
+
+    // [NEW] Init Layout
+    initLayout();
 }
 
-// Removed Pro Dashboard and Layout Switcher functionality
-// This function is kept empty for backward compatibility
+// [NEW] Layout Switcher Logic
+function initLayout() {
+    const savedLayout = localStorage.getItem('preferredLayout') || 'standard';
+    setLayout(savedLayout);
+    
+    const layoutButtons = document.querySelectorAll('.layout-btn');
+    layoutButtons.forEach(btn => {
+        const isActive = btn.dataset.value === savedLayout;
+        btn.dataset.active = isActive;
+        btn.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
+        if (isActive) btn.classList.add('m3-button-filled');
+        else btn.classList.add('m3-button-outlined');
+        
+        btn.onclick = () => {
+            setLayout(btn.dataset.value);
+            // Update UI
+            layoutButtons.forEach(b => {
+                b.dataset.active = (b === btn);
+                b.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
+                if (b === btn) b.classList.add('m3-button-filled');
+                else b.classList.add('m3-button-outlined');
+            });
+        };
+    });
+}
+
+function setLayout(layout) {
+    document.body.setAttribute('data-layout', layout);
+    localStorage.setItem('preferredLayout', layout);
+    
+    // Trigger resize event to ensure charts/grids redraw correctly
+    window.dispatchEvent(new Event('resize'));
+    
+    if (layout === 'pro') {
+        updateProDashboard();
+    }
+}
+
 function updateProDashboard() {
-    // No-op: Pro Dashboard feature has been removed
+    // 1. Update Stats
+    const statsClasses = document.getElementById('pro-stats-classes');
+    if (statsClasses) statsClasses.textContent = classProfiles.length;
+    
+    const statsSubmitted = document.getElementById('pro-stats-submitted');
+    const statsPending = document.getElementById('pro-stats-pending');
+    
+    // Calculate stats from cache if available
+    let submittedCount = 0;
+    let pendingCount = 0;
+    
+    if (activeAssignment) {
+        const key = getStatusCacheKey();
+        const cachedData = localStorage.getItem(key);
+        if (cachedData) {
+            try {
+                const statusList = JSON.parse(cachedData);
+                submittedCount = statusList.filter(item => item.status === 'submitted' || item.status === 'processed').length;
+                pendingCount = statusList.filter(item => item.status === 'submitted').length;
+            } catch (e) {}
+        }
+    }
+    
+    if (statsSubmitted) statsSubmitted.textContent = submittedCount;
+    if (statsPending) statsPending.textContent = pendingCount;
+
+    // 3. Render Class Cards
+    const grid = document.getElementById('pro-classes-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    if (classProfiles.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-12 text-on-surface-variant opacity-60">
+                <p>Chưa có lớp học nào. Hãy thêm lớp mới!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    classProfiles.forEach((profile, index) => {
+        const card = document.createElement('div');
+        card.className = 'bg-surface p-5 rounded-[24px] border border-outline-variant hover:elevation-2 transition-all cursor-pointer group relative overflow-hidden';
+        
+        // Random gradient for card header/bg
+        const gradients = [
+            'from-blue-500/10 to-cyan-500/10',
+            'from-purple-500/10 to-pink-500/10',
+            'from-orange-500/10 to-red-500/10',
+            'from-green-500/10 to-emerald-500/10'
+        ];
+        const gradient = gradients[index % gradients.length];
+        
+        card.innerHTML = `
+            <div class="absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative z-10 flex flex-col gap-3">
+                <div class="flex items-start justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </div>
+                    <button class="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); editClassProfile(${index})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-lg text-on-surface line-clamp-1">${profile.name}</h3>
+                    <p class="text-xs text-on-surface-variant font-mono mt-1 truncate opacity-70">${profile.id}</p>
+                </div>
+                
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-xs px-2 py-1 rounded-md bg-surface-container text-on-surface-variant">
+                        ${profile.assignmentTypes ? profile.assignmentTypes.length : 0} loại bài tập
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        card.onclick = () => {
+            loadClassProfile(index);
+            // Visual feedback
+            document.querySelectorAll('#pro-classes-grid > div').forEach(c => c.classList.remove('ring-2', 'ring-primary'));
+            card.classList.add('ring-2', 'ring-primary');
+        };
+        
+        grid.appendChild(card);
+    });
 }
 
 customColorInput.addEventListener('input', () => {
