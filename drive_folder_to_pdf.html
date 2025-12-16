@@ -32,6 +32,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         /* ==================================================================
@@ -2188,6 +2189,232 @@
             background: rgba(0, 210, 255, 0.12);
             color: #00ffff;
             box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
+        }
+
+        /* ==================================================================
+       2.7.5. GIAO DIỆN QUANTUM (Sci-Fi Dashboard)
+       ================================================================== */
+        body[data-design="quantum"] {
+            --font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+            --q-bg: #050505;
+            --q-surface: #0a0a0a;
+            --q-primary: #00f3ff;
+            --q-secondary: #7000ff;
+            --q-text: #e0e0e0;
+            --q-border: rgba(0, 243, 255, 0.3);
+            --q-glow: 0 0 10px rgba(0, 243, 255, 0.5);
+            
+            --m3-background: var(--q-bg);
+            --m3-surface: var(--q-surface);
+            --m3-surface-container: #0f0f0f;
+            --m3-surface-container-highest: #141414;
+            --m3-on-surface: var(--q-text);
+            --m3-on-surface-variant: #a0a0a0;
+            --m3-outline: var(--q-border);
+            --m3-primary: var(--q-primary);
+            
+            --radius-card: 4px;
+            --radius-btn: 2px;
+            --radius-input: 2px;
+        }
+
+        body[data-design="quantum"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        body[data-design="quantum"]::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Quantum Cards */
+        body[data-design="quantum"] .m3-setting-card,
+        body[data-design="quantum"] .m3-modal-content,
+        body[data-design="quantum"] aside {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid var(--q-border);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            position: relative;
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 20px), 
+                calc(100% - 20px) 100%, 
+                0 100%
+            );
+            border-radius: 0 !important;
+        }
+
+        /* Corner accents */
+        body[data-design="quantum"] .m3-setting-card::after,
+        body[data-design="quantum"] .m3-modal-content::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-top: 2px solid var(--q-primary);
+            border-left: 2px solid var(--q-primary);
+            pointer-events: none;
+        }
+        
+        body[data-design="quantum"] .m3-setting-card::before,
+        body[data-design="quantum"] .m3-modal-content::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            border-bottom: 2px solid var(--q-primary);
+            border-right: 2px solid var(--q-primary);
+            pointer-events: none;
+            /* Adjust for clip-path */
+            transform: translate(-5px, -5px); 
+        }
+
+        /* Buttons */
+        body[data-design="quantum"] .m3-button-filled {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--q-primary);
+            color: var(--q-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            transition: all 0.3s ease;
+            border-radius: 2px !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body[data-design="quantum"] .m3-button-filled::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        body[data-design="quantum"] .m3-button-filled:hover::before {
+            left: 100%;
+        }
+
+        body[data-design="quantum"] .m3-button-filled:hover {
+            background: var(--q-primary);
+            color: #000;
+            box-shadow: 0 0 25px var(--q-primary);
+            text-shadow: none;
+        }
+
+        /* Tonal/Outlined Buttons */
+        body[data-design="quantum"] .m3-button-tonal,
+        body[data-design="quantum"] .m3-button-outlined {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--q-text);
+            border-radius: 2px !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        body[data-design="quantum"] .m3-button-tonal:hover,
+        body[data-design="quantum"] .m3-button-outlined:hover {
+            border-color: var(--q-primary);
+            color: var(--q-primary);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        /* Inputs */
+        body[data-design="quantum"] .m3-input,
+        body[data-design="quantum"] .m3-select {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-left: 3px solid var(--q-primary);
+            color: var(--q-primary);
+            font-family: 'Rajdhani', monospace;
+            border-radius: 0 !important;
+        }
+
+        body[data-design="quantum"] .m3-input:focus,
+        body[data-design="quantum"] .m3-select:focus {
+            background: rgba(0, 243, 255, 0.05);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
+            border-color: var(--q-primary);
+        }
+
+        /* Status List */
+        body[data-design="quantum"] #submission-status-list li {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid transparent;
+            color: var(--q-text);
+            border-radius: 0 !important;
+            margin-bottom: 8px !important;
+            position: relative;
+        }
+        
+        body[data-design="quantum"] #submission-status-list li::before {
+            content: "[ ]";
+            margin-right: 10px;
+            color: #555;
+            font-family: monospace;
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="submitted"] { 
+            border-left-color: #00ff00; 
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="submitted"]::before {
+            content: "[OK]";
+            color: #00ff00;
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="processed"] { 
+            border-left-color: var(--q-primary); 
+            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="processed"]::before {
+            content: "[PROC]";
+            color: var(--q-primary);
+        }
+
+        body[data-design="quantum"] #submission-status-list li[data-status="error"] { 
+            border-left-color: #ff0000; 
+            box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.1);
+        }
+        body[data-design="quantum"] #submission-status-list li[data-status="error"]::before {
+            content: "[ERR]";
+            color: #ff0000;
+        }
+
+        /* Headers */
+        body[data-design="quantum"] h1, 
+        body[data-design="quantum"] h2, 
+        body[data-design="quantum"] h3 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--q-primary);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
         }
 
         /* ==================================================================
@@ -4791,6 +5018,9 @@
                             <button id="design-prism"
                                 class="design-btn m3-button m3-button-tonal text-xs py-2 px-3 rounded-full"
                                 data-value="prism">Prism</button>
+                            <button id="design-quantum"
+                                class="design-btn m3-button m3-button-tonal text-xs py-2 px-3 rounded-full"
+                                data-value="quantum">Quantum</button>
                         </div>
                     </section>
                     <section class="m3-setting-card rounded-2xl">

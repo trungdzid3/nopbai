@@ -3438,14 +3438,48 @@ async function scanAndSyncClasses(silent = false) {
     const selectedId = classProfileSelectValue ? classProfileSelectValue.value : classProfileSelect.value;
     if (selectedId) {
         const currentProfile = classProfiles.find(p => p.id === selectedId);
-        if (currentProfile && currentProfile.sheetId) {
-            const sheetExists = await checkSheetExists(currentProfile.sheetId);
+        
+        // LOGIC MỚI: Kiểm tra kỹ lưỡng trước khi tạo lại
+        if (currentProfile) {
+            let sheetExists = false;
+            
+            // 1. Kiểm tra ID hiện tại (nếu có)
+            if (currentProfile.sheetId) {
+                sheetExists = await checkSheetExists(currentProfile.sheetId);
+            }
+            
+            // 2. Nếu ID không tồn tại (hoặc sai), quét folder để tìm file thực tế
+            if (!sheetExists) {
+                const classFolderId = currentProfile.classFolderId || currentProfile.id;
+                if (classFolderId) {
+                    if (!silent) updateStatus(`🔍 Đang quét folder lớp để tìm Sheet...`);
+                    const { sheetFile } = await scanClassFolder(classFolderId);
+                    
+                    if (sheetFile) {
+                        console.log(`[SCAN] Tìm thấy Sheet có sẵn: ${sheetFile.name} (${sheetFile.id})`);
+                        // Cập nhật profile với ID tìm thấy
+                        currentProfile.sheetId = sheetFile.id;
+                        currentProfile.sheetUrl = sheetFile.webViewLink;
+                        
+                        // Save to localStorage
+                        const idx = classProfiles.findIndex(p => p.id === currentProfile.id);
+                        if (idx !== -1) {
+                            classProfiles[idx] = currentProfile;
+                            localStorage.setItem('classProfiles', JSON.stringify(classProfiles));
+                        }
+                        
+                        if (!silent) updateStatus(`✅ Đã liên kết lại với Sheet: ${sheetFile.name}`);
+                        sheetExists = true;
+                    }
+                }
+            }
+            
+            // 3. Chỉ tạo mới nếu thực sự không tìm thấy gì
             if (!sheetExists) {
                 try {
-                    if (!silent) updateStatus(`⚠️ Phát hiện Sheet bị xóa cho lớp "${currentProfile.name}"`);
+                    if (!silent) updateStatus(`⚠️ Không tìm thấy Sheet nào. Đang tạo mới cho lớp "${currentProfile.name}"`);
                     await recreateClassSheet(currentProfile);
                     if (!silent) updateStatus('✅ Đã tạo lại Sheet thành công!');
-                    // Reload để cập nhật UI
                     loadClassProfiles();
                 } catch (e) {
                     updateStatus(`❌ Lỗi tạo lại Sheet: ${e.message}`, true);
