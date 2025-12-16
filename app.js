@@ -450,7 +450,11 @@ function handleAssignmentTypeChange(name, folderId) {
     activeAssignment = { name, folderId, sheetName: name }; // sheetName = name của assignment
     updateAssignmentSelectionUI();
     updateStatus(`→ Đổi sang loại bài tập: ${name}`);
-    loadSubmissionStatusFromCache();
+    
+    // [UPDATE] Trigger immediate refresh instead of just loading cache
+    // loadSubmissionStatusFromCache(); -> OLD
+    checkSubmissionStatus(); // -> NEW: Fetch fresh data immediately
+    
     // Cập nhật thống kê số lượng nộp bài
     updateSubmissionStats();
     // Removed runAutoScan() - no longer scan on assignment change
@@ -1976,8 +1980,12 @@ function checkSystemReady() {
         submissionStatusPlaceholder.style.setProperty('display', 'none', 'important');
         submissionStatusPlaceholder.classList.add('hidden'); // Đảm bảo hoàn toàn ẩn
 
-        // Load submission status from cache when logged in
-        loadSubmissionStatusFromCache(true);
+        // [UPDATE] Trigger immediate refresh on app start/login if context exists
+        if (classProfileSelect.value && activeAssignment) {
+             checkSubmissionStatus();
+        } else {
+             loadSubmissionStatusFromCache(true);
+        }
 
         // Auto-scan classes from Drive after login (silent mode)
         if (inpRootFolderId && inpRootFolderId.value.trim()) {
@@ -4326,7 +4334,138 @@ function initTheme() {
     
     // Then apply theme
     applyTheme(theme, accent);
+
+    // [NEW] Init Layout
+    initLayout();
 }
+
+// [NEW] Layout Switcher Logic
+function initLayout() {
+    const savedLayout = localStorage.getItem('preferredLayout') || 'standard';
+    setLayout(savedLayout);
+    
+    const layoutButtons = document.querySelectorAll('.layout-btn');
+    layoutButtons.forEach(btn => {
+        const isActive = btn.dataset.value === savedLayout;
+        btn.dataset.active = isActive;
+        btn.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
+        if (isActive) btn.classList.add('m3-button-filled');
+        else btn.classList.add('m3-button-outlined');
+        
+        btn.onclick = () => {
+            setLayout(btn.dataset.value);
+            // Update UI
+            layoutButtons.forEach(b => {
+                b.dataset.active = (b === btn);
+                b.classList.remove('m3-button-tonal', 'm3-button-outlined', 'm3-button-filled');
+                if (b === btn) b.classList.add('m3-button-filled');
+                else b.classList.add('m3-button-outlined');
+            });
+        };
+    });
+}
+
+function setLayout(layout) {
+    document.body.setAttribute('data-layout', layout);
+    localStorage.setItem('preferredLayout', layout);
+    
+    const assignmentContainer = document.getElementById('assignment_types_container');
+    const statsContainer = document.getElementById('submission-stats');
+    const sidebarContent = document.querySelector('aside .flex.flex-col.h-full'); // Container inside aside
+    const mainContent = document.querySelector('main .max-w-5xl'); // Container inside main
+    
+    // Elements to move
+    const assignmentWrapper = document.getElementById('assignment-wrapper'); // We need to wrap assignment buttons to move them easily
+    
+    if (layout === 'pro') {
+        // --- PRO MODE: Move Assignments to Sidebar ---
+        if (sidebarContent && assignmentContainer) {
+            // Create a wrapper if not exists in sidebar for assignments
+            let sidebarAssignmentArea = document.getElementById('sidebar-assignment-area');
+            if (!sidebarAssignmentArea) {
+                sidebarAssignmentArea = document.createElement('div');
+                sidebarAssignmentArea.id = 'sidebar-assignment-area';
+                sidebarAssignmentArea.className = 'flex-1 overflow-y-auto px-4 py-2 space-y-2';
+                // Insert after the class selector (which is usually first or second child)
+                // Assuming class selector is in the top part
+                const classSelectorArea = sidebarContent.querySelector('.px-6.pt-6');
+                if (classSelectorArea) {
+                    classSelectorArea.after(sidebarAssignmentArea);
+                } else {
+                    sidebarContent.appendChild(sidebarAssignmentArea);
+                }
+            }
+            
+            // Move Assignment Container to Sidebar
+            sidebarAssignmentArea.appendChild(assignmentContainer);
+            
+            // Change styling for vertical list
+            assignmentContainer.classList.remove('flex-wrap', 'gap-2');
+            assignmentContainer.classList.add('flex-col', 'space-y-2');
+            
+            // Update button styles for vertical list
+            const buttons = assignmentContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('rounded-full');
+                btn.classList.add('rounded-xl', 'w-full', 'text-left', 'justify-start');
+            });
+        }
+        
+        // Move Stats to Sidebar Bottom
+        if (sidebarContent && statsContainer) {
+            // Insert before the bottom user profile/settings area
+            const bottomArea = sidebarContent.querySelector('.mt-auto');
+            if (bottomArea) {
+                sidebarContent.insertBefore(statsContainer, bottomArea);
+            }
+            statsContainer.classList.remove('mb-6');
+            statsContainer.classList.add('mb-2', 'mx-4');
+        }
+        
+    } else {
+        // --- STANDARD MODE: Move back to Main ---
+        if (mainContent && assignmentContainer) {
+            // Find the original place (usually after the header/toolbar)
+            // We'll append to a specific placeholder or just top of main content wrapper
+            const standardPlaceholder = document.getElementById('standard-assignment-placeholder');
+            if (standardPlaceholder) {
+                standardPlaceholder.appendChild(assignmentContainer);
+            } else {
+                // Fallback: Insert after the first child (Toolbar)
+                mainContent.insertBefore(assignmentContainer, mainContent.children[1]); 
+            }
+            
+            // Reset styling
+            assignmentContainer.classList.add('flex-wrap', 'gap-2');
+            assignmentContainer.classList.remove('flex-col', 'space-y-2');
+            
+            // Reset button styles
+            const buttons = assignmentContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.add('rounded-full');
+                btn.classList.remove('rounded-xl', 'w-full', 'text-left', 'justify-start');
+            });
+            
+            // Remove sidebar area if empty
+            const sidebarAssignmentArea = document.getElementById('sidebar-assignment-area');
+            if (sidebarAssignmentArea) sidebarAssignmentArea.remove();
+        }
+        
+        // Move Stats back
+        if (mainContent && statsContainer) {
+             const standardStatsPlaceholder = document.getElementById('standard-stats-placeholder');
+             if (standardStatsPlaceholder) {
+                 standardStatsPlaceholder.appendChild(statsContainer);
+             } else {
+                 // Fallback
+                 mainContent.insertBefore(statsContainer, document.getElementById('submission-status-list'));
+             }
+             statsContainer.classList.add('mb-6');
+             statsContainer.classList.remove('mb-2', 'mx-4');
+        }
+    }
+}
+
 customColorInput.addEventListener('input', () => {
     applyTheme(localStorage.getItem('theme') || 'system', customColorInput.value);
 });

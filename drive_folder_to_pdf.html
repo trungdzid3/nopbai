@@ -4187,6 +4187,78 @@
         }
 
         /* ==================================================================
+       3.5. PRO DASHBOARD LAYOUT (Layout B)
+       ================================================================== */
+        @media (min-width: 1025px) {
+            body[data-layout="pro"] #app_container {
+                display: grid;
+                grid-template-columns: 280px 1fr;
+                grid-template-rows: 100vh;
+                gap: 0;
+            }
+
+            body[data-layout="pro"] aside {
+                grid-column: 1;
+                width: 100% !important;
+                border-right: 1px solid var(--m3-outline-variant);
+                background-color: var(--m3-surface-container-low);
+                padding: 0;
+            }
+
+            body[data-layout="pro"] main {
+                grid-column: 2;
+                width: 100% !important;
+                padding: 24px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Hide standard elements in Pro mode if needed */
+            body[data-layout="pro"] #mobile_header {
+                display: none !important;
+            }
+
+            /* Sidebar Styling in Pro Mode */
+            body[data-layout="pro"] aside .flex-col {
+                padding: 0;
+            }
+            
+            /* Assignment List in Sidebar */
+            body[data-layout="pro"] #sidebar-assignment-area {
+                border-top: 1px solid var(--m3-outline-variant);
+                border-bottom: 1px solid var(--m3-outline-variant);
+                background: var(--m3-surface-container);
+                margin: 10px 0;
+            }
+
+            body[data-layout="pro"] #sidebar-assignment-area button {
+                transition: all 0.2s ease;
+                border: 1px solid transparent;
+            }
+
+            body[data-layout="pro"] #sidebar-assignment-area button:hover {
+                background-color: var(--m3-surface-container-highest);
+                transform: translateX(4px);
+            }
+
+            body[data-layout="pro"] #sidebar-assignment-area button[data-active="true"] {
+                background-color: var(--m3-primary-container);
+                color: var(--m3-on-primary-container);
+                border-left: 4px solid var(--m3-primary);
+                font-weight: 600;
+            }
+
+            /* Stats in Sidebar */
+            body[data-layout="pro"] #submission-stats {
+                background: transparent;
+                border: 1px solid var(--m3-outline-variant);
+                padding: 12px;
+                border-radius: 12px;
+            }
+        }
+
+        /* ==================================================================
        4. TABLE STYLES (Material 3)
        ================================================================== */
         .m3-table {
@@ -5000,6 +5072,18 @@
             </div>
             <div id="settings-modal-content" class="flex-1 px-6 py-5 overflow-y-auto">
                 <div id="settings-panel-appearance" class="m3-settings-panel space-y-4" data-active="true">
+                    <section class="m3-setting-card rounded-2xl">
+                        <h3 class="text-base font-semibold text-on-surface mb-3">Bố cục (Layout)</h3>
+                        <div class="flex gap-2">
+                            <button id="layout-standard" data-value="standard"
+                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Cơ bản</button>
+                            <button id="layout-pro" data-value="pro"
+                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Pro Dashboard</button>
+                        </div>
+                        <p class="text-xs text-on-surface-variant mt-2">
+                            * Pro Dashboard: Chuyển danh sách bài tập sang cột trái, tối ưu không gian cho danh sách nộp bài.
+                        </p>
+                    </section>
                     <section class="m3-setting-card rounded-2xl">
                         <h3 class="text-base font-semibold text-on-surface mb-3">Phong cách thiết kế</h3>
                         <div class="flex flex-wrap gap-2">
