@@ -4658,8 +4658,8 @@
         <!-- MAIN CONTENT -->
         <main class="flex-1 p-0 overflow-hidden relative" style="width: 100%;">
             
-            <!-- MAIN CONTENT CONTAINER -->
-            <div class="h-full flex flex-col p-4 md:p-6 overflow-y-auto">
+            <!-- STANDARD VIEW CONTAINER -->
+            <div id="standard-layout-container" class="h-full flex flex-col p-4 md:p-6 overflow-y-auto">
                 <div class="max-w-7xl mx-auto flex flex-col h-full w-full">
 
                     <!-- [MỚI] QUICK ACTIONS TOOLBAR (Chèn vào vị trí trên cùng) -->
@@ -4778,7 +4778,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> <!-- End of standard-layout-container -->
         </main>
     </div>
     
@@ -5007,18 +5007,6 @@
             </div>
             <div id="settings-modal-content" class="flex-1 px-6 py-5 overflow-y-auto">
                 <div id="settings-panel-appearance" class="m3-settings-panel space-y-4" data-active="true">
-                    <section class="m3-setting-card rounded-2xl">
-                        <h3 class="text-base font-semibold text-on-surface mb-3">Bố cục (Layout)</h3>
-                        <div class="flex gap-2">
-                            <button id="layout-standard" data-value="standard"
-                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Cơ bản</button>
-                            <button id="layout-pro" data-value="pro"
-                                class="layout-btn m3-button m3-button-tonal text-xs py-2 px-3 smooth-transition rounded-full">Pro Dashboard</button>
-                        </div>
-                        <p class="text-xs text-on-surface-variant mt-2">
-                            * Pro Dashboard: Chuyển danh sách bài tập sang cột trái, tối ưu không gian cho danh sách nộp bài.
-                        </p>
-                    </section>
                     <section class="m3-setting-card rounded-2xl">
                         <h3 class="text-base font-semibold text-on-surface mb-3">Phong cách thiết kế</h3>
                         <div class="flex flex-wrap gap-2">
