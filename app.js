@@ -405,6 +405,55 @@ function bindModalEvents() {
         }
     };
 
+    // Submission List Modal
+    const submissionListModal = document.getElementById('submission_list_modal');
+    const closeSubmissionListModalBtn = document.getElementById('close_submission_list_modal');
+    const closeSubmissionListModal = document.getElementById('close_submission_list_modal_btn');
+    const copySubmittedBtn = document.getElementById('copy_submitted_list');
+    const copyNotSubmittedBtn = document.getElementById('copy_not_submitted_list');
+
+    if (closeSubmissionListModalBtn) {
+        closeSubmissionListModalBtn.onclick = () => {
+            if (submissionListModal) submissionListModal.setAttribute('aria-hidden', 'true');
+        };
+    }
+
+    if (closeSubmissionListModal) {
+        closeSubmissionListModal.onclick = () => {
+            if (submissionListModal) submissionListModal.setAttribute('aria-hidden', 'true');
+        };
+    }
+
+    if (submissionListModal) {
+        submissionListModal.onclick = (e) => {
+            if (e.target === submissionListModal) {
+                submissionListModal.setAttribute('aria-hidden', 'true');
+            }
+        };
+    }
+
+    if (copySubmittedBtn) {
+        copySubmittedBtn.onclick = () => {
+            const text = submissionListModal?.dataset.submittedList || '';
+            if (text) {
+                copyToClipboard(text);
+            } else {
+                updateStatus('Không có dữ liệu để copy', true);
+            }
+        };
+    }
+
+    if (copyNotSubmittedBtn) {
+        copyNotSubmittedBtn.onclick = () => {
+            const text = submissionListModal?.dataset.notSubmittedList || '';
+            if (text) {
+                copyToClipboard(text);
+            } else {
+                updateStatus('Không có dữ liệu để copy', true);
+            }
+        };
+    }
+
     submissionStatusList.addEventListener('click', handleStatusItemClick);
     submissionStatusList.addEventListener('dblclick', handleStatusItemDblClick);
     submissionStatusList.addEventListener('contextmenu', handleStatusItemContextMenu);
@@ -5454,7 +5503,7 @@ async function updateSubmissionStats() {
             }
         });
         
-        // 5. Cập nhật UI với thống kê chi tiết (màu theo trạng thái)
+        // 5. Cập nhật UI với thống kê chi tiết (màu theo trạng thái) và làm clickable
         const statsHTML = `
             <span class="text-on-surface">${totalSubmitted}/${totalStudents}</span>
             <span class="mx-1 text-outline">|</span>
@@ -5465,6 +5514,11 @@ async function updateSubmissionStats() {
         if (statsDiv) {
             statsDiv.innerHTML = statsHTML;
             statsDiv.classList.remove('hidden');
+            statsDiv.style.cursor = 'pointer';
+            statsDiv.title = 'Click để xem danh sách chi tiết';
+            
+            // Thêm event listener để mở modal
+            statsDiv.onclick = () => openSubmissionListModal(profile.sheetId, sheetNameToUse);
         }
         
         console.log(`[STATS] ${activeAssignment.name}: ${totalSubmitted}/${totalStudents} học sinh đã nộp (sheet: "${sheetNameToUse}")`);
@@ -5472,6 +5526,188 @@ async function updateSubmissionStats() {
         console.error('[STATS] Lỗi cập nhật thống kê:', err);
         if (statsDiv) statsDiv.classList.add('hidden');
     }
+}
+
+/**
+ * Mở modal hiển thị danh sách người nộp/chưa nộp
+ */
+async function openSubmissionListModal(spreadsheetId, sheetName) {
+    const modal = document.getElementById('submission_list_modal');
+    const submittedListDiv = document.getElementById('submitted_list');
+    const notSubmittedListDiv = document.getElementById('not_submitted_list');
+    
+    if (!modal) return;
+    
+    // Hiện modal
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Hiển thị loading
+    submittedListDiv.innerHTML = '<div class="text-outline text-center py-4">Đang tải...</div>';
+    notSubmittedListDiv.innerHTML = '<div class="text-outline text-center py-4">Đang tải...</div>';
+    
+    try {
+        // Lấy danh sách tất cả học sinh từ sheet
+        const allStudents = await getAllStudentsFromSheet(spreadsheetId, sheetName);
+        
+        // Lấy danh sách người đã nộp từ UI
+        const submissionItems = document.querySelectorAll('#submission-status-list li[data-status]');
+        const submittedNames = new Set();
+        
+        submissionItems.forEach(item => {
+            const status = item.dataset.status;
+            if (status && status !== 'error') {
+                const nameElement = item.querySelector('span:first-child');
+                if (nameElement) {
+                    submittedNames.add(nameElement.textContent.trim());
+                }
+            }
+        });
+        
+        // Phân loại
+        const submitted = allStudents.filter(name => submittedNames.has(name));
+        const notSubmitted = allStudents.filter(name => !submittedNames.has(name));
+        
+        // Hiển thị danh sách đã nộp
+        if (submitted.length > 0) {
+            submittedListDiv.innerHTML = `
+                <div class="font-medium text-green-600 dark:text-green-400 mb-2">
+                    Tổng: ${submitted.length} người
+                </div>
+                <div class="text-on-surface leading-relaxed">
+                    ${submitted.join(', ')}
+                </div>
+            `;
+        } else {
+            submittedListDiv.innerHTML = '<div class="text-outline text-center py-2">Chưa có ai nộp</div>';
+        }
+        
+        // Hiển thị danh sách chưa nộp
+        if (notSubmitted.length > 0) {
+            notSubmittedListDiv.innerHTML = `
+                <div class="font-medium text-orange-600 dark:text-orange-400 mb-2">
+                    Tổng: ${notSubmitted.length} người
+                </div>
+                <div class="text-on-surface leading-relaxed">
+                    ${notSubmitted.join(', ')}
+                </div>
+            `;
+        } else {
+            notSubmittedListDiv.innerHTML = '<div class="text-outline text-center py-2">Tất cả đã nộp</div>';
+        }
+        
+        // Lưu data để copy
+        modal.dataset.submittedList = submitted.join(', ');
+        modal.dataset.notSubmittedList = notSubmitted.join(', ');
+        
+    } catch (err) {
+        console.error('[MODAL] Lỗi lấy danh sách:', err);
+        submittedListDiv.innerHTML = '<div class="text-error text-center py-2">Lỗi tải dữ liệu</div>';
+        notSubmittedListDiv.innerHTML = '<div class="text-error text-center py-2">Lỗi tải dữ liệu</div>';
+    }
+}
+
+/**
+ * Lấy danh sách tất cả học sinh từ sheet
+ */
+async function getAllStudentsFromSheet(spreadsheetId, sheetName) {
+    try {
+        // 1. Tìm vị trí cột "Họ và tên"
+        const headerResponse = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!1:1`
+        });
+        
+        const headerRow = headerResponse.result.values ? headerResponse.result.values[0] : [];
+        const nameColIndex = headerRow.findIndex(cell => 
+            cell && cell.trim().toLowerCase().includes('họ và tên')
+        );
+        
+        if (nameColIndex === -1) {
+            console.warn(`Không tìm thấy cột 'Họ và tên' trong sheet ${sheetName}`);
+            return [];
+        }
+        
+        // 2. Lấy chữ cột từ index (A=0, B=1, ..., Z=25, AA=26, ...)
+        const colLetter = columnIndexToLetter(nameColIndex);
+        
+        // 3. Đọc cột tên từ dòng 2 trở đi (bỏ header)
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!${colLetter}2:${colLetter}1000`
+        });
+        
+        const values = response.result.values;
+        if (!values || values.length === 0) return [];
+        
+        // 4. Lấy danh sách tên (bỏ qua ô trống)
+        const names = [];
+        for (const row of values) {
+            if (row && row[0] && row[0].trim()) {
+                names.push(row[0].trim());
+            }
+        }
+        
+        console.log(`[MODAL] Lấy được ${names.length} học sinh từ sheet "${sheetName}"`);
+        return names;
+    } catch (err) {
+        console.error(`Lỗi lấy danh sách học sinh từ sheet ${sheetName}:`, err);
+        return [];
+    }
+}
+
+/**
+ * Chuyển index cột thành chữ cột (0 -> A, 25 -> Z, 26 -> AA, ...)
+ */
+function columnIndexToLetter(index) {
+    let letter = '';
+    while (index >= 0) {
+        letter = String.fromCharCode((index % 26) + 65) + letter;
+        index = Math.floor(index / 26) - 1;
+    }
+    return letter;
+}
+
+/**
+ * Copy text vào clipboard
+ */
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            updateStatus('✓ Đã copy vào clipboard');
+        }).catch(err => {
+            console.error('Lỗi copy:', err);
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        fallbackCopyToClipboard(text);
+    }
+}
+
+/**
+ * Fallback copy method cho trình duyệt cũ
+ */
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            updateStatus('✓ Đã copy vào clipboard');
+        } else {
+            updateStatus('✗ Không thể copy', true);
+        }
+    } catch (err) {
+        console.error('Lỗi copy:', err);
+        updateStatus('✗ Không thể copy', true);
+    }
+    
+    document.body.removeChild(textArea);
 }
 
 /**

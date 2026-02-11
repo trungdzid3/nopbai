@@ -1,9 +1,10 @@
 /**
  * Tệp Apps Script này thực hiện các nhiệm vụ tự động cho Google Form.
- * PHIÊN BẢN 24.8 (Đồng bộ Lịch dọn dẹp)
+ * PHIÊN BẢN 24.10 (Cập nhật Lịch Bài kiểm tra)
  *
- * - (MỚI V24.8) Đồng bộ lịch dọn dẹp. "Khác" (OTH) sẽ dọn dẹp cùng "Đại số" (THU) lúc 18:00 T5 và cùng "Hình học" (SUN) lúc 17:00 CN.
- * - (V24.7) Giữ nguyên hạn nộp Khác (OTH_A) là 23:00 Thứ 3.
+ * - (MỚI V24.10) Cập nhật lịch "Bài kiểm tra" (OTH): Chỉ còn 1 slot (CN 0h-19h). Dọn dẹp lúc 23h T7.
+ * - (V24.8) Đồng bộ lịch dọn dẹp. "Bài kiểm tra" (OTH) sẽ dọn dẹp cùng "Đại số" (THU) lúc 18:00 T5 và cùng "Hình học" (SUN) lúc 17:00 CN.
+ * - (V24.7) Giữ nguyên hạn nộp Bài kiểm tra (OTH_A) là 23:00 Thứ 3.
  * - (V24.5) Giữ nguyên hạn nộp Đại số (THU) là 23:00 Thứ 3.
  */
 
@@ -21,7 +22,7 @@ const STUDENT_NAME_QUESTION_TITLE = "Tên học sinh (chỉ điền tên đệm 
 const ASSIGNMENT_TYPE_QUESTION_TITLE = "Chọn bài tập:";
 const ASSIGNMENT_TYPE_THU = "Bài tập thứ 5";
 const ASSIGNMENT_TYPE_SUN = "Bài tập Chủ nhật";
-const ASSIGNMENT_TYPE_OTH = "Khác";
+const ASSIGNMENT_TYPE_OTH = "Bài kiểm tra";
 
 
 // 3. (*** CẬP NHẬT V14.3 ***) Cấu hình 3 Sheet (Dùng ID trang tính - GID)
@@ -30,7 +31,7 @@ const SHEET_ID = "1GiQWCCgl9XAJ6DqTiSjRZkzPztaT6nEix3qyZmCOHV8"; // ID Của FIL
 // (*** MỚI V14 ***) Cập nhật GID (ID trang tính)
 const SHEET_TAB_ID_THU = "1234172792"; // <<< GID (ID TRANG TÍNH) CỦA SHEET ĐẠI SỐ
 const SHEET_TAB_ID_SUN = "566805598"; // <<< GID (ID TRANG TÍNH) CỦA SHEET HÌNH HỌC
-const SHEET_TAB_ID_OTH = "125828814"; // <<< GID (ID TRANG TÍNH) CỦA SHEET KHÁC
+const SHEET_TAB_ID_OTH = "125828814"; // <<< GID (ID TRANG TÍNH) CỦA SHEET BÀI KIỂM TRA
 
 // Cấu hình cho Sheet (Trang) BÀI TẬP THỨ 5
 const SHEET_NAME_THU = "Bảng nhận xét (Đại số)";
@@ -42,8 +43,8 @@ const SHEET_NAME_SUN = "Bảng nhận xét (Hình học)";
 const NAME_COLUMN_SUN = "B";
 const CHECKBOX_COLUMN_SUN = "G";
 
-// Cấu hình cho Sheet (Trang) BÀI TẬP KHÁC
-const SHEET_NAME_OTH = "Bảng nhận xét (Khác)";
+// Cấu hình cho Sheet (Trang) BÀI KIỂM TRA
+const SHEET_NAME_OTH = "Bảng nhận xét (Bài kiểm tra)";
 const NAME_COLUMN_OTH = "B";
 const CHECKBOX_COLUMN_OTH = "G";
 
@@ -52,20 +53,18 @@ const CHECKBOX_COLUMN_OTH = "G";
 const RECIPIENT_EMAIL = "trungdzid3@gmail.com";
 const SUBJECT_TEMPLATE_THU = "Biểu mẫu: Bài tập Thứ 5";
 const SUBJECT_TEMPLATE_SUN = "Biểu mẫu: Bài tập Chủ Nhật";
-const SUBJECT_TEMPLATE_OTH = "Biểu mẫu: Bài tập Khác";
+const SUBJECT_TEMPLATE_OTH = "Biểu mẫu: Bài kiểm tra";
 
 // 5. (*** CẬP NHẬT V24.7 ***) Cấu hình lịch nộp bài
 const TIME_OPEN_THU_NUM = (5 * 10000) + (0 * 100) + 0; // 50000 (Thứ 6 00:00)
 const TIME_CLOSE_THU_NUM = (2 * 10000) + (23 * 100) + 0; // 22300 (Thứ 3 23:00) (V24.5)
 
 const TIME_OPEN_SUN_NUM = (1 * 10000) + (12 * 100) + 0; // 11200 (Thứ 2 12:00)
-const TIME_CLOSE_SUN_NUM = (6 * 10000) + (22 * 100) + 0; // 62200 (Thứ 7 22:00)
+const TIME_CLOSE_SUN_NUM = (5 * 10000) + (22 * 100) + 0; // 62200 (Thứ 6 22:00)
 
-const TIME_OPEN_OTH_NUM_A = (1 * 10000) + (12 * 100) + 0; // 11200 (Thứ 2 12:00)
-const TIME_CLOSE_OTH_NUM_A = (2 * 10000) + (23 * 100) + 0; // 22300 (Thứ 3 23:00) (V24.7)
-
-const TIME_OPEN_OTH_NUM_B = (5 * 10000) + (0 * 100) + 0; // 50000 (Thứ 6 00:00)
-const TIME_CLOSE_OTH_NUM_B = (6 * 10000) + (22 * 100) + 0; // 62200 (Thứ 7 22:00)
+// (*** CẬP NHẬT V24.10 ***) Bài kiểm tra (OTH) - Chỉ còn 1 slot: CN 0h-19h
+const TIME_OPEN_OTH_NUM = (0 * 10000) + (0 * 100) + 0; // 00000 (Chủ nhật 00:00)
+const TIME_CLOSE_OTH_NUM = (0 * 10000) + (19 * 100) + 0; // 01900 (Chủ nhật 19:00)
 
 // 6. (MỚI V14.1) Cấu hình Du di
 const GRACE_PERIOD_MINUTES = 10; // <<< SỐ PHÚT DU DI (10 PHÚT)
@@ -256,7 +255,7 @@ function onFormSubmit(e) {
     // Lấy loại bài tập
     let assignmentType = getResponseByTitle(formResponse, ASSIGNMENT_TYPE_QUESTION_TITLE);
     if (!assignmentType) {
-        Logger.log(`Không tìm thấy câu trả lời cho câu hỏi: "${ASSIGNMENT_TYPE_QUESTION_TITLE}". Sẽ xử lý như bài tập Khác (mặc định) và Quá hạn.`);
+        Logger.log(`Không tìm thấy câu trả lời cho câu hỏi: "${ASSIGNMENT_TYPE_QUESTION_TITLE}". Sẽ xử lý như Bài kiểm tra (mặc định) và Quá hạn.`);
     }
 
     // === Phần 2: Xác định thư mục đích, trạng thái, và nộp sớm ===
@@ -285,29 +284,28 @@ function onFormSubmit(e) {
         // (*** MỚI V14.2 ***) Tính Nộp sớm
         isEarly = checkIsEarly(now, TIME_CLOSE_SUN_NUM, 2);
 
-    } else { // (Bao gồm Khác và Mặc định)
+    } else { // (Bao gồm Bài kiểm tra và Mặc định)
         targetParentFolder = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
         emailSubjectBase = SUBJECT_TEMPLATE_OTH;
         
         let deadlineNum; // (*** MỚI V14.2 ***)
         
-        if (assignmentType === ASSIGNMENT_TYPE_OTH) { // Nếu là "Khác"
-            // (*** CẬP NHẬT V24.7: Dùng mốc TIME_CLOSE_OTH_NUM_A mới ***)
-            const isOnTime_A = (currentTimeNum >= TIME_OPEN_OTH_NUM_A && currentTimeNum < TIME_CLOSE_OTH_NUM_A);
-            const isOnTime_B = (currentTimeNum >= TIME_OPEN_OTH_NUM_B && currentTimeNum < TIME_CLOSE_OTH_NUM_B);
-            if (!(isOnTime_A || isOnTime_B)) {
+        if (assignmentType === ASSIGNMENT_TYPE_OTH) { // Nếu là "Bài kiểm tra"
+            // (*** CẬP NHẬT V24.10: Chỉ còn 1 slot CN 0h-19h ***)
+            const isOnTime = (currentTimeNum >= TIME_OPEN_OTH_NUM && currentTimeNum < TIME_CLOSE_OTH_NUM);
+            if (!isOnTime) {
                 isOverdue = true;
             }
-            // (*** MỚI V14.2 ***) Tìm hạn chót gần nhất cho Lớp Khác
-            deadlineNum = (realTimeNum < TIME_OPEN_OTH_NUM_B) ? TIME_CLOSE_OTH_NUM_A : TIME_CLOSE_OTH_NUM_B;
+            // (*** MỚI V14.2 ***) Tìm hạn chót cho Bài kiểm tra
+            deadlineNum = TIME_CLOSE_OTH_NUM;
             isEarly = checkIsEarly(now, deadlineNum, 1); // Yêu cầu 1 ngày
 
         } else { // Nếu là loại bài tập không xác định
             isOverdue = true;
             Logger.log(`Loại bài tập không hợp lệ ("${assignmentType}"). Đã chuyển vào thư mục "${targetParentFolder.getName()}" và đánh dấu Quá hạn.`);
-            assignmentType = ASSIGNMENT_TYPE_OTH; // Ép về "Khác" để đánh dấu
+            assignmentType = ASSIGNMENT_TYPE_OTH; // Ép về "Bài kiểm tra" để đánh dấu
             // (*** MỚI V14.2 ***) Tính hạn chót cho trường hợp mặc định
-            deadlineNum = (realTimeNum < TIME_OPEN_OTH_NUM_B) ? TIME_CLOSE_OTH_NUM_A : TIME_CLOSE_OTH_NUM_B;
+            deadlineNum = TIME_CLOSE_OTH_NUM;
             isEarly = checkIsEarly(now, deadlineNum, 1);
         }
     }
@@ -740,10 +738,11 @@ function findAndMarkCheckbox(originalName, assignmentType, context, isEarly) {
 
 
 /**
- * HÀM 3: (*** CẬP NHẬT V24.9 - DỌN DẸP ĐỊNH KỲ CHÍNH XÁC ***)
+ * HÀM 3: (*** CẬP NHẬT V24.10 - DỌN DẸP ĐỊNH KỲ CHÍNH XÁC ***)
  * Chạy dọn dẹp theo lịch cụ thể:
  * - T5 18:30: Đại số (THU) - xóa email, form responses, và dọn folder
  * - CN 17:00: Hình học (SUN) - xóa email, form responses, và dọn folder
+ * - T7 23:00: Bài kiểm tra (OTH) - xóa email, form responses, và dọn folder (MỚI V24.10)
  * 
  * YÊU CẦU: Trigger HOURLY (chạy hàng giờ)
  */
@@ -827,6 +826,43 @@ function runScheduledCleanupAndEnsureOpen() {
         }
       } else {
         Logger.log(`[CLEANUP] CN đã dọn dẹp hôm nay rồi. Sẽ chạy lại tuần sau.`);
+      }
+    }
+    
+    // --- LỊCH BÀI KIỂM TRA: T7 23:00 (MỚI V24.10) ---
+    else if (day === 6 && hour === 23 && minute >= 0) {
+      const scriptProperties = PropertiesService.getScriptProperties();
+      const lastRunOth = scriptProperties.getProperty('LAST_CLEANUP_OTH_TIME');
+      const today = now.toLocaleDateString("vi-VN");
+      
+      // Kiểm tra xem hôm nay đã chạy chưa
+      if (lastRunOth !== today) {
+        Logger.log(">>> ĐẾN GIỜ DỌN DẸP: THỨ 7 23:00 (BÀI KIỂM TRA) <<<");
+        
+        try {
+          // 1. Xóa email cũ
+          cleanupOldEmails("Biểu mẫu: Bài kiểm tra");
+          
+          // 2. Xóa form responses cũ (hơn 7 ngày)
+          const form = FormApp.getActiveForm();
+          cleanupFormResponsesByType(form, "Bài kiểm tra", 7);
+          
+          // 3. Dọn dẹp folder
+          const parentFolderOth = DriveApp.getFolderById(PARENT_FOLDER_OTH_ID);
+          clearFolderContents(parentFolderOth);
+          
+          // 4. Xóa cache email reconcile
+          clearReconcileEmailCache(scriptProperties);
+          
+          // 5. Đánh dấu đã chạy hôm nay
+          scriptProperties.setProperty('LAST_CLEANUP_OTH_TIME', today);
+          
+          Logger.log("--- ✅ Hoàn tất dọn dẹp THỨ 7 (BÀI KIỂM TRA) ---");
+        } catch (othErr) {
+          Logger.log(`LỖI khi dọn dẹp T7: ${othErr.message}`);
+        }
+      } else {
+        Logger.log(`[CLEANUP] T7 đã dọn dẹp hôm nay rồi. Sẽ chạy lại tuần sau.`);
       }
     }
 
